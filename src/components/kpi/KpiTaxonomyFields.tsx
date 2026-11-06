@@ -6,6 +6,8 @@ import {
   useProcesses,
   useAwardCriteria,
   useAwardSubCriteria,
+  useAwardKpiMeasures,
+  useDomains,
   usePillars,
 } from "../../hooks/useKpi";
 
@@ -13,11 +15,15 @@ interface KpiTaxonomyFieldsProps {
   operationalObjectiveId: string;
   processId: string;
   awardSubCriterionId: string;
+  awardKpiMeasureId: string;
+  domainId: string;
   pillarId: string;
   onChange: (patch: {
     operational_objective_id?: string;
     process_id?: string;
     award_sub_criterion_id?: string;
+    award_kpi_measure_id?: string;
+    domain_id?: string;
     pillar_id?: string;
   }) => void;
 }
@@ -30,21 +36,28 @@ export const KpiTaxonomyFields: React.FC<KpiTaxonomyFieldsProps> = ({
   operationalObjectiveId,
   processId,
   awardSubCriterionId,
+  awardKpiMeasureId,
+  domainId,
   pillarId,
   onChange,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isAr = i18n.language?.startsWith("ar");
   const { data: objectivesData } = useOperationalObjectives();
   const { data: processesData } = useProcesses();
   const { data: criteriaData } = useAwardCriteria();
   const { data: subCriteriaData } = useAwardSubCriteria();
   const { data: pillarsData } = usePillars();
+  const { data: measuresData } = useAwardKpiMeasures();
+  const { data: domainsData } = useDomains();
 
   const objectives = objectivesData ?? [];
   const processes = processesData ?? [];
   const criteria = criteriaData ?? [];
   const subCriteria = subCriteriaData ?? [];
   const pillars = pillarsData ?? [];
+  const measures = measuresData ?? [];
+  const domains = domainsData ?? [];
 
   const selectedProcess = processes.find((p: any) => p.id === processId);
   const selectedObjective = objectives.find(
@@ -89,7 +102,7 @@ export const KpiTaxonomyFields: React.FC<KpiTaxonomyFieldsProps> = ({
       </div>
 
       <Select
-        label={`Objective *`}
+        label={`${t("kpi.dictionary.fieldObjective")} *`}
         value={processId}
         onChange={(v) => {
           const process = processes.find((p: any) => p.id === v.target.value);
@@ -114,7 +127,7 @@ export const KpiTaxonomyFields: React.FC<KpiTaxonomyFieldsProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Select
-          label="Criteria"
+          label={t("kpi.dictionary.fieldCriteria")}
           value={selectedCriterionId}
           onChange={(v) => {
             setSelectedCriterionId(v.target.value);
@@ -127,7 +140,7 @@ export const KpiTaxonomyFields: React.FC<KpiTaxonomyFieldsProps> = ({
           placeholder={t("common.selectAnOption")}
         />
         <Select
-          label="Sub-Criteria"
+          label={t("kpi.dictionary.fieldSubCriteria")}
           value={awardSubCriterionId}
           onChange={(v) => onChange({ award_sub_criterion_id: v.target.value })}
           options={visibleSubCriteria.map((s: any) => ({
@@ -151,6 +164,32 @@ export const KpiTaxonomyFields: React.FC<KpiTaxonomyFieldsProps> = ({
         options={pillars.map((p: any) => ({
           value: p.id,
           label: p.name_en,
+        }))}
+        placeholder={t("common.selectAnOption")}
+      />
+
+      <Select
+        label={t("kpi.dictionary.fieldAwardKpiMeasure")}
+        value={awardKpiMeasureId}
+        onChange={(v) => onChange({ award_kpi_measure_id: v.target.value })}
+        options={measures.map((m: any) => ({
+          value: m.id,
+          label: `${m.code ? `${String(m.code).toUpperCase()} — ` : ""}${
+            (isAr ? m.name_ar : m.name_en) || m.name_en || m.name_ar || ""
+          }`,
+        }))}
+        placeholder={t("common.selectAnOption")}
+      />
+
+      <Select
+        label={t("kpi.masterData.domains")}
+        value={domainId}
+        onChange={(v) => onChange({ domain_id: v.target.value })}
+        options={domains.map((d: any) => ({
+          value: d.id,
+          label: `${d.code ? `${String(d.code).toUpperCase()} — ` : ""}${
+            (isAr ? d.name_ar : d.name_en) || d.name_en || d.name_ar || ""
+          }`,
         }))}
         placeholder={t("common.selectAnOption")}
       />

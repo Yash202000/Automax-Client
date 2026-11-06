@@ -497,6 +497,8 @@ export interface UpdateProfileRequest {
   mobile_verified?: boolean;
   bypass_login_totp?: boolean;
   enable_login_totp?: boolean;
+  contact_center?: boolean;
+  is_ad_user?: boolean;
 }
 
 export interface ManagerScopeResponse {
@@ -955,6 +957,7 @@ export interface TransitionFieldChange {
   transition_id: string;
   field_name: string;
   label: string;
+  label_ar: string;
   is_required: boolean;
   department_type_filter?: string;
   sort_order: number;
@@ -963,6 +966,7 @@ export interface TransitionFieldChange {
 export interface TransitionFieldChangeRequest {
   field_name: string;
   label?: string;
+  label_ar?: string;
   is_required: boolean;
   department_type_filter?: string;
   sort_order?: number;
@@ -972,6 +976,7 @@ export interface TransitionFieldChangeRequest {
 export interface WorkflowCreateRequest {
   name: string;
   name_ar?: string;
+  code?: string;
   description?: string;
   description_ar?: string;
   record_type?: ClassificationType;
@@ -1173,6 +1178,7 @@ export interface NotificationTemplate {
   id: string;
   name: string;
   code: string;
+  provider_template_id: string;
   channel: "email" | "sms";
   module_type: string;
   action_type: string;
@@ -1324,7 +1330,9 @@ export interface AIQualityFeedback {
   id: string;
   incident_id: string;
   changed_summary: string;
+  changed_summary_ar?: string;
   resolution_status: string;
+  resolution_status_ar?: string;
   distance_meters: number;
   is_reopened: boolean;
   created_at: string;
@@ -1373,6 +1381,7 @@ export interface IncidentRevision {
   revision_number: number;
   action_type: IncidentRevisionActionType;
   action_description: string;
+  action_description_ar?: string | null;
   changes: IncidentFieldChange[];
   performed_by_id: string;
   performed_by?: User;
@@ -1553,9 +1562,13 @@ export interface IncidentFilter {
   search?: string;
   workflow_id?: string;
   current_state_id?: string;
+  /** Multi-select variant — when non-empty, sent as-is instead of current_state_id. */
+  current_state_ids?: string[];
   classification_ids?: string[];
   priority?: number;
   assignee_id?: string;
+  /** Multi-select variant — when non-empty, sent as-is instead of assignee_id. */
+  assignee_ids?: string[];
   department_ids?: string[];
   my_record?: string;
   location_ids?: string[];
@@ -1565,6 +1578,7 @@ export interface IncidentFilter {
   channel?: string; // For complaints
   source?: string;
   converted_to_request?: boolean;
+  exclude_closed?: boolean;
   start_date?: string;
   end_date?: string;
   page?: number;
@@ -1575,6 +1589,29 @@ export interface IncidentFilter {
   momra_ref?: string;
   current_state_code?: string;
   radius?: number;
+}
+
+// SLA state used by the incidents feed filter drawer.
+export type SlaFilter = "within" | "breached";
+
+// Combined filter model for the /incidents/list feed + filter drawer.
+export interface FeedFilters {
+  stateIds: string[];
+  transitionId?: string;
+  assigneeIds: string[];
+  reporterId?: string;
+  workflowId?: string;
+  source?: string;
+  momraRef?: string;
+  convertedToRequest?: boolean;
+  departmentIds: string[];
+  classificationIds: string[];
+  locationIds: string[];
+  priority?: number;
+  startDate?: string;
+  endDate?: string;
+  sla?: SlaFilter;
+  reporterPhone?: string;
 }
 
 // Convert Incident to Request types
@@ -1961,6 +1998,7 @@ export interface Settings {
   error_log_retention_unit?: "days" | "months";
   auth_setting: {
     totp_enabled: boolean;
+    show_forgot_password: boolean;
   };
   sms_max_length: number;
   updated_at: string;
@@ -1996,6 +2034,7 @@ export interface SettingsUpdateRequest {
   error_log_retention_unit?: "days" | "months";
   auth_setting?: {
     totp_enabled?: boolean;
+    show_forgot_password?: boolean;
   };
 }
 
@@ -2058,6 +2097,10 @@ export interface Email {
   provider?: string;
   template_code?: string;
   language?: string;
+  meta?: {
+    type?: string;
+    id?: string;
+  };
 }
 
 export interface EmailFilter {

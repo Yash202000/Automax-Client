@@ -33,13 +33,21 @@ import { cn, getLocalizedDescription, getLocalizedName } from "@/lib/utils";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 import i18n from "@/i18n";
 import { useImageValidation } from "@/hooks/useImageValidation";
-import { RejectedAttachmentsList } from "./RejectedAttachmentsList";
+import {
+  RejectedAttachmentsList,
+  PolicyRejectedList,
+} from "./RejectedAttachmentsList";
+import { useAttachmentPolicy } from "../../hooks/useAttachmentPolicy";
 
 interface ConvertToRequestModalProps {
   incident: IncidentDetail;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (newRequestId: string) => void;
+  onSuccess: (
+    requestId: string,
+    requestNumber?: string,
+    isLinked?: boolean,
+  ) => void;
 }
 
 type Step = "transition" | "classification" | "workflow" | "review";
@@ -63,6 +71,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
     null,
   );
   const imageValidation = useImageValidation();
+  const attachmentPolicy = useAttachmentPolicy("internal");
   const { clearRejected: clearRejectedImages } = imageValidation;
   const [feedbackRating, setFeedbackRating] = useState<number>(0);
   const [feedbackComment, setFeedbackComment] = useState("");
@@ -78,15 +87,14 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
   // const [description, setDescription] = useState("");
 
   // Convert type (existing or new request)
-  const [convertType, setConvertType] = useState<"existing" | "new">("new");
+  const [convertType, setConvertType] = useState<"existing" | "new" | "">("");
   const [selectedRequest, setSelectedRequest] = useState<Incident | null>(null);
   const [requestSearch, setRequestSearch] = useState("");
   const [showRequestSearch, setShowRequestSearch] = useState(true);
   const [searchedRequests, setSearchedRequests] = useState<Incident[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
-  const [convertableRequestStateId, setConvertableRequestStateId] = useState<
-    string | null
-  >(null);
+  // Narrow the existing-request list to the incident's classification and location
+  const [matchContext, setMatchContext] = useState(true);
 
   // Query for available transitions
   const { data: transitionsData } = useQuery({
@@ -131,12 +139,6 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
         (item, index, self) =>
           index === self.findIndex((t) => t.id === item.id),
       );
-      if (unique?.length && unique[0]?.states?.length) {
-        const convertableRequestState =
-          unique[0].states.find((x: any) => x.state_type === "initial")?.id ||
-          "";
-        setConvertableRequestStateId(convertableRequestState);
-      }
       return { success: true, data: unique };
     },
     enabled: isOpen && currentStep === "workflow",
@@ -233,6 +235,9 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
 
   // Debounced search for requests
   useEffect(() => {
+    if (!isOpen) return;
+    // Set on cleanup so a slow response for outdated filters can't overwrite newer results
+    let cancelled = false;
     const timer = setTimeout(async () => {
       // Always load requests - show all if search is empty, or filter by search
       setRequestsLoading(true);
@@ -240,23 +245,42 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
         const params: any = {
           record_type: "request",
           limit: 20,
-          current_state_id: convertableRequestStateId,
+          exclude_closed: true,
         };
+        if (matchContext) {
+          if (incident.classification?.id) {
+            params.classification_ids = [incident.classification.id];
+          }
+          if (incident.location?.id) {
+            params.location_ids = [incident.location.id];
+          }
+        }
         if (requestSearch && requestSearch.length >= 2) {
           params.search = requestSearch;
         }
         const response = await incidentApi.list(params);
+        if (cancelled) return;
         setSearchedRequests(response.data || []);
       } catch (error) {
+        if (cancelled) return;
         console.error("Failed to search requests:", error);
         setSearchedRequests([]);
       } finally {
-        setRequestsLoading(false);
+        if (!cancelled) setRequestsLoading(false);
       }
     }, 300);
 
-    return () => clearTimeout(timer);
-  }, [requestSearch]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    isOpen,
+    requestSearch,
+    matchContext,
+    incident.classification?.id,
+    incident.location?.id,
+  ]);
 
   // Convert mutation
   const convertMutation = useMutation({
@@ -271,8 +295,16 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
       });
     },
     onSuccess: (result) => {
+      if (convertType === "existing" && selectedRequest) {
+        onSuccess(selectedRequest.id, selectedRequest.incident_number, true);
+        return;
+      }
       if (result.data?.new_request?.id) {
-        onSuccess(result.data.new_request.id);
+        onSuccess(
+          result.data.new_request.id,
+          result.data.new_request.incident_number,
+          false,
+        );
       }
     },
   });
@@ -291,15 +323,15 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
       setWorkflowId("");
       // setTitle("");
       // setDescription("");
-      setConvertType("new");
+      setConvertType("");
       setSelectedRequest(null);
       setRequestSearch("");
-      setShowRequestSearch(false);
+      setShowRequestSearch(true);
       setSearchedRequests([]);
     }
   }, [isOpen, clearRejectedImages]);
 
-  const steps: { key: Step; label: string; icon: React.ReactNode }[] = [
+  const allSteps: { key: Step; label: string; icon: React.ReactNode }[] = [
     {
       key: "transition",
       label: t("requests.stepTransition"),
@@ -321,6 +353,9 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
       icon: <FileText className="w-4 h-4" />,
     },
   ];
+  const steps = allSteps.filter(
+    (step) => convertType !== "new" || step.key !== "transition",
+  );
 
   const currentStepIndex = steps.findIndex((s) => s.key === currentStep);
 
@@ -343,16 +378,19 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
           if (requiresAttachment && !transitionAttachment) return false;
           if (requiresFeedback && feedbackRating === 0) return false;
         }
-        return true;
+        return convertType !== "";
       case "classification":
+        if (convertType === "") return false;
         // Classification not required if linking to existing request
         if (convertType === "existing") return true;
         return !!classificationId;
       case "workflow":
+        if (convertType === "") return false;
         // Workflow not required if linking to existing request
         if (convertType === "existing") return true;
         return !!workflowId;
       case "review":
+        if (convertType === "") return false;
         // Feedback is mandatory
         if (!feedbackComment.trim()) return false;
         // For existing request, need selectedRequest
@@ -378,6 +416,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
   };
 
   const handleConvert = () => {
+    if (convertType === "") return;
     // For existing request, require selected request
     if (convertType === "existing" && !selectedRequest) return;
 
@@ -464,12 +503,13 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
 
         {/* Convert Type Toggle */}
         <div className="px-6 py-4 border-b border-[hsl(var(--border))] flex items-center gap-3">
-          <label className="relative w-full cursor-pointer">
+          <label className="group relative w-full cursor-pointer">
             <input
               type="radio"
               name="convertRequest"
               value="existing"
               className="peer hidden"
+              disabled={convertType === "new"}
               checked={convertType === "existing"}
               onChange={(e) =>
                 setConvertType(e.target.value as "existing" | "new")
@@ -477,7 +517,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
             />
             <div
               className="bg-background border rounded-lg p-3 flex gap-3 items-start transition-all
-              peer-checked:border-[hsl(var(--primary))] peer-checked:ring-2 peer-checked:ring-[hsl(var(--primary)/0.3)] hover:border-[hsl(var(--primary))]"
+              peer-checked:border-[hsl(var(--primary))] peer-checked:ring-2 peer-checked:ring-[hsl(var(--primary)/0.3)] peer-disabled:opacity-50 peer-disabled:cursor-not-allowed hover:border-[hsl(var(--primary))]"
             >
               <Link className="w-5 h-5 text-[hsl(var(--muted-foreground))] mt-0.5" />
               <div>
@@ -489,22 +529,32 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                 </p>
               </div>
             </div>
+            {convertType === "new" && (
+              <span
+                role="tooltip"
+                className="pointer-events-none invisible absolute left-0 top-full z-50 mt-2 w-64 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--popover))] p-2 text-xs text-[hsl(var(--popover-foreground))] shadow-md group-hover:visible"
+              >
+                {t("requests.convertTypeLockedTooltip")}
+              </span>
+            )}
           </label>
 
-          <label className="relative w-full cursor-pointer">
+          <label className="group relative w-full cursor-pointer">
             <input
               type="radio"
               name="convertRequest"
               value="new"
               className="peer hidden"
+              disabled={convertType === "existing"}
               checked={convertType === "new"}
-              onChange={(e) =>
-                setConvertType(e.target.value as "existing" | "new")
-              }
+              onChange={() => {
+                setConvertType("new");
+                setCurrentStep("classification");
+              }}
             />
             <div
               className="bg-background border rounded-lg p-3 flex gap-3 items-start transition-all
-              peer-checked:border-[hsl(var(--primary))] peer-checked:ring-2 peer-checked:ring-[hsl(var(--primary)/0.3)] hover:border-[hsl(var(--primary))]"
+              peer-checked:border-[hsl(var(--primary))] peer-checked:ring-2 peer-checked:ring-[hsl(var(--primary)/0.3)] peer-disabled:opacity-50 peer-disabled:cursor-not-allowed hover:border-[hsl(var(--primary))]"
             >
               <PlusCircle className="w-5 h-5 text-[hsl(var(--muted-foreground))] mt-0.5" />
               <div>
@@ -516,6 +566,14 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                 </p>
               </div>
             </div>
+            {convertType === "existing" && (
+              <span
+                role="tooltip"
+                className="pointer-events-none invisible absolute left-0 top-full z-50 mt-2 w-64 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--popover))] p-2 text-xs text-[hsl(var(--popover-foreground))] shadow-md group-hover:visible"
+              >
+                {t("requests.convertTypeLockedTooltip")}
+              </span>
+            )}
           </label>
         </div>
 
@@ -524,7 +582,14 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
           {/* Step 1: Transition */}
           {currentStep === "transition" && (
             <div className="space-y-4">
-              {convertType === "existing" ? (
+              {convertType === "" ? (
+                <p className="py-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
+                  {t(
+                    "requests.selectRequestType",
+                    "Select a request type to continue.",
+                  )}
+                </p>
+              ) : convertType === "existing" ? (
                 <>
                   <div>
                     <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -534,6 +599,18 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                       {t("requests.existingRequestDescription")}
                     </p>
                   </div>
+
+                  <label className="flex items-center gap-2 text-sm text-[hsl(var(--foreground))]">
+                    <input
+                      type="checkbox"
+                      checked={matchContext}
+                      onChange={(e) => setMatchContext(e.target.checked)}
+                    />
+                    {t(
+                      "requests.matchClassificationLocation",
+                      "Only show requests with the same classification and location",
+                    )}
+                  </label>
 
                   {selectedRequest ? (
                     <div className="flex items-center justify-between p-4 bg-[hsl(var(--muted)/0.5)] rounded-lg border border-[hsl(var(--border))]">
@@ -547,7 +624,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                       </div>
                       <button
                         type="button"
-                        onClick={() => setSelectedRequest(null)}
+                        onClick={() => {
+                          setSelectedRequest(null);
+                          setShowRequestSearch(true);
+                        }}
                         className="p-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
                       >
                         <X className="w-4 h-4" />
@@ -568,7 +648,7 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                         className="w-full pl-10 pr-4 py-3 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
                       />
 
-                      {showRequestSearch && requestSearch.length >= 2 && (
+                      {showRequestSearch && (
                         <div className="absolute top-full left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-lg z-20 max-h-60 overflow-y-auto">
                           {requestsLoading ? (
                             <div className="p-4 text-center">
@@ -853,14 +933,20 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                                 <input
                                   type="file"
                                   className="hidden"
+                                  accept={attachmentPolicy.accept}
                                   disabled={imageValidation.isValidating}
                                   onChange={async (e) => {
                                     const input = e.target;
                                     const file = input.files?.[0];
                                     input.value = "";
                                     if (!file) return;
+                                    const allowed =
+                                      await attachmentPolicy.filterFiles([
+                                        file,
+                                      ]);
+                                    if (allowed.length === 0) return;
                                     const { valid } =
-                                      await imageValidation.validate([file]);
+                                      await imageValidation.validate(allowed);
                                     if (valid[0])
                                       setTransitionAttachment(valid[0]);
                                   }}
@@ -868,6 +954,10 @@ export const ConvertToRequestModal: React.FC<ConvertToRequestModalProps> = ({
                               </label>
                             )}
                             <div className="mt-2">
+                              <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">
+                                {attachmentPolicy.hint}
+                              </p>
+                              <PolicyRejectedList policy={attachmentPolicy} />
                               <RejectedAttachmentsList
                                 items={imageValidation.rejected}
                                 onDismiss={imageValidation.clearRejected}

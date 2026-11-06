@@ -1182,7 +1182,12 @@ export const IncidentsPage: React.FC = () => {
                                 )}
                                 {(incident.recurrence_count ?? 0) > 1 && (
                                   <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
-                                    +{incident.recurrence_count! - 1} more
+                                    {t(
+                                      "incidents.locationRecurrence.moreCount",
+                                      {
+                                        count: incident.recurrence_count! - 1,
+                                      },
+                                    )}
                                   </span>
                                 )}
                               </div>
@@ -1444,9 +1449,19 @@ export const IncidentsPage: React.FC = () => {
         incidents={selectedIncidents}
         isOpen={showConvertModal}
         onClose={() => setShowConvertModal(false)}
-        onSuccess={(newRequestId) => {
+        onSuccess={(requestId, requestNumber, isLinked) => {
           setShowConvertModal(false);
-          navigate(`/requests/${newRequestId}`);
+          clearSelection();
+          refetch();
+          toast.success(
+            isLinked
+              ? requestNumber
+                ? t("requests.linkedSuccessfullyWithNumber", { requestNumber })
+                : t("requests.linkedSuccessfully")
+              : requestId && requestNumber
+                ? t("requests.createdSuccessfullyWithNumber", { requestNumber })
+                : t("requests.createdSuccessfully"),
+          );
         }}
       />
     </div>

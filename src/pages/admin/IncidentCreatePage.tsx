@@ -15,15 +15,13 @@ import {
   AlertCircle,
   Info,
   Zap,
-  Upload,
-  X,
-  Paperclip,
   Loader2,
 } from "lucide-react";
 import {
   Button,
   Card,
   Input,
+  PhoneNumberInput,
   Select,
   Textarea,
   TreeSelect,
@@ -73,11 +71,19 @@ import { Avatar, AvatarBadge, AvatarFallback } from "@/ui/avatar";
 import { getAvatarName } from "@/lib/utils";
 import { VirtualizedList } from "@/components/ui/virtualized-list";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
-import { capFilesByCount } from "@/utils/attachmentLimits";
 import { errorLogApi } from "../../api/errorLogs";
 import { useImageValidation } from "@/hooks/useImageValidation";
-import { RejectedAttachmentsList } from "@/components/incidents/RejectedAttachmentsList";
-import { isSamePhoneNumber } from "@/utils/validations";
+import { useAttachmentPolicy } from "@/hooks/useAttachmentPolicy";
+import {
+  AttachmentDropzone,
+  AttachmentFileRow,
+  RejectedFileRows,
+} from "@/components/attachments/AttachmentUpload";
+import {
+  getPhoneCountryName,
+  getPhoneNumberCountryIssue,
+  normalizePhoneNumber,
+} from "@/utils/phoneCountries";
 
 const statusBadgeColor: any = {
   online: "bg-green-500",
@@ -180,6 +186,9 @@ export function IncidentCreatePage() {
   // Guard against duplicate calls triggered by LocationPicker's internal lat/lng useEffect
   const lastProcessedGeoRef = useRef<string | null>(null);
   const [gisData, setGISData] = useState<any>(null);
+  const [coordinateInputError, setCoordinateInputError] = useState<
+    string | undefined
+  >();
   const { incomingCallNumber, incomingCallName } = useSoftphoneStore();
 
   const isEPM940 =
@@ -286,17 +295,9 @@ export function IncidentCreatePage() {
     [lookupCategoriesData],
   );
 
-  const MAX_ATTACHMENTS = Number(
-    envConfigCategory?.values?.find(
-      (v) => v.code === "INTERNAL_ATTACHMENT_LIMIT",
-    )?.name ?? "5",
-  );
-
-  const MAX_ATTACHMENT_SIZE_MB = Number(
-    envConfigCategory?.values?.find(
-      (v) => v.code === "INTERNAL_ATTACHMENT_SIZE_LIMIT",
-    )?.name ?? "5",
-  );
+  const attachmentPolicy = useAttachmentPolicy("internal");
+  const MAX_ATTACHMENTS = attachmentPolicy.maxFiles;
+  const MAX_ATTACHMENT_SIZE_MB = attachmentPolicy.maxSizeMB;
 
   const MAX_DESCRIPTION_LENGTH = Number(
     envConfigCategory?.values?.find((v) => v.code === "MAX_DESCRIPTION_LENGTH")
@@ -306,7 +307,8 @@ export function IncidentCreatePage() {
   const isAttachmentOversized = (file: File) =>
     file.size > MAX_ATTACHMENT_SIZE_MB * 1024 * 1024;
 
-  const attachmentLimitReached = attachments.length >= MAX_ATTACHMENTS;
+  const attachmentLimitReached =
+    !attachmentPolicy.enabled || attachments.length >= MAX_ATTACHMENTS;
 
   const validateAttachments = (files: File[]): string => {
     if (files.length > MAX_ATTACHMENTS) {
@@ -336,24 +338,14 @@ export function IncidentCreatePage() {
   };
 
   const addAttachmentFiles = async (newFiles: File[]) => {
-    const { accepted, skippedForLimit } = capFilesByCount(
+    const accepted = await attachmentPolicy.filterFiles(
       newFiles,
       attachments.length,
-      MAX_ATTACHMENTS,
     );
     const { valid } = await imageValidation.validate(accepted);
     const next = [...attachments, ...valid];
     setAttachments(next);
-    setErrors((prev) => ({
-      ...prev,
-      attachments:
-        skippedForLimit > 0
-          ? t("incidents.attachmentLimitExceeded", {
-              max: MAX_ATTACHMENTS,
-              defaultValue: `Maximum ${MAX_ATTACHMENTS} attachments allowed`,
-            })
-          : validateAttachments(next),
-    }));
+    setErrors((prev) => ({ ...prev, attachments: validateAttachments(next) }));
   };
 
   const sourceOptions = useMemo(() => {
@@ -901,12 +893,29 @@ export function IncidentCreatePage() {
     },
     onError: (error: any) => {
       console.error("Mutation error:", error);
+      // Backend field errors come as { errors: { AlternateMobile: "..." } };
+      // map PascalCase keys to our snake_case form fields so they show under the field
+      const fieldErrors: Record<string, string> = {};
+      const backendErrors = error.response?.data?.errors;
+      if (backendErrors && typeof backendErrors === "object") {
+        for (const [key, msg] of Object.entries(backendErrors)) {
+          const field = key
+            .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+            .toLowerCase();
+          fieldErrors[field] = String(msg);
+        }
+      }
       const message =
         error.response?.data?.message ||
         error.response?.data?.error ||
-        error.message ||
+        (Object.keys(fieldErrors).length > 0
+          ? t(
+              "incidents.fixErrorsBeforeSubmit",
+              "Please fix the errors before submitting",
+            )
+          : error.message) ||
         "Failed to create incident";
-      setErrors((prev) => ({ ...prev, submit: message }));
+      setErrors((prev) => ({ ...prev, ...fieldErrors, submit: message }));
     },
   });
 
@@ -982,9 +991,59 @@ export function IncidentCreatePage() {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
-    if (field === "reporter_phone" && errors.alternate_mobile) {
-      setErrors((prev) => ({ ...prev, alternate_mobile: "" }));
+    // Re-check the alternate number live whenever either phone field changes,
+    // so the message appears/disappears under the field as the user types
+    if (field === "reporter_phone" || field === "alternate_mobile") {
+      const phone =
+        field === "reporter_phone" ? value : formData.reporter_phone;
+      const alternate =
+        field === "alternate_mobile" ? value : formData.alternate_mobile;
+      setErrors((prev) => ({
+        ...prev,
+        // Format is checked on blur/submit, not per keystroke
+        alternate_mobile: getAlternateMobileError(alternate, phone, false),
+      }));
     }
+  };
+
+  const getCountryPhoneError = (value?: string) => {
+    const issue = getPhoneNumberCountryIssue(value);
+    if (!issue) return "";
+    if (issue.type === "unsupportedCode") {
+      return t(
+        "incidents.phoneUnsupportedCountryCode",
+        "This country code is not supported. Select a country from the list",
+      );
+    }
+    const { country } = issue;
+    return t("incidents.phoneInvalidForCountry", {
+      defaultValue:
+        "Enter a valid {{country}} number, e.g. +{{dialCode}} {{example}}",
+      country: getPhoneCountryName(country, i18n.language),
+      dialCode: country.dialCode,
+      example: country.example,
+    });
+  };
+
+  const getAlternateMobileError = (
+    alternate?: string,
+    phone?: string,
+    checkFormat = true,
+  ) => {
+    if (!alternate?.trim()) return "";
+    const countryError = checkFormat ? getCountryPhoneError(alternate) : "";
+    if (countryError) return countryError;
+    // Compare canonical forms so "0501234567" equals "+966501234567"
+    if (
+      phone?.trim() &&
+      normalizePhoneNumber(alternate) === normalizePhoneNumber(phone)
+    ) {
+      return t(
+        "incidents.alternatePhoneSameAsPhone",
+        "Alternative number must be different from the caller phone number",
+      );
+    }
+    return "";
   };
 
   const handleLookupChange = (categoryId: string, value: any) => {
@@ -1308,6 +1367,9 @@ export function IncidentCreatePage() {
       }
     }
 
+    const phoneError = getCountryPhoneError(formData.reporter_phone);
+    if (phoneError) newErrors.reporter_phone = phoneError;
+
     // Always require classification, location, source on web client
     if (!formData.classification_id || !formData.classification_id.trim()) {
       newErrors.classification_id = t("incidents.classificationRequired");
@@ -1405,17 +1467,22 @@ export function IncidentCreatePage() {
       }
     }
 
-    // Alternate number is optional, but when given it must differ from the main phone
-    if (isSamePhoneNumber(formData.alternate_mobile, formData.reporter_phone)) {
-      newErrors.alternate_mobile = t(
-        "incidents.alternatePhoneSameAsPhone",
-        "Alternative number must be different from the caller phone number",
-      );
+    const alternateMobileError = getAlternateMobileError(
+      formData.alternate_mobile,
+      formData.reporter_phone,
+    );
+    if (alternateMobileError) {
+      newErrors.alternate_mobile = alternateMobileError;
     }
 
     if (attachments.length > 0) {
       const attachmentError = validateAttachments(attachments);
       if (attachmentError) newErrors.attachments = attachmentError;
+    }
+
+    // An incomplete or out-of-range manual latitude/longitude blocks creation.
+    if (coordinateInputError) {
+      newErrors.geolocation = coordinateInputError;
     }
 
     setErrors(newErrors);
@@ -1447,6 +1514,13 @@ export function IncidentCreatePage() {
       location_id: finalLocationId,
       comment: comment.trim() || undefined,
     };
+
+    // Prefilled caller IDs may still be local ("0501234567"); send the
+    // country-coded form the agent saw in the phone fields
+    submitData.reporter_phone = normalizePhoneNumber(formData.reporter_phone);
+    submitData.alternate_mobile = normalizePhoneNumber(
+      formData.alternate_mobile,
+    );
 
     // Ensure empty strings are not sent for optional UUID fields
     if (submitData.assignee_id === "") {
@@ -1754,23 +1828,23 @@ export function IncidentCreatePage() {
                   (workflowRequiredFields.includes("reporter_phone") ||
                     workflowOptionalFields.includes("reporter_phone") ||
                     callOriginated) && (
-                    <Input
+                    <PhoneNumberInput
                       label={t(
                         "incidents.reporterPhone",
                         "Caller Phone Number",
                       )}
-                      type="tel"
                       value={formData.reporter_phone || ""}
-                      onChange={(e) =>
-                        handleChange(
-                          "reporter_phone",
-                          e.target.value.replace(/[^0-9+\-\s()]/g, ""),
-                        )
+                      onChange={(value) =>
+                        handleChange("reporter_phone", value)
                       }
-                      placeholder={t(
-                        "incidents.reporterPhonePlaceholder",
-                        "+971 50 000 0000",
-                      )}
+                      onBlur={() =>
+                        setErrors((prev) => ({
+                          ...prev,
+                          reporter_phone: getCountryPhoneError(
+                            formData.reporter_phone,
+                          ),
+                        }))
+                      }
                       required={workflowRequiredFields.includes(
                         "reporter_phone",
                       )}
@@ -1845,45 +1919,46 @@ export function IncidentCreatePage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Input
+                      <PhoneNumberInput
                         label={t(
                           "incidents.reporterPhone",
                           "Caller Phone Number",
                         )}
-                        type="tel"
                         value={formData.reporter_phone || ""}
-                        onChange={(e) =>
-                          handleChange(
-                            "reporter_phone",
-                            e.target.value.replace(/[^0-9+\-\s()]/g, ""),
-                          )
+                        onChange={(value) =>
+                          handleChange("reporter_phone", value)
                         }
-                        placeholder={t(
-                          "incidents.reporterPhonePlaceholder",
-                          "+971 50 000 0000",
-                        )}
+                        onBlur={() =>
+                          setErrors((prev) => ({
+                            ...prev,
+                            reporter_phone: getCountryPhoneError(
+                              formData.reporter_phone,
+                            ),
+                          }))
+                        }
                         required={workflowRequiredFields.includes(
                           "reporter_phone",
                         )}
                         error={errors.reporter_phone}
                       />
-                      <Input
+                      <PhoneNumberInput
                         label={`${t(
                           "incidents.reporterAlternativePhone",
                           "Caller Alternative Number",
                         )} (${t("incidents.optional", "optional")})`}
-                        type="tel"
                         value={formData.alternate_mobile || ""}
-                        onChange={(e) =>
-                          handleChange(
-                            "alternate_mobile",
-                            e.target.value.replace(/[^0-9+\-\s()]/g, ""),
-                          )
+                        onChange={(value) =>
+                          handleChange("alternate_mobile", value)
                         }
-                        placeholder={t(
-                          "incidents.reporterPhonePlaceholder",
-                          "+971 50 000 0000",
-                        )}
+                        onBlur={() =>
+                          setErrors((prev) => ({
+                            ...prev,
+                            alternate_mobile: getAlternateMobileError(
+                              formData.alternate_mobile,
+                              formData.reporter_phone,
+                            ),
+                          }))
+                        }
                         error={errors.alternate_mobile}
                       />
                     </div>
@@ -2056,6 +2131,8 @@ export function IncidentCreatePage() {
                         )}
                         error={errors.geolocation}
                         onToggleExpand={() => setShowLocationModal(true)}
+                        showCoordinateInputs={isEPM940}
+                        onCoordinateErrorChange={setCoordinateInputError}
                       />
 
                       <LocationPickerModal
@@ -2113,121 +2190,57 @@ export function IncidentCreatePage() {
                     <span className="text-red-500 ml-1">*</span>
                   )}
                 </h2>
-                <div className="space-y-4">
-                  {attachments.length > 0 && (
-                    <div className="space-y-2">
-                      {attachments.map((file, index) => {
-                        const invalid = isAttachmentOversized(file);
-                        return (
-                          <div
-                            key={index}
-                            className={cn(
-                              "flex items-center justify-between p-3 rounded-lg border",
-                              invalid
-                                ? "bg-red-50 border-red-400"
-                                : "bg-primary/10 border-primary",
-                            )}
-                          >
-                            <div className="flex items-center gap-2">
-                              <Paperclip
-                                className={cn(
-                                  "w-4 h-4",
-                                  invalid ? "text-red-500" : "text-gray-500",
-                                )}
-                              />
-                              <span
-                                className={cn(
-                                  "text-sm truncate max-w-[250px] hover:underline cursor-pointer",
-                                  invalid
-                                    ? "text-red-600"
-                                    : "text-muted-foreground",
-                                )}
-                                onClick={() => setPreviewIndex(index)}
-                              >
-                                {file.name}
-                              </span>
-                              <span
-                                className={cn(
-                                  "text-xs",
-                                  invalid ? "text-red-500" : "text-gray-500",
-                                )}
-                              >
-                                ({(file.size / 1024).toFixed(1)}{" "}
-                                {t("common.kb")})
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setAttachments((prev) => {
-                                  const next = prev.filter(
-                                    (_, i) => i !== index,
-                                  );
-                                  setErrors((errPrev) => ({
-                                    ...errPrev,
-                                    attachments: validateAttachments(next),
-                                  }));
-                                  return next;
-                                });
-                              }}
-                              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                  <label
-                    className={cn(
-                      "flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-xl transition-colors",
-                      errors.attachments
-                        ? "border-[hsl(var(--destructive)/0.5)]"
-                        : "border-[hsl(var(--border))]",
-                      attachmentLimitReached || validatingAttachments
-                        ? "opacity-50 cursor-not-allowed"
-                        : "cursor-pointer hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted)/0.3)]",
-                    )}
-                  >
-                    <Upload className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                    <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                      {validatingAttachments
+                <div className="space-y-3">
+                  <AttachmentDropzone
+                    policy={attachmentPolicy}
+                    onFiles={(files) => void addAttachmentFiles(files)}
+                    disabled={attachmentLimitReached || validatingAttachments}
+                    busyText={
+                      validatingAttachments
                         ? t("incidents.validatingImages", "Checking photos...")
-                        : attachmentLimitReached
-                          ? t("incidents.attachmentLimit", {
-                              max: MAX_ATTACHMENTS,
-                              defaultValue: `Max ${MAX_ATTACHMENTS} attachments`,
-                            })
-                          : t("incidents.clickToUpload")}
-                    </span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      multiple
-                      disabled={attachmentLimitReached || validatingAttachments}
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files || []);
-                        if (files.length > 0) void addAttachmentFiles(files);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                    {t("citizen.maxSize", "Max")} {MAX_ATTACHMENT_SIZE_MB} MB ·{" "}
-                    {t("incidents.attachmentLimit", {
-                      max: MAX_ATTACHMENTS,
-                      defaultValue: `Max ${MAX_ATTACHMENTS} attachments`,
-                    })}
-                  </p>
+                        : undefined
+                    }
+                    hasError={!!errors.attachments}
+                  />
                   {errors.attachments && (
-                    <p className="mt-2 text-sm text-[hsl(var(--destructive))]">
+                    <p className="text-sm text-[hsl(var(--destructive))]">
                       {errors.attachments}
                     </p>
                   )}
-                  <RejectedAttachmentsList
+                  {attachments.map((file, index) => (
+                    <AttachmentFileRow
+                      key={`${file.name}-${index}`}
+                      name={file.name}
+                      size={file.size}
+                      status={
+                        isAttachmentOversized(file) ? "rejected" : "ready"
+                      }
+                      message={t("attachments.tooLarge", {
+                        size: (file.size / (1024 * 1024)).toFixed(1),
+                        max: MAX_ATTACHMENT_SIZE_MB,
+                        defaultValue:
+                          "File is {{size}} MB, the limit is {{max}} MB.",
+                      })}
+                      onNameClick={() => setPreviewIndex(index)}
+                      onRemove={() => {
+                        setAttachments((prev) => {
+                          const next = prev.filter((_, i) => i !== index);
+                          setErrors((errPrev) => ({
+                            ...errPrev,
+                            attachments: validateAttachments(next),
+                          }));
+                          return next;
+                        });
+                      }}
+                    />
+                  ))}
+                  <RejectedFileRows
+                    items={attachmentPolicy.rejected}
+                    onDismiss={attachmentPolicy.dismissRejected}
+                  />
+                  <RejectedFileRows
                     items={imageValidation.rejected}
-                    onDismiss={imageValidation.clearRejected}
+                    onDismiss={imageValidation.dismissRejected}
                   />
                 </div>
               </Card>

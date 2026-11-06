@@ -12,6 +12,8 @@ import type {
   Initiative,
   InitiativeRequest,
   Domain,
+  AwardKpiMeasure,
+  AwardKpiMeasureRequest,
   DomainRequest,
   AwardCriterion,
   AwardCriterionRequest,
@@ -31,6 +33,7 @@ import type {
   OperationalKPI,
   OperationalKPIRequest,
   AwardKPI,
+  RelatedKpi,
   AwardKPIRequest,
   KpiTarget,
   KpiAnnualTargetRequest,
@@ -56,6 +59,8 @@ import type {
   KpiPerformanceEvidenceRequest,
   KpiMetric,
   KpiMetricRequest,
+  KpiBaselineRevision,
+  KpiEntryCorrectionRequest,
   KpiAttachmentUploadResult,
   KpiEngagementEvidence,
   KpiEngagementEvidenceRequest,
@@ -197,7 +202,7 @@ export const kpiMasterDataApi = {
   },
   listKpisForOperationalObjective: async (
     id: string,
-  ): Promise<ApiResponse<OperationalKPI[]>> => {
+  ): Promise<ApiResponse<RelatedKpi[]>> => {
     const res = await apiClient.get(`/kpi/operational-objectives/${id}/kpis`);
     return res.data;
   },
@@ -241,7 +246,7 @@ export const kpiMasterDataApi = {
   },
   listKpisForProcess: async (
     id: string,
-  ): Promise<ApiResponse<OperationalKPI[]>> => {
+  ): Promise<ApiResponse<RelatedKpi[]>> => {
     const res = await apiClient.get(`/kpi/processes/${id}/kpis`);
     return res.data;
   },
@@ -300,6 +305,28 @@ export const kpiMasterDataApi = {
     return res.data;
   },
 
+  listAwardKpiMeasures: async (): Promise<ApiResponse<AwardKpiMeasure[]>> => {
+    const res = await apiClient.get("/kpi/award-kpi-measures");
+    return res.data;
+  },
+  createAwardKpiMeasure: async (
+    data: AwardKpiMeasureRequest,
+  ): Promise<ApiResponse<AwardKpiMeasure>> => {
+    const res = await apiClient.post("/kpi/award-kpi-measures", data);
+    return res.data;
+  },
+  updateAwardKpiMeasure: async (
+    id: string,
+    data: Partial<AwardKpiMeasureRequest>,
+  ): Promise<ApiResponse<AwardKpiMeasure>> => {
+    const res = await apiClient.put(`/kpi/award-kpi-measures/${id}`, data);
+    return res.data;
+  },
+  deleteAwardKpiMeasure: async (id: string): Promise<ApiResponse<void>> => {
+    const res = await apiClient.delete(`/kpi/award-kpi-measures/${id}`);
+    return res.data;
+  },
+
   listAwardCriteria: async (): Promise<ApiResponse<AwardCriterion[]>> => {
     const res = await apiClient.get("/kpi/award-criteria");
     return res.data;
@@ -323,7 +350,7 @@ export const kpiMasterDataApi = {
   },
   listKpisForAwardCriterion: async (
     id: string,
-  ): Promise<ApiResponse<AwardKPI[]>> => {
+  ): Promise<ApiResponse<RelatedKpi[]>> => {
     const res = await apiClient.get(`/kpi/award-criteria/${id}/kpis`);
     return res.data;
   },
@@ -371,7 +398,7 @@ export const kpiMasterDataApi = {
   },
   listKpisForAwardSubCriterion: async (
     id: string,
-  ): Promise<ApiResponse<AwardKPI[]>> => {
+  ): Promise<ApiResponse<RelatedKpi[]>> => {
     const res = await apiClient.get(`/kpi/award-sub-criteria/${id}/kpis`);
     return res.data;
   },
@@ -792,6 +819,13 @@ export const kpiPerformanceApi = {
     const res = await apiClient.post("/kpi/benchmarks", data);
     return res.data;
   },
+  updateBenchmark: async (
+    id: string,
+    data: KpiBenchmarkRequest,
+  ): Promise<ApiResponse<KpiBenchmark>> => {
+    const res = await apiClient.put(`/kpi/benchmarks/${id}`, data);
+    return res.data;
+  },
   deleteBenchmark: async (id: string): Promise<ApiResponse<void>> => {
     const res = await apiClient.delete(`/kpi/benchmarks/${id}`);
     return res.data;
@@ -934,6 +968,20 @@ const postKpiImport = async (
 };
 
 export const kpiDictionaryImportApi = {
+  downloadTemplate: async (language: "en" | "ar"): Promise<void> => {
+    const res = await apiClient.get("/kpi/dictionary-import/template", {
+      params: { lang: language },
+      responseType: "blob",
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `kpi_dictionary_template_${language}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
   validate: (file: File, options: KpiImportOptions) =>
     postKpiImport("validate", file, options),
   commit: (file: File, options: KpiImportOptions) =>
@@ -943,8 +991,11 @@ export const kpiDictionaryImportApi = {
 export const kpiDashboardApi = {
   getDashboard: async (params?: {
     kpi_type?: string;
+    kpi?: string;
+    metric_id?: string;
     year?: number;
     quarter?: number;
+    month?: number;
     objective_id?: string;
     criteria_id?: string;
     sub_criteria_id?: string;
@@ -952,7 +1003,10 @@ export const kpiDashboardApi = {
     const searchParams = new URLSearchParams();
     if (params?.kpi_type) searchParams.append("kpi_type", params.kpi_type);
     if (params?.year) searchParams.append("year", String(params.year));
+    if (params?.kpi) searchParams.append("kpi", params.kpi);
+    if (params?.metric_id) searchParams.append("metric_id", params.metric_id);
     if (params?.quarter) searchParams.append("quarter", String(params.quarter));
+    if (params?.month) searchParams.append("month", String(params.month));
     if (params?.objective_id)
       searchParams.append("objective_id", params.objective_id);
     if (params?.criteria_id)
@@ -1021,6 +1075,34 @@ export const kpiEngagementApi = {
     const res = await apiClient.put(`/kpi/metrics/${metricId}/value`, {
       value,
     });
+    return res.data;
+  },
+  listBaselineRevisions: async (
+    metricId: string,
+  ): Promise<ApiResponse<KpiBaselineRevision[]>> => {
+    const res = await apiClient.get(
+      `/kpi/metrics/${metricId}/baseline-revisions`,
+    );
+    return res.data;
+  },
+  requestBaselineRevision: async (
+    metricId: string,
+    data: { new_value: number; new_period?: string; reason: string },
+  ): Promise<ApiResponse<KpiBaselineRevision>> => {
+    const res = await apiClient.post(
+      `/kpi/metrics/${metricId}/baseline-revisions`,
+      data,
+    );
+    return res.data;
+  },
+  reviewBaselineRevision: async (
+    revisionId: string,
+    data: { decision: "approve" | "reject"; comment?: string },
+  ): Promise<ApiResponse<KpiBaselineRevision>> => {
+    const res = await apiClient.post(
+      `/kpi/baseline-revisions/${revisionId}/review`,
+      data,
+    );
     return res.data;
   },
   deleteMetric: async (metricId: string): Promise<ApiResponse<void>> => {
@@ -1235,6 +1317,16 @@ export const kpiEngagementApi = {
     );
     return res.data;
   },
+  createEntryCorrection: async (
+    entryId: string,
+    data: KpiEntryCorrectionRequest,
+  ): Promise<ApiResponse<KpiEntry>> => {
+    const res = await apiClient.post(
+      `/kpi/entries/${entryId}/corrections`,
+      data,
+    );
+    return res.data;
+  },
   deleteEntry: async (
     type: string,
     id: string,
@@ -1346,6 +1438,18 @@ export const kpiComposedApi = {
     id: string,
   ): Promise<ApiResponse<KpiSingleDashboardResponse>> => {
     const res = await apiClient.get(`/kpi/${type}/${id}/dashboard`);
+    return res.data;
+  },
+  updateNarrative: async (
+    type: KPIType,
+    id: string,
+    data: {
+      curve_description: string;
+      shortcomings_description: string;
+      proposed_improvement: string;
+    },
+  ): Promise<ApiResponse<null>> => {
+    const res = await apiClient.put(`/kpi/${type}/${id}/narrative`, data);
     return res.data;
   },
   getAnnualRollup: async (

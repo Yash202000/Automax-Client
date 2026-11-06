@@ -17,6 +17,7 @@ declare global {
       CTI_PROVIDER?: string;
       SIP_PASSWORD?: string;
       ENABLE_GIS?: string;
+      ENABLE_WORKFLOW_CODE?: string;
       SESSION_TIMEOUT_MINUTES?: string;
       APP_VERSION?: string;
       ENABLE_SIGNUP?: string;
@@ -110,6 +111,12 @@ apiClient.interceptors.response.use(
 
     // If this is the logout request failing, don't try to refresh
     if (originalRequest.url?.includes("/auth/logout")) {
+      return Promise.reject(error);
+    }
+
+    // AD login 401s are credential/OTP failures, not an expired session —
+    // replaying them would also spend another OTP attempt.
+    if (originalRequest.url?.includes("/ldap/login")) {
       return Promise.reject(error);
     }
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   Upload,
@@ -19,9 +19,10 @@ import {
   LocationPickerModal,
   type LocationData,
 } from "@/components/ui";
-import { incidentApi, lookupApi } from "@/api/admin";
+import { incidentApi } from "@/api/admin";
 import IncidentDetailsCard from "@/components/incidents/IncidentDetailsCard";
-import { capAttachmentSelection } from "@/utils/attachmentLimits";
+import { PolicyRejectedList } from "@/components/incidents/RejectedAttachmentsList";
+import { useAttachmentPolicy } from "@/hooks/useAttachmentPolicy";
 
 export function CitizenIncidentUpdatePage() {
   const { t } = useTranslation();
@@ -39,34 +40,8 @@ export function CitizenIncidentUpdatePage() {
   const incident = _location.state?.incident;
   const ivr_link_token = _location.state?.signed_token;
 
-  const isAllowedType = (file: File) => {
-    if (!file.type) return true;
+  const attachmentPolicy = useAttachmentPolicy("citizen");
 
-    return (
-      file.type.startsWith("image/") ||
-      file.type.startsWith("video/") ||
-      file.type.startsWith("audio/") ||
-      file.type === "application/pdf"
-    );
-  };
-
-  const { data: env_config } = useQuery({
-    queryKey: ["lookups", "categories", "env_config"],
-    queryFn: async () => {
-      const categories = await lookupApi.listCategories();
-      return (
-        (categories.data || []).find(
-          (cat) => cat.code === "ENV_CONFIGURATION",
-        ) || null
-      );
-    },
-  });
-
-  const MAX_MB = Number(
-    (env_config?.values || []).find(
-      (v) => v.code === "CITIZEN_ATTACHMENT_SIZE_LIMIT",
-    )?.name || "20",
-  );
   // ── Submit mutation ──
   const submitMutation = useMutation({
     mutationFn: async ({
@@ -111,47 +86,17 @@ export function CitizenIncidentUpdatePage() {
     },
   });
 
-  const MAX_ATTACHMENTS =
-    (env_config?.values || []).find(
-      (v) => v.code === "CITIZEN_ATTACHMENT_LIMIT",
-    )?.name || "5";
-
-  const [attachmentLimitError, setAttachmentLimitError] = useState("");
-
-  const handleFiles = (files: FileList | null) => {
+  const handleFiles = async (files: FileList | null) => {
     if (!files) return;
-
-    const { accepted, oversized, unsupported, skippedForLimit } =
-      capAttachmentSelection(
-        Array.from(files),
-        attachments.length,
-        Number(MAX_ATTACHMENTS),
-        MAX_MB,
-        isAllowedType,
-      );
-
-    const invalid = [
-      ...unsupported.map((f) => `${f.name} — ${t("citizen.unsupportedType")}`),
-      ...oversized.map(
-        (f) => `${f.name} — ${t("citizen.tooLarge", `exceeds ${MAX_MB}MB`)}`,
-      ),
-    ];
-
-    setAttachmentLimitError(
-      skippedForLimit > 0
-        ? t(
-            "citizen.attachmentLimit",
-            `Maximum ${MAX_ATTACHMENTS} attachments allowed`,
-          )
-        : "",
+    const accepted = await attachmentPolicy.filterFiles(
+      Array.from(files),
+      attachments.length,
     );
-    setErrors((p) => ({ ...p, attachments: invalid.join(", ") }));
     setAttachments((p) => [...p, ...accepted]);
   };
 
   const removeFile = (index: number) => {
     setAttachments((p) => p.filter((_, i) => i !== index));
-    setAttachmentLimitError("");
   };
 
   const validate = () => {
@@ -284,80 +229,78 @@ export function CitizenIncidentUpdatePage() {
         </Card>
 
         {/* ── Attachments ── */}
-        <Card className="p-6">
-          <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2 mb-4">
-            <Paperclip className="w-4 h-4 text-blue-600" />
-            {t("incidents.attachments")}
-            <span className="text-xs font-normal text-gray-400">
-              ({t("common.optional")})
-            </span>
-          </h2>
+        {attachmentPolicy.enabled && (
+          <Card className="p-6">
+            <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2 mb-4">
+              <Paperclip className="w-4 h-4 text-blue-600" />
+              {t("incidents.attachments")}
+              <span className="text-xs font-normal text-gray-400">
+                ({t("common.optional")})
+              </span>
+            </h2>
 
-          {attachments.length > 0 && (
-            <div className="space-y-2 mb-4">
-              {attachments.map((file, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Paperclip className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                    <span className="text-sm text-gray-700 truncate">
-                      {file.name}
-                    </span>
-                    <span className="text-xs text-gray-400 flex-shrink-0">
-                      ({(file.size / 1024).toFixed(1)} {t("common.kb")})
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeFile(index)}
-                    className="p-1 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+            {attachments.length > 0 && (
+              <div className="space-y-2 mb-4">
+                {attachments.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary"
                   >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              {attachmentLimitError && (
-                <p className="text-red-500 text-sm">{attachmentLimitError}</p>
-              )}
-            </div>
-          )}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Paperclip className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-700 truncate">
+                        {file.name}
+                      </span>
+                      <span className="text-xs text-gray-400 flex-shrink-0">
+                        ({(file.size / 1024).toFixed(1)} {t("common.kb")})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(index)}
+                      className="p-1 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
-          <label
-            className={`flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors
+            <label
+              className={`flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors
               hover:border-blue-400 hover:bg-blue-50
-              ${errors.attachments ? "border-red-300 bg-red-50" : "border-gray-300"}
+              ${attachmentPolicy.rejected.length > 0 ? "border-red-300 bg-red-50" : "border-gray-300"}
             `}
-          >
-            <Upload className="w-6 h-6 text-gray-400" />
-            <p className="text-sm text-gray-600 text-center">
-              <span className="font-medium text-blue-600">
-                {t("incidents.clickToUpload")}
-              </span>{" "}
-              {t("common.orDragAndDrop")}
-            </p>
-            <p className="text-xs text-gray-400">
-              {t("citizen.supportedAttachmentTypes")} &middot;{" "}
-              {t("citizen.maxSize")} {MAX_MB} MB
-            </p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*,video/*,audio/*,.pdf"
-              className="hidden"
-              onChange={(e) => {
-                handleFiles(e.target.files);
-                e.target.value = "";
-              }}
-            />
-          </label>
+            >
+              <Upload className="w-6 h-6 text-gray-400" />
+              <p className="text-sm text-gray-600 text-center">
+                <span className="font-medium text-blue-600">
+                  {t("incidents.clickToUpload")}
+                </span>{" "}
+                {t("common.orDragAndDrop")}
+              </p>
+              <p className="text-xs text-gray-400 text-center">
+                {attachmentPolicy.hint}
+              </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept={attachmentPolicy.accept}
+                className="hidden"
+                onChange={(e) => {
+                  void handleFiles(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </label>
 
-          {errors.attachments && (
-            <p className="mt-2 text-sm text-red-500">{errors.attachments}</p>
-          )}
-        </Card>
+            <div className="mt-3">
+              <PolicyRejectedList policy={attachmentPolicy} />
+            </div>
+          </Card>
+        )}
 
         {/* ── Comment ── */}
         <Card className="p-6">
@@ -392,7 +335,7 @@ export function CitizenIncidentUpdatePage() {
             className="w-full"
             leftIcon={<Send className="w-4 h-4" />}
             isLoading={submitMutation.isPending}
-            disabled={submitMutation.isPending || Boolean(attachmentLimitError)}
+            disabled={submitMutation.isPending}
           >
             {t("citizen.submitUpdate")}
           </Button>

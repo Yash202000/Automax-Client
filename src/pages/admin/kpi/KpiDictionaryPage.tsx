@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   BookOpen,
   Plus,
@@ -17,7 +18,10 @@ import {
   Pencil,
   Crosshair,
   FileSpreadsheet,
+  Download,
+  Loader2,
 } from "lucide-react";
+import { kpiDictionaryImportApi } from "../../../api/kpi";
 import {
   useStrategicKPIs,
   useOperationalKPIs,
@@ -79,7 +83,7 @@ const SortIcon: React.FC<{
 };
 
 export const KpiDictionaryPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { canUpdateKpi, canCreateKpi } = usePermissions();
   const [activeTab, setActiveTab] = useState<DictTab>("strategic");
   const [search, setSearch] = useState("");
@@ -88,6 +92,22 @@ export const KpiDictionaryPage: React.FC = () => {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(1);
   const [newMenuOpen, setNewMenuOpen] = useState(false);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
+
+  const downloadTemplate = async () => {
+    setDownloadingTemplate(true);
+    try {
+      const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
+      const language = currentLanguage.toLowerCase().startsWith("ar")
+        ? "ar"
+        : "en";
+      await kpiDictionaryImportApi.downloadTemplate(language);
+    } catch {
+      toast.error(t("kpi.dictionaryImport.templateDownloadFailed"));
+    } finally {
+      setDownloadingTemplate(false);
+    }
+  };
 
   const strategicQuery = useStrategicKPIs(
     activeTab === "strategic" ? { page: 1, limit: FETCH_LIMIT } : undefined,
@@ -190,13 +210,28 @@ export const KpiDictionaryPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           {canCreateKpi() && (
-            <Link
-              to="/goals/kpi/dictionary/import"
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              {t("kpi.dictionaryImport.button")}
-            </Link>
+            <>
+              <button
+                type="button"
+                onClick={downloadTemplate}
+                disabled={downloadingTemplate}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                {downloadingTemplate ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                {t("kpi.dictionaryImport.downloadTemplate")}
+              </button>
+              <Link
+                to="/goals/kpi/dictionary/import"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                {t("kpi.dictionaryImport.button")}
+              </Link>
+            </>
           )}
           <div className="relative">
             <button

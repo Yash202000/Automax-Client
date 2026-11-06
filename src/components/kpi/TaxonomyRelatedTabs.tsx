@@ -15,6 +15,7 @@ import {
 import type {
   KpiCollaboratorAssignment,
   KpiEngagementEvidence,
+  RelatedKpi,
 } from "../../types/kpi";
 import {
   formatFileSize,
@@ -32,21 +33,6 @@ import {
 // Non-component helpers (formatters, statusColorMap, usePagedSearch) live in
 // utils/taxonomyRelated.ts — react-refresh/only-export-components requires
 // this file to export components only.
-
-// Minimal structural shape RelatedKpisTable needs — satisfied by both the
-// AwardKPI and OperationalKPI frontend types without any casting.
-export interface RelatedKpiSummary {
-  id: string;
-  code: string;
-  name_en: string;
-  description_en: string;
-  activation_status: string;
-  reporting_frequency: string;
-  owner_dept?: { name: string };
-  owner_org?: { name_en: string };
-  owning_agency?: { name: string };
-  created_by?: { first_name: string; last_name: string };
-}
 
 export const TablePagination: React.FC<{
   page: number;
@@ -194,19 +180,17 @@ export type TaxonomyEntity =
   | "awardCriterion"
   | "awardSubCriterion";
 
-export const RelatedKpisTable = <T extends RelatedKpiSummary>({
+export const RelatedKpisTable = ({
   kpis,
   loading,
-  kpiType,
   entity,
 }: {
-  kpis: T[];
+  kpis: RelatedKpi[];
   loading: boolean;
-  kpiType: "award" | "operational";
   entity: TaxonomyEntity;
 }) => {
   const { t } = useTranslation();
-  const paged = usePagedSearch<T>(kpis, (kpi, q) =>
+  const paged = usePagedSearch<RelatedKpi>(kpis, (kpi, q) =>
     [kpi.code, kpi.name_en, kpi.description_en]
       .filter(Boolean)
       .some((f) => f!.toLowerCase().includes(q)),
@@ -275,7 +259,7 @@ export const RelatedKpisTable = <T extends RelatedKpiSummary>({
                     >
                       <td className="px-6 py-4 text-sm whitespace-nowrap">
                         <Link
-                          to={`/goals/kpi/dictionary/${kpiType}/${kpi.id}`}
+                          to={`/goals/kpi/dictionary/${kpi.kpi_type}/${kpi.id}`}
                           className="font-mono font-medium text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           {kpi.code}

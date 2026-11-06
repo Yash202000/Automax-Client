@@ -57,7 +57,7 @@ import type {
   User as UserType,
 } from "../../types";
 import { getNodePath, type TreeSelectNode } from "../../utils/treeUtils";
-import { cn, getLocalizedName } from "@/lib/utils";
+import { cn, getLocalizedField, getLocalizedName } from "@/lib/utils";
 import "leaflet/dist/leaflet.css";
 import { resolveSourceLabel } from "@/utils/sourceLabel";
 
@@ -461,7 +461,7 @@ export const QueryDetailPage: React.FC = () => {
           newErrors[fc.field_name] = t(
             "incidents.fieldRequired",
             "{{field}} is required",
-            { field: fc.label || fc.field_name },
+            { field: getLocalizedField(fc, "label") || fc.field_name },
           );
       }
     } else if (stepKey === "attachment") {
@@ -627,7 +627,7 @@ export const QueryDetailPage: React.FC = () => {
         newTransitionErrors[fc.field_name] = t(
           "incidents.fieldRequired",
           "{{field}} is required",
-          { field: fc.label || fc.field_name },
+          { field: getLocalizedField(fc, "label") || fc.field_name },
         );
     }
 
@@ -2532,7 +2532,7 @@ export const QueryDetailPage: React.FC = () => {
                         {trans.field_changes!.map((fc) => (
                           <div key={fc.id}>
                             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">
-                              {fc.label || fc.field_name}
+                              {getLocalizedField(fc, "label") || fc.field_name}
                               {fc.is_required && (
                                 <span className="text-red-500 ml-1">*</span>
                               )}

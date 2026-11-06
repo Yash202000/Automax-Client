@@ -2,17 +2,24 @@ import React, { useState, useRef, useEffect } from "react";
 import { Outlet, Navigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../../stores/authStore";
-import { Zap, Languages } from "lucide-react";
+import { Languages } from "lucide-react";
 import {
   setLanguage,
   getCurrentLanguage,
   supportedLanguages,
 } from "../../i18n";
-import { publicUrl } from "../../utils/publicUrl";
+import {
+  publicUrl,
+  resolveLogoUrl as resolveLogo,
+} from "../../utils/publicUrl";
 import { useTheme } from "@/hooks/useTheme";
+import { useSettings } from "../../contexts/SettingsContext";
 
 export const AuthLayout: React.FC = () => {
   const { t } = useTranslation();
+  const { settings } = useSettings();
+  const mainLogo = resolveLogo(settings?.logo_url);
+  const logoAlt = settings?.logo_alt_text || "Automax";
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
@@ -31,6 +38,7 @@ export const AuthLayout: React.FC = () => {
     window.APP_CONFIG?.CLIENT === "EPM940" ||
     import.meta.env.VITE_CLIENT === "EPM940";
   const { theme } = useTheme();
+  const formLogo = mainLogo ?? (isEPM940 ? publicUrl("epm-logo.png") : null);
 
   const isEpmDark = isEPM940 && theme === "dark";
   // Close language dropdown when clicking outside
@@ -132,25 +140,13 @@ export const AuthLayout: React.FC = () => {
           {/* Logo */}
 
           <div className="flex items-center gap-3">
-            {isEPM940 ? (
-              <div>
-                <img
-                  src={publicUrl("epm940_rebranding/automax.svg")}
-                  alt="Automax"
-                  className="h-9 object-contain"
-                />
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <Zap className="w-7 h-7 text-white" />
-                </div>
-                <span className="text-2xl font-bold text-white">Automax</span>
-              </div>
-            )}
+            <img
+              src={publicUrl("epm940_rebranding/automax.svg")}
+              alt="Automax"
+              className="h-9 object-contain"
+            />
           </div>
 
-          {/* Main Content */}
           <div className="space-y-8">
             <div>
               <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
@@ -170,24 +166,16 @@ export const AuthLayout: React.FC = () => {
                 {t("navigation.theCompletePlatformForManagingYourBusiness")}
               </p>
             </div>
-
             <div className="space-y-6">
               {features.map((feature, index) => (
                 <div key={index} className="flex items-center gap-4">
                   <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-lg border ${
-                      isEpmDark
-                        ? "border-white/10 bg-white/5"
-                        : "border-white/10 bg-white/10"
-                    }`}
+                    className={`flex h-12 w-12 items-center justify-center rounded-lg border ${isEpmDark ? "border-white/10 bg-white/5" : "border-white/10 bg-white/10"}`}
                   >
                     {feature.icon}
                   </div>
-
                   <span
-                    className={`font-medium ${
-                      isEpmDark ? "text-gray-300" : "text-blue-100"
-                    }`}
+                    className={`font-medium ${isEpmDark ? "text-gray-300" : "text-blue-100"}`}
                   >
                     {feature.text}
                   </span>
@@ -196,12 +184,9 @@ export const AuthLayout: React.FC = () => {
             </div>
           </div>
 
-          {/* Footer */}
           <div className="text-blue-200 text-sm">
-            {window.APP_CONFIG?.APP_VERSION ||
-              import.meta.env.VITE_APP_VERSION ||
-              "v1.0.2"}{" "}
-            &copy; {new Date().getFullYear()} Automax. All rights reserved.
+            {window.APP_CONFIG?.APP_VERSION || "1.0.2"} ©{" "}
+            {new Date().getFullYear()} Automax. All rights reserved.
           </div>
         </div>
       </div>
@@ -215,21 +200,15 @@ export const AuthLayout: React.FC = () => {
           {/* Mobile Logo */}
           <div className="lg:hidden">
             <Link to="/" className="flex items-center gap-2">
-              {isEPM940 ? (
-                <img
-                  src={publicUrl(
-                    theme === "dark"
-                      ? "epm940_rebranding/automax.svg"
-                      : "epm940_rebranding/automax-dark.svg",
-                  )}
-                  alt="Automax"
-                  className="h-6 object-contain"
-                />
-              ) : (
-                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
-              )}
+              <img
+                src={publicUrl(
+                  theme === "dark"
+                    ? "epm940_rebranding/automax.svg"
+                    : "epm940_rebranding/automax-dark.svg",
+                )}
+                alt="Automax"
+                className="h-6 object-contain"
+              />
             </Link>
           </div>
           <div className="hidden lg:block" /> {/* Spacer for desktop */}
@@ -276,18 +255,10 @@ export const AuthLayout: React.FC = () => {
             )}
           </div>
         </div>
-        {/* automax epm940 logos */}
-        {isEPM940 && (
+        {/* Main logo from system settings */}
+        {formLogo && (
           <div className="flex flex-row justify-center px-6 lg:px-12 pb-4 sm:pb-0">
-            <img
-              src={publicUrl(
-                /*  theme === "dark"
-                  ? "epm940_rebranding/940-logo-white-hq.png"
-                  : */ "epm-logo.png",
-              )}
-              alt="Automax"
-              className="h-33 object-contain"
-            />
+            <img src={formLogo} alt={logoAlt} className="h-33 object-contain" />
           </div>
         )}
         {/* Form Container */}

@@ -12,6 +12,9 @@ import {
   RotateCcw,
   Eye,
   Loader2,
+  Undo2,
+  History,
+  PenLine,
 } from "lucide-react";
 import {
   useKpiEntries,
@@ -26,10 +29,16 @@ import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
 import { Input } from "../ui/Input";
 import { AddEntryModal } from "./AddEntryModal";
+import { CorrectEntryModal } from "./CorrectEntryModal";
 import type {
   KpiEntryStatus,
   KpiEntry,
   WorkflowTransitionBrief,
+} from "../../types/kpi";
+import {
+  formatEntryDate,
+  periodCodeLabel,
+  periodWithYear,
 } from "../../types/kpi";
 
 interface ViewEntriesModalProps {
@@ -47,6 +56,12 @@ const entryStatusColor: Record<KpiEntryStatus, string> = {
   approved:
     "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400",
   rejected: "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400",
+  superseded:
+    "bg-slate-100 text-slate-500 line-through dark:bg-slate-700/50 dark:text-slate-400",
+  reversed:
+    "bg-slate-100 text-slate-500 line-through dark:bg-slate-700/50 dark:text-slate-400",
+  reversal:
+    "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
 };
 
 const entryStatusIcon: Record<KpiEntryStatus, React.ReactNode> = {
@@ -54,6 +69,9 @@ const entryStatusIcon: Record<KpiEntryStatus, React.ReactNode> = {
   submitted: <Send className="w-3 h-3" />,
   approved: <CheckCircle className="w-3 h-3" />,
   rejected: <XCircle className="w-3 h-3" />,
+  superseded: <History className="w-3 h-3" />,
+  reversed: <Undo2 className="w-3 h-3" />,
+  reversal: <Undo2 className="w-3 h-3" />,
 };
 
 const transitionIconMap: Record<string, React.ReactNode> = {
@@ -78,6 +96,7 @@ interface EntryRowProps {
   canEdit: boolean;
   onEdit: (entry: KpiEntry) => void;
   onDelete: (entry: KpiEntry) => void;
+  onCorrect: (entry: KpiEntry) => void;
   onTransition: (entry: KpiEntry, transition: WorkflowTransitionBrief) => void;
 }
 
@@ -86,6 +105,7 @@ const EntryRow: React.FC<EntryRowProps> = ({
   canEdit,
   onEdit,
   onDelete,
+  onCorrect,
   onTransition,
 }) => {
   const { hasPermission } = usePermissions();
@@ -93,8 +113,11 @@ const EntryRow: React.FC<EntryRowProps> = ({
   const transitions = (transResp?.data ?? []).filter((tr) =>
     hasPermission(kpiTransitionPermissionCode(tr.code)),
   );
+  const canCorrect = entry.status === "approved" && canEdit;
   const showActionsRow =
-    (entry.status === "draft" && canEdit) || transitions.length > 0;
+    (entry.status === "draft" && canEdit) ||
+    canCorrect ||
+    transitions.length > 0;
 
   return (
     <div className="rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-4">
@@ -107,13 +130,26 @@ const EntryRow: React.FC<EntryRowProps> = ({
             {entry.status}
           </span>
           <span className="text-xs text-slate-500 dark:text-slate-400">
-            {entry.period_code}
+            {periodCodeLabel(entry.period_code)}
           </span>
+          {entry.entry_version > 1 && (
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              v{entry.entry_version}
+              {entry.correction_type &&
+                ` · ${entry.correction_type === "reversal" ? "Reversal" : "Adjustment"} of v${entry.entry_version - 1}`}
+            </span>
+          )}
         </div>
         <span className="text-sm font-semibold text-slate-900 dark:text-white tabular-nums">
           {entry.actual_value}
         </span>
       </div>
+      {entry.correction_reason && (
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          <span className="font-medium">Correction reason:</span>{" "}
+          {entry.correction_reason}
+        </p>
+      )}
       {entry.performance_commentary && (
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
           {entry.performance_commentary}
@@ -126,7 +162,13 @@ const EntryRow: React.FC<EntryRowProps> = ({
             {entry.submitted_by.first_name} {entry.submitted_by.last_name}
           </span>
         )}
-        <span>{formatDate(entry.created_at)}</span>
+        {entry.entry_date ? (
+          <span title={`Created ${formatDate(entry.created_at)}`}>
+            Entry date {formatEntryDate(entry.entry_date)}
+          </span>
+        ) : (
+          <span>Created {formatDate(entry.created_at)}</span>
+        )}
       </div>
 
       {showActionsRow && (
@@ -148,6 +190,15 @@ const EntryRow: React.FC<EntryRowProps> = ({
                 Delete
               </button>
             </>
+          )}
+          {canCorrect && (
+            <button
+              onClick={() => onCorrect(entry)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 transition-colors"
+            >
+              <PenLine className="w-3.5 h-3.5" />
+              Adjust / Reverse
+            </button>
           )}
           {transitions.map((tr) => (
             <button
@@ -183,6 +234,7 @@ export const ViewEntriesModal: React.FC<ViewEntriesModalProps> = ({
 
   const [editTarget, setEditTarget] = useState<KpiEntry | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<KpiEntry | null>(null);
+  const [correctTarget, setCorrectTarget] = useState<KpiEntry | null>(null);
   const [transitionPick, setTransitionPick] = useState<{
     entry: KpiEntry;
     transition: WorkflowTransitionBrief;
@@ -259,6 +311,7 @@ export const ViewEntriesModal: React.FC<ViewEntriesModalProps> = ({
                     canEdit={canEdit}
                     onEdit={setEditTarget}
                     onDelete={setDeleteTarget}
+                    onCorrect={setCorrectTarget}
                     onTransition={(e, tr) =>
                       setTransitionPick({ entry: e, transition: tr })
                     }
@@ -291,6 +344,12 @@ export const ViewEntriesModal: React.FC<ViewEntriesModalProps> = ({
         onSuccess={() => setEditTarget(null)}
       />
 
+      <CorrectEntryModal
+        key={correctTarget?.id ?? "none"}
+        entry={correctTarget}
+        onClose={() => setCorrectTarget(null)}
+      />
+
       {/* Delete confirm */}
       <Modal
         isOpen={!!deleteTarget}
@@ -304,7 +363,11 @@ export const ViewEntriesModal: React.FC<ViewEntriesModalProps> = ({
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Are you sure you want to delete the entry for{" "}
             <strong>
-              {deleteTarget?.period_code} {deleteTarget?.reporting_year}
+              {deleteTarget &&
+                periodWithYear(
+                  deleteTarget.period_code,
+                  deleteTarget.reporting_year,
+                )}
             </strong>
             ? This cannot be undone.
           </p>
@@ -338,8 +401,12 @@ export const ViewEntriesModal: React.FC<ViewEntriesModalProps> = ({
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Confirm this action for the entry (
-            {transitionPick?.entry.period_code}{" "}
-            {transitionPick?.entry.reporting_year}).
+            {transitionPick &&
+              periodWithYear(
+                transitionPick.entry.period_code,
+                transitionPick.entry.reporting_year,
+              )}
+            ).
           </p>
           <Input
             label="Comment (optional)"

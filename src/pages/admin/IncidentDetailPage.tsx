@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
 import SingleLocationMap from "../../components/maps/SingleLocationMap";
 import { withCallStatusDot } from "../../utils/callStatus";
-import { capFilesByCount } from "../../utils/attachmentLimits";
 import { errorLogApi } from "../../api/errorLogs";
 import { useImageValidation } from "../../hooks/useImageValidation";
+import { useAttachmentPolicy } from "../../hooks/useAttachmentPolicy";
+import { AttachmentUploadPanel } from "../../components/attachments/AttachmentUpload";
 import {
   useParams,
   useNavigate,
@@ -74,6 +75,7 @@ import {
   UnmergeIncidentsModal,
   BulkUnmergeModal,
   RejectedAttachmentsList,
+  PolicyRejectedList,
 } from "../../components/incidents";
 import {
   incidentApi,
@@ -109,7 +111,7 @@ import type {
   ValidationRules,
   IncidentRevision,
 } from "../../types";
-import { cn, getLocalizedName } from "@/lib/utils";
+import { cn, getLocalizedField, getLocalizedName } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PERMISSIONS } from "../../constants/permissions";
 import { useAuthStore } from "../../stores/authStore";
@@ -130,6 +132,7 @@ import { IncidentMentionTextarea } from "@/components/common/IncidentMentionText
 import RenderWithIncidentMentions from "@/components/common/RenderWithIncidentMentions";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
 import { resolveSourceLabel } from "@/utils/sourceLabel";
+import { localizeDurationLabel } from "@/utils/localizedDurationOptions";
 
 const parseAllowMultiple = (validationRules?: string): boolean => {
   if (!validationRules) return false;
@@ -308,7 +311,6 @@ export const IncidentDetailPage: React.FC = () => {
   const transitionImageValidation = useImageValidation();
   const validatingTransitionAttachments =
     transitionImageValidation.isValidating;
-  const attachmentsTabImageValidation = useImageValidation();
   const [transitionFeedbackComment, setTransitionFeedbackComment] =
     useState("");
   const [transitionFieldValues, setTransitionFieldValues] = useState<
@@ -538,30 +540,15 @@ export const IncidentDetailPage: React.FC = () => {
     queryFn: () => lookupApi.listCategories(),
   });
 
-  const envConfigCategory = useMemo(
-    () =>
-      (lookupCategoriesData?.data || []).find(
-        (cat) => cat.code === "ENV_CONFIGURATION",
-      ),
-    [lookupCategoriesData],
-  );
-
-  const MAX_TRANSITION_ATTACHMENTS = Number(
-    envConfigCategory?.values?.find(
-      (v) => v.code === "INTERNAL_ATTACHMENT_LIMIT",
-    )?.name ?? "5",
-  );
-
-  const MAX_TRANSITION_ATTACHMENT_SIZE_MB = Number(
-    envConfigCategory?.values?.find(
-      (v) => v.code === "INTERNAL_ATTACHMENT_SIZE_LIMIT",
-    )?.name ?? "5",
-  );
+  const attachmentPolicy = useAttachmentPolicy("internal");
+  const MAX_TRANSITION_ATTACHMENTS = attachmentPolicy.maxFiles;
+  const MAX_TRANSITION_ATTACHMENT_SIZE_MB = attachmentPolicy.maxSizeMB;
 
   const isTransitionAttachmentOversized = (file: File) =>
     file.size > MAX_TRANSITION_ATTACHMENT_SIZE_MB * 1024 * 1024;
 
   const transitionAttachmentLimitReached =
+    !attachmentPolicy.enabled ||
     transitionAttachment.length >= MAX_TRANSITION_ATTACHMENTS;
 
   const validateTransitionAttachments = (files: File[]): string => {
@@ -600,23 +587,16 @@ export const IncidentDetailPage: React.FC = () => {
     replace = false,
   ) => {
     const base = replace ? [] : transitionAttachment;
-    const { accepted, skippedForLimit } = capFilesByCount(
+    const accepted = await attachmentPolicy.filterFiles(
       replace ? newFiles.slice(0, 1) : newFiles,
       base.length,
-      MAX_TRANSITION_ATTACHMENTS,
     );
     const { valid } = await transitionImageValidation.validate(accepted);
     const next = [...base, ...valid];
     setTransitionAttachment(next);
     setTransitionErrors((prev) => ({
       ...prev,
-      attachment:
-        skippedForLimit > 0
-          ? t("incidents.attachmentLimitExceeded", {
-              max: MAX_TRANSITION_ATTACHMENTS,
-              defaultValue: `Maximum ${MAX_TRANSITION_ATTACHMENTS} attachments allowed`,
-            })
-          : validateTransitionAttachments(next),
+      attachment: validateTransitionAttachments(next),
     }));
   };
 
@@ -1528,7 +1508,7 @@ export const IncidentDetailPage: React.FC = () => {
           newErrors[fc.field_name] = t(
             "incidents.fieldRequired",
             "{{field}} is required",
-            { field: fc.label || fc.field_name },
+            { field: getLocalizedField(fc, "label") || fc.field_name },
           );
       }
     } else if (stepKey === "duration") {
@@ -1836,7 +1816,7 @@ export const IncidentDetailPage: React.FC = () => {
         newTransitionErrors[fc.field_name] = t(
           "incidents.fieldRequired",
           "{{field}} is required",
-          { field: fc.label || fc.field_name },
+          { field: getLocalizedField(fc, "label") || fc.field_name },
         );
     }
 
@@ -1950,17 +1930,6 @@ export const IncidentDetailPage: React.FC = () => {
 
   const getHistoryById = (id: string) => {
     return history.find((h: any) => h.id === id);
-  };
-
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const input = event.target;
-    const file = input.files?.[0];
-    input.value = "";
-    if (!file) return;
-    const { valid } = await attachmentsTabImageValidation.validate([file]);
-    if (valid.length > 0) uploadAttachmentMutation.mutate(valid[0]);
   };
 
   const { data: commentTemplatesData } = useQuery({
@@ -2077,7 +2046,7 @@ export const IncidentDetailPage: React.FC = () => {
                 <p className="text-sm font-semibold text-yellow-900">
                   {otherUsers.length === 1
                     ? t("incidents.alsoViewing")
-                    : t("usersViewing", { count: otherUsers.length })}
+                    : t("incidents.usersViewing", { count: otherUsers.length })}
                 </p>
                 <div className="flex items-center gap-2 flex-wrap">
                   {otherUsers.map((u, idx) => (
@@ -2087,7 +2056,9 @@ export const IncidentDetailPage: React.FC = () => {
                     >
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                       <span className="text-xs font-medium text-yellow-900">
-                        {u.user_name || u.user_email || t("unknownUser")}
+                        {u.user_name ||
+                          u.user_email ||
+                          t("incidents.unknownUser")}
                       </span>
                     </div>
                   ))}
@@ -2789,45 +2760,49 @@ export const IncidentDetailPage: React.FC = () => {
                             />
                           </div>
                           <div className="bg-[hsl(var(--muted)/0.3)] rounded-lg p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <span className="font-medium text-[hsl(var(--foreground))]">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className="min-w-0 flex-1 wrap-break-word">
+                                <bdi className="font-medium text-[hsl(var(--foreground))]">
                                   {getLocalizedName(item.transition) ||
                                     t("incidents.stateChanged")}
-                                </span>
+                                </bdi>
                                 <span className="text-[hsl(var(--muted-foreground))] mx-2">
                                   {t("incidents.by")}
                                 </span>
-                                <span className="font-medium text-[hsl(var(--foreground))]">
+                                <bdi className="font-medium text-[hsl(var(--foreground))]">
                                   {item.performed_by?.first_name ||
                                     item.performed_by?.username ||
                                     t("incidents.system")}
-                                </span>
+                                </bdi>
                                 {item.performed_by && (
-                                  <span className="text-xs text-[hsl(var(--muted-foreground))] ml-2">
+                                  <span className="text-xs text-[hsl(var(--muted-foreground))] ms-2">
                                     (
-                                    {(() => {
-                                      const u = users.find(
-                                        (user) =>
-                                          user.id === item.performed_by?.id,
-                                      );
-                                      return (
-                                        getLocalizedName(u?.department) ||
-                                        getLocalizedName(u?.departments?.[0]) ||
-                                        getLocalizedName(
-                                          item.performed_by?.department,
-                                        ) ||
-                                        getLocalizedName(
-                                          item.performed_by?.departments?.[0],
-                                        ) ||
-                                        "-"
-                                      );
-                                    })()}
+                                    <bdi>
+                                      {(() => {
+                                        const u = users.find(
+                                          (user) =>
+                                            user.id === item.performed_by?.id,
+                                        );
+                                        return (
+                                          getLocalizedName(u?.department) ||
+                                          getLocalizedName(
+                                            u?.departments?.[0],
+                                          ) ||
+                                          getLocalizedName(
+                                            item.performed_by?.department,
+                                          ) ||
+                                          getLocalizedName(
+                                            item.performed_by?.departments?.[0],
+                                          ) ||
+                                          "-"
+                                        );
+                                      })()}
+                                    </bdi>
                                     )
                                   </span>
                                 )}
                               </div>
-                              <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                              <span className="shrink-0 text-xs text-[hsl(var(--muted-foreground))]">
                                 {formatDateTime(item.transitioned_at)}
                               </span>
                             </div>
@@ -2991,44 +2966,53 @@ export const IncidentDetailPage: React.FC = () => {
                             </p>
                           ) : (
                             <div className="max-h-[280px] space-y-2 overflow-y-auto overscroll-contain pe-1">
-                              {recurrenceData?.data.map((item) => (
-                                <Link
-                                  key={item.id}
-                                  to={`/incidents/${item.id}`}
-                                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.2)] px-3 py-2.5 hover:bg-[hsl(var(--muted)/0.5)]"
-                                >
-                                  <div className="flex min-w-0 flex-wrap items-center gap-3">
-                                    <span className="rounded bg-[hsl(var(--muted))] px-2 py-1 text-xs font-semibold text-[hsl(var(--foreground))]">
-                                      {item.classification_name}
-                                    </span>
-                                    <span className="font-mono text-sm font-bold text-[hsl(var(--primary))]">
-                                      {item.incident_number}
-                                    </span>
-                                    <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                                      {item.location_name || "-"}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    {item.status
-                                      .toLowerCase()
-                                      .includes("closed") && (
-                                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                    )}
-                                    <span
-                                      className="rounded px-2 py-1 text-xs font-medium text-white"
-                                      style={{
-                                        backgroundColor:
-                                          item.status_color || "#6b7280",
-                                      }}
-                                    >
-                                      {item.status}
-                                    </span>
-                                    <time className="text-xs text-[hsl(var(--muted-foreground))]">
-                                      {formatDateTime(item.created_at)}
-                                    </time>
-                                  </div>
-                                </Link>
-                              ))}
+                              {recurrenceData?.data.map((item) => {
+                                const isArabic = i18n.language === "ar";
+                                return (
+                                  <Link
+                                    key={item.id}
+                                    to={`/incidents/${item.id}`}
+                                    className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.2)] px-3 py-2.5 hover:bg-[hsl(var(--muted)/0.5)]"
+                                  >
+                                    <div className="flex min-w-0 flex-wrap items-center gap-3">
+                                      <span className="rounded bg-[hsl(var(--muted))] px-2 py-1 text-xs font-semibold text-[hsl(var(--foreground))]">
+                                        {isArabic && item.classification_name_ar
+                                          ? item.classification_name_ar
+                                          : item.classification_name}
+                                      </span>
+                                      <span className="font-mono text-sm font-bold text-[hsl(var(--primary))]">
+                                        {item.incident_number}
+                                      </span>
+                                      <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                                        {(isArabic && item.location_name_ar
+                                          ? item.location_name_ar
+                                          : item.location_name) || "-"}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      {item.status
+                                        .toLowerCase()
+                                        .includes("closed") && (
+                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                      )}
+                                      <span
+                                        className="rounded px-2 py-1 text-xs font-medium text-white"
+                                        style={{
+                                          backgroundColor:
+                                            item.status_color || "#6b7280",
+                                        }}
+                                      >
+                                        {isArabic && item.status_ar
+                                          ? item.status_ar
+                                          : item.status}
+                                      </span>
+                                      <time className="text-xs text-[hsl(var(--muted-foreground))]">
+                                        {formatDateTime(item.created_at)}
+                                      </time>
+                                    </div>
+                                  </Link>
+                                );
+                              })}
                               {(recurrenceData?.total_pages ?? 1) > 1 && (
                                 <div className="flex items-center justify-between pt-1 text-sm">
                                   <span className="text-[hsl(var(--muted-foreground))]">
@@ -3199,39 +3183,13 @@ export const IncidentDetailPage: React.FC = () => {
               {/* Attachments Tab */}
               {activeTab === "attachments" && (
                 <div className="space-y-4">
-                  {/* Upload Button */}
-                  <div>
-                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg cursor-pointer hover:opacity-90 transition-opacity">
-                      <Upload className="w-4 h-4" />
-                      {t("incidents.uploadFile")}
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={handleFileUpload}
-                        disabled={
-                          uploadAttachmentMutation.isPending ||
-                          attachmentsTabImageValidation.isValidating
-                        }
-                      />
-                    </label>
-                    {(uploadAttachmentMutation.isPending ||
-                      attachmentsTabImageValidation.isValidating) && (
-                      <span className="ml-2 text-sm text-[hsl(var(--muted-foreground))]">
-                        {attachmentsTabImageValidation.isValidating
-                          ? t(
-                              "incidents.validatingImages",
-                              "Checking photos...",
-                            )
-                          : t("incidents.uploading")}
-                      </span>
-                    )}
-                    <div className="mt-2">
-                      <RejectedAttachmentsList
-                        items={attachmentsTabImageValidation.rejected}
-                        onDismiss={attachmentsTabImageValidation.clearRejected}
-                      />
-                    </div>
-                  </div>
+                  {/* Upload */}
+                  <AttachmentUploadPanel
+                    audience="internal"
+                    uploadFile={(file) =>
+                      uploadAttachmentMutation.mutateAsync(file)
+                    }
+                  />
 
                   {/* Attachments List */}
                   <div className="space-y-3">
@@ -3461,7 +3419,7 @@ export const IncidentDetailPage: React.FC = () => {
                                               )?.from_state,
                                             )}
                                           </span>
-                                          <ArrowRight className="w-4 h-4" />
+                                          <ArrowRight className="w-4 h-4 rtl:-rotate-180" />
                                           <span
                                             className={
                                               "text-xs  mt-0.5" +
@@ -3579,7 +3537,7 @@ export const IncidentDetailPage: React.FC = () => {
                                                 )?.from_state,
                                               )}
                                             </span>
-                                            <ArrowRight className="w-4 h-4" />
+                                            <ArrowRight className="w-4 h-4 rtl:-rotate-180" />
                                             <span
                                               className={
                                                 "text-xs  mt-0.5" +
@@ -3712,7 +3670,7 @@ export const IncidentDetailPage: React.FC = () => {
                                               )?.from_state,
                                             )}
                                           </span>
-                                          <ArrowRight className="w-4 h-4" />
+                                          <ArrowRight className="w-4 h-4 rtl:-rotate-180" />
                                           <span
                                             className={
                                               "text-xs  mt-0.5" +
@@ -4275,7 +4233,7 @@ export const IncidentDetailPage: React.FC = () => {
                                 {part}
                               </span>
                               {idx < classificationPath.length - 1 && (
-                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))] rtl:-rotate-180" />
                               )}
                             </React.Fragment>
                           ))}
@@ -4309,7 +4267,7 @@ export const IncidentDetailPage: React.FC = () => {
                                 {part}
                               </span>
                               {idx < departmentPath.length - 1 && (
-                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))] rtl:-rotate-180" />
                               )}
                             </React.Fragment>
                           ))}
@@ -4370,7 +4328,7 @@ export const IncidentDetailPage: React.FC = () => {
                                 {part}
                               </span>
                               {idx < locationPath.length - 1 && (
-                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
+                                <ChevronRight className="w-3 h-3 text-[hsl(var(--muted-foreground))] rtl:-rotate-180" />
                               )}
                             </React.Fragment>
                           ))}
@@ -5866,6 +5824,7 @@ export const IncidentDetailPage: React.FC = () => {
                                   type="file"
                                   className="hidden"
                                   multiple
+                                  accept={attachmentPolicy.accept}
                                   disabled={
                                     transitionAttachmentLimitReached ||
                                     validatingTransitionAttachments
@@ -5917,6 +5876,7 @@ export const IncidentDetailPage: React.FC = () => {
                             type="file"
                             className="hidden"
                             multiple={transitionAttachmentAllowsMultiple}
+                            accept={attachmentPolicy.accept}
                             disabled={validatingTransitionAttachments}
                             onChange={(e) => {
                               const files = e.target.files;
@@ -5934,19 +5894,15 @@ export const IncidentDetailPage: React.FC = () => {
                         </label>
                       )}
                       <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                        {t("citizen.maxSize", "Max")}{" "}
-                        {MAX_TRANSITION_ATTACHMENT_SIZE_MB} MB ·{" "}
-                        {t("incidents.attachmentLimit", {
-                          max: MAX_TRANSITION_ATTACHMENTS,
-                          defaultValue: `Max ${MAX_TRANSITION_ATTACHMENTS} attachments`,
-                        })}
+                        {attachmentPolicy.hint}
                       </p>
                       {transitionErrors.attachment && (
                         <p className="text-xs text-red-500 mt-1">
                           {transitionErrors.attachment}
                         </p>
                       )}
-                      <div className="mt-2">
+                      <div className="mt-2 space-y-2">
+                        <PolicyRejectedList policy={attachmentPolicy} />
                         <RejectedAttachmentsList
                           items={transitionImageValidation.rejected}
                           onDismiss={transitionImageValidation.clearRejected}
@@ -6097,7 +6053,7 @@ export const IncidentDetailPage: React.FC = () => {
                         {trans.field_changes!.map((fc) => (
                           <div key={fc.id}>
                             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">
-                              {fc.label || fc.field_name}
+                              {getLocalizedField(fc, "label") || fc.field_name}
                               {fc.is_required && (
                                 <span className="text-red-500 ml-1">*</span>
                               )}
@@ -6429,7 +6385,7 @@ export const IncidentDetailPage: React.FC = () => {
                         </option>
                         {readyToCloseDurationOptions.map((opt) => (
                           <option key={opt} value={opt}>
-                            {opt}
+                            {localizeDurationLabel(opt, t)}
                           </option>
                         ))}
                       </select>
@@ -6884,9 +6840,23 @@ export const IncidentDetailPage: React.FC = () => {
           incident={incident}
           isOpen={convertModalOpen}
           onClose={() => setConvertModalOpen(false)}
-          onSuccess={(newRequestId) => {
+          onSuccess={(requestId, requestNumber, isLinked) => {
             setConvertModalOpen(false);
-            navigate(`/requests/${newRequestId}`);
+            // Refreshes the incident and its transitions, history and activity
+            queryClient.invalidateQueries({ queryKey: ["incident", id] });
+            toast.success(
+              isLinked
+                ? requestNumber
+                  ? t("requests.linkedSuccessfullyWithNumber", {
+                      requestNumber,
+                    })
+                  : t("requests.linkedSuccessfully")
+                : requestId && requestNumber
+                  ? t("requests.createdSuccessfullyWithNumber", {
+                      requestNumber,
+                    })
+                  : t("requests.createdSuccessfully"),
+            );
           }}
         />
       )}
@@ -7048,6 +7018,8 @@ export const IncidentDetailPage: React.FC = () => {
 function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
   const { t } = useTranslation();
   const isResolved = feedback.resolution_status?.toLowerCase() === "resolved";
+  const changeSummary = getLocalizedField(feedback, "changed_summary");
+  const resolutionStatus = getLocalizedField(feedback, "resolution_status");
 
   console.log("[AIQuality] Rendering AIQualityReport with feedback:", feedback);
 
@@ -7131,7 +7103,7 @@ function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
                   : "text-yellow-800 dark:text-yellow-600",
               )}
             >
-              {feedback.resolution_status?.replace(/_/g, " ") || "—"}
+              {resolutionStatus ? resolutionStatus.replace(/_/g, " ") : "—"}
             </span>
           </div>
         </div>
@@ -7153,15 +7125,14 @@ function AIQualityReport({ feedback }: { feedback: AIQualityFeedback }) {
       </div>
 
       {/* Change summary */}
-      {feedback.changed_summary && (
+      {changeSummary && (
         <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 space-y-2">
           <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5" />
             {t("incidents.changeSummary")}
           </p>
           <p className="text-sm text-[hsl(var(--foreground))] leading-relaxed">
-            {feedback.changed_summary} |{" "}
-            {feedback.raw_response?.coordinates_check?.note}
+            {changeSummary} | {feedback.raw_response?.coordinates_check?.note}
           </p>
         </div>
       )}

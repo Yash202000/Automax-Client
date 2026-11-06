@@ -49,6 +49,37 @@ import type {
 // Goal CRUD
 // ──────────────────────────────────────────────────
 
+// Builds the query string for goal filters. Shared by list and export so the
+// exported file always matches what the list shows for the same filters.
+const buildGoalFilterParams = (filter: GoalFilter): URLSearchParams => {
+  const params = new URLSearchParams();
+  if (filter.page) params.append("page", String(filter.page));
+  if (filter.limit) params.append("limit", String(filter.limit));
+  if (filter.status) params.append("status", filter.status);
+  if (filter.priority) params.append("priority", filter.priority);
+  if (filter.owner_id) params.append("owner_id", filter.owner_id);
+  if (filter.department_id)
+    params.append("department_id", filter.department_id);
+  if (filter.parent_goal_id)
+    params.append("parent_goal_id", filter.parent_goal_id);
+  if (filter.root_only) params.append("root_only", "true");
+  if (filter.category) params.append("category", filter.category);
+  if (filter.search) params.append("search", filter.search);
+  const toStartOfDay = (d: string) => `${d}T00:00:00Z`;
+  const toEndOfDay = (d: string) => `${d}T23:59:59Z`;
+  if (filter.start_from)
+    params.append("start_from", toStartOfDay(filter.start_from));
+  if (filter.start_to) params.append("start_to", toEndOfDay(filter.start_to));
+  if (filter.target_from)
+    params.append("target_from", toStartOfDay(filter.target_from));
+  if (filter.target_to)
+    params.append("target_to", toEndOfDay(filter.target_to));
+  if (filter.sort_by) params.append("sort_by", filter.sort_by);
+  if (filter.sort_order) params.append("sort_order", filter.sort_order);
+  if (filter.scope) params.append("scope", filter.scope);
+  return params;
+};
+
 export const goalApi = {
   create: async (data: GoalCreateRequest): Promise<ApiResponse<Goal>> => {
     const res = await apiClient.post("/goals", data);
@@ -56,32 +87,7 @@ export const goalApi = {
   },
 
   list: async (filter: GoalFilter = {}): Promise<GoalListResponse> => {
-    const params = new URLSearchParams();
-    if (filter.page) params.append("page", String(filter.page));
-    if (filter.limit) params.append("limit", String(filter.limit));
-    if (filter.status) params.append("status", filter.status);
-    if (filter.priority) params.append("priority", filter.priority);
-    if (filter.owner_id) params.append("owner_id", filter.owner_id);
-    if (filter.department_id)
-      params.append("department_id", filter.department_id);
-    if (filter.parent_goal_id)
-      params.append("parent_goal_id", filter.parent_goal_id);
-    if (filter.root_only) params.append("root_only", "true");
-    if (filter.category) params.append("category", filter.category);
-    if (filter.search) params.append("search", filter.search);
-    const toStartOfDay = (d: string) => `${d}T00:00:00Z`;
-    const toEndOfDay = (d: string) => `${d}T23:59:59Z`;
-    if (filter.start_from)
-      params.append("start_from", toStartOfDay(filter.start_from));
-    if (filter.start_to)
-      params.append("start_to", toEndOfDay(filter.start_to));
-    if (filter.target_from)
-      params.append("target_from", toStartOfDay(filter.target_from));
-    if (filter.target_to)
-      params.append("target_to", toEndOfDay(filter.target_to));
-    if (filter.sort_by) params.append("sort_by", filter.sort_by);
-    if (filter.sort_order) params.append("sort_order", filter.sort_order);
-    if (filter.scope) params.append("scope", filter.scope);
+    const params = buildGoalFilterParams(filter);
 
     const res = await apiClient.get(`/goals?${params.toString()}`);
     return res.data;
@@ -122,14 +128,10 @@ export const goalApi = {
   },
 
   exportCSV: async (filter: GoalFilter = {}): Promise<Blob> => {
-    const params = new URLSearchParams();
+    const params = buildGoalFilterParams(filter);
+    params.delete("page");
+    params.delete("limit");
     params.append("format", "csv");
-    if (filter.status) params.append("status", filter.status);
-    if (filter.priority) params.append("priority", filter.priority);
-    if (filter.owner_id) params.append("owner_id", filter.owner_id);
-    if (filter.department_id) params.append("department_id", filter.department_id);
-    if (filter.category) params.append("category", filter.category);
-    if (filter.search) params.append("search", filter.search);
 
     const res = await apiClient.get(`/goals/export?${params.toString()}`, {
       responseType: "blob",
@@ -137,15 +139,13 @@ export const goalApi = {
     return res.data;
   },
 
-  exportJSON: async (filter: GoalFilter = {}): Promise<{ success: boolean; data: Goal[]; total: number }> => {
-    const params = new URLSearchParams();
+  exportJSON: async (
+    filter: GoalFilter = {},
+  ): Promise<{ success: boolean; data: Goal[]; total: number }> => {
+    const params = buildGoalFilterParams(filter);
+    params.delete("page");
+    params.delete("limit");
     params.append("format", "json");
-    if (filter.status) params.append("status", filter.status);
-    if (filter.priority) params.append("priority", filter.priority);
-    if (filter.owner_id) params.append("owner_id", filter.owner_id);
-    if (filter.department_id) params.append("department_id", filter.department_id);
-    if (filter.category) params.append("category", filter.category);
-    if (filter.search) params.append("search", filter.search);
 
     const res = await apiClient.get(`/goals/export?${params.toString()}`);
     return res.data;
@@ -570,7 +570,8 @@ export const metricImportApi = {
     params.append("format", format);
     if (filter.status) params.append("status", filter.status);
     if (filter.priority) params.append("priority", filter.priority);
-    if (filter.department_id) params.append("department_id", filter.department_id);
+    if (filter.department_id)
+      params.append("department_id", filter.department_id);
     const res = await apiClient.get(
       `/goals/metrics/export-template?${params.toString()}`,
       { responseType: "blob" },
@@ -606,9 +607,7 @@ export const metricImportApi = {
     return res.data;
   },
 
-  getBatch: async (
-    id: string,
-  ): Promise<ApiResponse<MetricImportBatch>> => {
+  getBatch: async (id: string): Promise<ApiResponse<MetricImportBatch>> => {
     const res = await apiClient.get(`/goals/metric-batches/${id}`);
     return res.data;
   },

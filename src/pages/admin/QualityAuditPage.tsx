@@ -15,7 +15,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { aiQualityApi } from "../../api/admin";
-import { cn } from "@/lib/utils";
+import { cn, getLocalizedField } from "@/lib/utils";
 import { useAuthStore } from "../../stores/authStore";
 import type { AIQualityFeedback } from "../../types";
 import i18n from "@/i18n";
@@ -92,7 +92,9 @@ export default function QualityAuditPage() {
         r.incident?.incident_number?.toLowerCase().includes(term) ||
         r.incident?.title?.toLowerCase().includes(term) ||
         r.changed_summary?.toLowerCase().includes(term) ||
-        r.resolution_status?.toLowerCase().includes(term);
+        r.changed_summary_ar?.toLowerCase().includes(term) ||
+        r.resolution_status?.toLowerCase().includes(term) ||
+        r.resolution_status_ar?.toLowerCase().includes(term);
 
       const matchesStatus =
         !statusFilter ||
@@ -306,14 +308,16 @@ export default function QualityAuditPage() {
                         )}
                       >
                         {style.icon}
-                        {formatStatus(record.resolution_status)}
+                        {formatStatus(
+                          getLocalizedField(record, "resolution_status"),
+                        )}
                       </span>
                     </td>
 
                     {/* Change Summary */}
                     <td className="px-4 py-3 max-w-[260px]">
                       <p className="text-xs text-[hsl(var(--foreground))] line-clamp-2 leading-relaxed">
-                        {record.changed_summary || "—"}
+                        {getLocalizedField(record, "changed_summary") || "—"}
                       </p>
                     </td>
 

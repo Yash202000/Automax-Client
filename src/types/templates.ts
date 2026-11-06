@@ -33,6 +33,7 @@ export interface NotificationTemplateCreatePayload {
   channel: NotificationChannel;
   module_type: ModuleType;
   action_type: ActionType;
+  provider_template_id?: string;
 
   description?: string;
 

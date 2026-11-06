@@ -2649,6 +2649,18 @@ const performanceCommonFilters: ReportFieldDefinition[] = [
     multiselect: true,
   },
   {
+    field: "state_name",
+    label: "Status",
+    label_ar: "الحالة",
+    type: "enum",
+    category: "Core",
+    sortable: false,
+    filterable: true,
+    dynamicOptions: "states",
+    canBeColumn: false,
+    multiselect: true,
+  },
+  {
     field: "created_at",
     label: "Created At",
     label_ar: "تاريخ الإنشاء",

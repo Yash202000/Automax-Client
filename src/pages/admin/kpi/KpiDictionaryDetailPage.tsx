@@ -80,6 +80,8 @@ import { AddEntryModal } from "../../../components/kpi/AddEntryModal";
 import { ViewEntriesModal } from "../../../components/kpi/ViewEntriesModal";
 import { CollaboratorsTab } from "../../../components/kpi/CollaboratorsTab";
 import { KpiEvidenceUploadModal } from "../../../components/kpi/KpiEvidenceUploadModal";
+import { BaselineRevisionPanel } from "../../../components/kpi/BaselineRevisionPanel";
+import { BaselinePeriodPicker } from "../../../components/kpi/BaselinePeriodPicker";
 import type {
   KpiCheckInStatus,
   KpiEvidenceType,
@@ -91,6 +93,7 @@ import type {
   OperationalObjective,
   WorkflowTransitionBrief,
 } from "../../../types/kpi";
+import { formatBaselinePeriod } from "../../../types/kpi";
 
 const statusColorMap: Record<string, string> = {
   draft: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -262,6 +265,11 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
           <p className="mt-1 text-base font-bold text-slate-900 dark:text-white tabular-nums">
             {formatValue(m, m.baseline_value)}
           </p>
+          {m.baseline_period && (
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              {formatBaselinePeriod(m.baseline_period)}
+            </p>
+          )}
         </div>
         <div className="px-3">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
@@ -380,7 +388,7 @@ const DUPLICATE_METRIC_NAME_MSG =
   "Metric name already exists under this KPI. Please use a unique metric name.";
 
 export const KpiDictionaryDetailPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { type, id } = useParams<{ type: string; id: string }>();
   const navigate = useNavigate();
   const { canUpdateKpi, canAssignKpi } = usePermissions();
@@ -404,6 +412,9 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const { data, isLoading, error } = currentQuery;
   const kpi = data?.data as any;
   const status = kpi?.activation_status ?? "";
+  // Metric weights can only be corrected before the KPI is approved — the
+  // backend enforces the same rule.
+  const configLocked = ["approved", "active", "closed"].includes(status);
 
   // ── Engagement data ─────────────────────────────────
   const kpiType = type ?? "strategic";
@@ -448,6 +459,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     unit: "",
     custom_unit_label: "",
     baseline_value: 0,
+    baseline_period: "",
     weight: 1,
     formula: "",
     calculation_type: "Direct Value",
@@ -538,6 +550,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     unit: m.unit,
     custom_unit_label: m.custom_unit_label,
     baseline_value: m.baseline_value,
+    baseline_period: m.baseline_period ?? "",
     weight: m.weight,
     formula: m.formula,
     calculation_type: m.calculation_type,
@@ -569,6 +582,23 @@ export const KpiDictionaryDetailPage: React.FC = () => {
     setConfigForm(selectedMetric ? metricToRequest(selectedMetric) : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMetric?.id]);
+
+  // An approved baseline revision changes the Baseline server-side; carry it
+  // into the open form so a later Save doesn't send the old (locked) value.
+  React.useEffect(() => {
+    if (selectedMetric) {
+      setConfigForm((p) =>
+        p
+          ? {
+              ...p,
+              baseline_value: selectedMetric.baseline_value,
+              baseline_period: selectedMetric.baseline_period ?? "",
+            }
+          : p,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMetric?.baseline_value, selectedMetric?.baseline_period]);
 
   const handleCancelMetricConfig = () => {
     if (selectedMetric) setConfigForm(metricToRequest(selectedMetric));
@@ -761,16 +791,24 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   }
 
   // ── Parent Objective resolution ─────────────────────
-  // Operational KPIs carry operational_objective_id directly; Strategic (and
-  // Award) KPIs have no such field, so fall back to matching an Operational
-  // Objective by shared goal_id — the closest read-only equivalent of "this
-  // KPI's parent objective" available from the current data model.
+  // Use the KPI's own parent objective when set; otherwise the parent of its
+  // child objective (process) — that is the real parent for KPIs linked
+  // only to a child objective. Matching an objective by shared goal_id is
+  // the last resort (it can pick a different objective under the same goal).
   const allOperationalObjectives = operationalObjectivesRes ?? [];
+  const childParentId =
+    kpi.process?.operational_objective_id ??
+    kpi.process?.operational_objective?.id;
   const parentObjective: OperationalObjective | undefined =
     kpi.operational_objective ??
     allOperationalObjectives.find(
       (o: OperationalObjective) => o.id === kpi.operational_objective_id,
     ) ??
+    (childParentId
+      ? allOperationalObjectives.find(
+          (o: OperationalObjective) => o.id === childParentId,
+        )
+      : undefined) ??
     (kpi.goal_id
       ? allOperationalObjectives.find(
           (o: OperationalObjective) => o.goal_id === kpi.goal_id,
@@ -794,7 +832,20 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       value: kpi.goal.title,
     });
   }
-  if (parentObjective) {
+  // "Objective" is the child objective (process) picked in the KPI form's
+  // "Objective *" field — show that, linking to its own page (which shows
+  // its parent). Only KPIs with no child objective fall back to the parent.
+  if (kpi.process) {
+    const childObjectiveId = kpi.process.id;
+    infoTiles.push({
+      icon: <GitBranch className="w-5 h-5 text-teal-600 dark:text-teal-400" />,
+      bg: "bg-teal-50 dark:bg-teal-900/20",
+      label: "Objective",
+      value: kpi.process.name_en,
+      onClick: () =>
+        navigate(`/goals/kpi/master-data/processes/${childObjectiveId}`),
+    });
+  } else if (parentObjective) {
     infoTiles.push({
       icon: <ListTree className="w-5 h-5 text-teal-600 dark:text-teal-400" />,
       bg: "bg-teal-50 dark:bg-teal-900/20",
@@ -816,7 +867,10 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       value: kpi.owner_dept.name,
     });
   }
-  if (type === "strategic" && kpi.pillar) {
+  // Pillar and Criteria/Sub-Criteria are optional tags on every KPI type
+  // (see KpiTaxonomyFields), so show them whenever set, not only for the
+  // type they were originally introduced on.
+  if (kpi.pillar) {
     infoTiles.push({
       icon: <Layers className="w-5 h-5 text-green-600 dark:text-green-400" />,
       bg: "bg-green-50 dark:bg-green-900/20",
@@ -824,20 +878,20 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       value: kpi.pillar.name_en,
     });
   }
-  if (type === "operational" && kpi.process) {
-    const childObjectiveId = kpi.process.id;
+  if (kpi.award_sub_criterion?.award_criterion) {
+    const criterionId = kpi.award_sub_criterion.award_criterion.id;
     infoTiles.push({
       icon: (
-        <GitBranch className="w-5 h-5 text-green-600 dark:text-green-400" />
+        <ClipboardCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
       ),
-      bg: "bg-green-50 dark:bg-green-900/20",
-      label: "Child Objective",
-      value: kpi.process.name_en,
+      bg: "bg-purple-50 dark:bg-purple-900/20",
+      label: t("kpi.masterData.awardCriteria"),
+      value: kpi.award_sub_criterion.award_criterion.name_en,
       onClick: () =>
-        navigate(`/goals/kpi/master-data/processes/${childObjectiveId}`),
+        navigate(`/goals/kpi/master-data/award-criteria/${criterionId}`),
     });
   }
-  if (type === "award" && kpi.award_sub_criterion) {
+  if (kpi.award_sub_criterion) {
     const subCriterionId = kpi.award_sub_criterion.id;
     infoTiles.push({
       icon: (
@@ -848,6 +902,19 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       value: kpi.award_sub_criterion.name_en,
       onClick: () =>
         navigate(`/goals/kpi/master-data/award-sub-criteria/${subCriterionId}`),
+    });
+  }
+  if (kpi.award_kpi_measure) {
+    const m = kpi.award_kpi_measure;
+    infoTiles.push({
+      icon: (
+        <ClipboardCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+      ),
+      bg: "bg-purple-50 dark:bg-purple-900/20",
+      label: t("kpi.dictionary.fieldAwardKpiMeasure"),
+      value: `${m.code ? `${m.code.toUpperCase()} — ` : ""}${
+        (i18n.language?.startsWith("ar") ? m.name_ar : m.name_en) || m.name_en
+      }`,
     });
   }
   if (kpi.reporting_frequency) {
@@ -1623,10 +1690,20 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                     }))
                   }
                 />
+                <BaselinePeriodPicker
+                  label="Baseline Period"
+                  value={metricForm.baseline_period ?? ""}
+                  hint="Month the Baseline was measured, e.g. Dec 2025"
+                  onChange={(v) =>
+                    setMetricForm((p) => ({ ...p, baseline_period: v }))
+                  }
+                />
                 <Input
                   label="Weight"
                   type="number"
                   step="0.1"
+                  min={0}
+                  max={100}
                   value={metricForm.weight}
                   onChange={(e) =>
                     setMetricForm((p) => ({
@@ -2178,6 +2255,55 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                     )
                   }
                 />
+                <Input
+                  label="Weight (%) *"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  max={100}
+                  value={configForm.weight ?? 0}
+                  disabled={!canUpdateKpi() || configLocked}
+                  hint={
+                    configLocked
+                      ? "Locked once the KPI is approved or active"
+                      : `Active metrics total ${totalWeight.toFixed(0)}% (must be 100% to activate)`
+                  }
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, weight: Number(e.target.value) } : p,
+                    )
+                  }
+                />
+                <Input
+                  label="Baseline *"
+                  type="number"
+                  value={configForm.baseline_value ?? 0}
+                  disabled={!canUpdateKpi() || configLocked}
+                  hint={
+                    configLocked
+                      ? "Locked for this cycle — request a revision below"
+                      : undefined
+                  }
+                  onChange={(e) =>
+                    setConfigForm((p) =>
+                      p ? { ...p, baseline_value: Number(e.target.value) } : p,
+                    )
+                  }
+                />
+                <BaselinePeriodPicker
+                  key={selectedMetric.id}
+                  label="Baseline Period"
+                  value={configForm.baseline_period ?? ""}
+                  disabled={!canUpdateKpi() || configLocked}
+                  hint={
+                    configLocked
+                      ? "Locked with the Baseline — request a revision below"
+                      : undefined
+                  }
+                  onChange={(v) =>
+                    setConfigForm((p) => (p ? { ...p, baseline_period: v } : p))
+                  }
+                />
 
                 <div className="sm:col-span-2 lg:col-span-4">
                   <Textarea
@@ -2474,6 +2600,14 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                 </div>
               )}
 
+              {configLocked && (
+                <BaselineRevisionPanel
+                  kpiType={kpiType}
+                  kpiId={kpiId}
+                  metric={selectedMetric}
+                />
+              )}
+
               {canUpdateKpi() && (
                 <div className="mt-6 flex justify-end gap-3">
                   <Button variant="outline" onClick={handleCancelMetricConfig}>
@@ -2666,6 +2800,11 @@ export const KpiDictionaryDetailPage: React.FC = () => {
           type={type ?? ""}
           id={id ?? ""}
           canAssign={canAssignKpi()}
+          departmentFilterIds={[
+            ...(kpi?.owner_dept_id ? [kpi.owner_dept_id] : []),
+            ...(kpi?.owning_agency_id ? [kpi.owning_agency_id] : []),
+            ...(kpi?.related_departments?.map((d: any) => d.id) ?? []),
+          ].filter((v: string, i: number, a: string[]) => a.indexOf(v) === i)}
         />
       )}
 
@@ -3034,6 +3173,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
           entryMetric?.reporting_frequency || kpi?.reporting_frequency
         }
         kpiCode={kpi?.code}
+        targetRequirement={kpi?.target_requirement}
         isOpen={showAddEntry}
         onClose={() => setShowAddEntry(false)}
       />

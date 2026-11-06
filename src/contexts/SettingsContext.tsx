@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { settingsApi } from "../api/settings";
 import type { Settings } from "../types";
 import { hexToHSL } from "@/lib/utils";
+import { resolveLogoUrl } from "../utils/publicUrl";
 
 interface SettingsContextType {
   settings: Settings | null;
@@ -35,6 +36,21 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({
     root.style.setProperty("--secondary", hexToHSL(settings.secondary_color));
     root.style.setProperty("--accent", hexToHSL(settings.accent_color));
   }, [settings]);
+
+  // Favicon from settings (file name in public/ or full URL); keeps the
+  // default from index.html when unset.
+  useEffect(() => {
+    const href = resolveLogoUrl(settings?.favicon_url);
+    if (!href) return;
+    let link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    link.removeAttribute("type");
+    link.href = href;
+  }, [settings?.favicon_url]);
 
   return (
     <SettingsContext.Provider value={{ settings, isLoading }}>

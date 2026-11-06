@@ -15,12 +15,13 @@ import {
 import { departmentApi } from "../../../api/admin";
 import { Button } from "../../../components/ui/Button";
 import { Input, Textarea, Select } from "../../../components/ui/Input";
+import { MultiSelect } from "../../../components/ui/MultiSelect";
 import { DocumentaFolderPicker } from "../../../components/kpi/DocumentaFolderPicker";
 import { KpiTaxonomyFields } from "../../../components/kpi/KpiTaxonomyFields";
 import type { AwardKPIRequest, KPIOwnerType } from "../../../types/kpi";
 
 export const KpiDictionaryFormAwardPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
@@ -46,14 +47,18 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
     operational_objective_id: "",
     process_id: "",
     award_sub_criterion_id: "",
+    award_kpi_measure_id: "",
+    domain_id: "",
+    classification: "",
     pillar_id: "",
     owner_type: "internal" as KPIOwnerType,
     owner_dept_id: "",
     owner_org_id: "",
     owning_agency_id: "",
-    related_units: "",
+    related_department_ids: [] as string[],
     documenta_folder_id: "",
     polarity: "ascending",
+    target_requirement: "mandatory",
     reporting_frequency: "quarterly",
     baseline: 0,
     unit_of_measure: "",
@@ -86,14 +91,19 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       operational_objective_id: kpi.operational_objective_id ?? "",
       process_id: kpi.process_id ?? "",
       award_sub_criterion_id: kpi.award_sub_criterion_id ?? "",
+      award_kpi_measure_id: kpi.award_kpi_measure_id ?? "",
+      domain_id: kpi.domain_id ?? "",
+      classification: kpi.classification || "",
       pillar_id: kpi.pillar_id ?? "",
       owner_type: kpi.owner_type ?? "internal",
       owner_dept_id: kpi.owner_dept_id ?? "",
       owner_org_id: kpi.owner_org_id ?? "",
       owning_agency_id: kpi.owning_agency_id ?? "",
-      related_units: kpi.related_units ?? "",
+      related_department_ids:
+        kpi.related_departments?.map((d: any) => d.id) ?? [],
       documenta_folder_id: kpi.documenta_folder_id ?? "",
       polarity: kpi.polarity,
+      target_requirement: kpi.target_requirement || "mandatory",
       reporting_frequency: kpi.reporting_frequency ?? "quarterly",
       baseline: kpi.baseline,
       unit_of_measure: kpi.unit_of_measure ?? "",
@@ -132,6 +142,9 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       baseline: Number(form.baseline),
       pillar_id: form.pillar_id || undefined,
       award_sub_criterion_id: form.award_sub_criterion_id || undefined,
+      award_kpi_measure_id: form.award_kpi_measure_id || undefined,
+      domain_id: form.domain_id || undefined,
+      classification: form.classification || undefined,
       owner_dept_id: form.owner_dept_id || undefined,
       owning_agency_id: form.owning_agency_id || undefined,
       owner_org_id:
@@ -202,6 +215,8 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
             operationalObjectiveId={form.operational_objective_id}
             processId={form.process_id}
             awardSubCriterionId={form.award_sub_criterion_id}
+            awardKpiMeasureId={form.award_kpi_measure_id}
+            domainId={form.domain_id}
             pillarId={form.pillar_id}
             onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
           />
@@ -278,32 +293,59 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
             )}
           </div>
 
-          <Input
-            label="Related Units"
-            value={form.related_units}
-            onChange={handleChange("related_units")}
+          <MultiSelect
+            label={t("kpi.dictionary.fieldRelatedDepartments")}
+            value={form.related_department_ids}
+            onChange={(v) =>
+              setForm((prev) => ({ ...prev, related_department_ids: v }))
+            }
+            options={departments.map((d: any) => ({
+              value: d.id,
+              label: d.name,
+            }))}
+            searchable
+            placeholder={t("common.selectAnOption")}
           />
 
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Evidence Folder
+              {t("kpi.dictionary.fieldEvidenceFolder")}
             </label>
             <div className="flex items-center gap-2">
               <div className="flex-1 flex items-center gap-2 rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/40 px-3 py-2 text-sm text-slate-600 dark:text-slate-300">
                 <FolderOpen size={16} className="text-amber-500 shrink-0" />
                 {form.documenta_folder_id
-                  ? documentaFolderPath.join(" / ") || "Configured"
-                  : "Not configured — evidence will use a default folder on first upload"}
+                  ? documentaFolderPath.join(" / ") ||
+                    t("kpi.dictionary.evidenceConfigured")
+                  : t("kpi.dictionary.evidenceNotConfigured")}
               </div>
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => setShowFolderPicker(true)}
               >
-                Choose Folder
+                {t("kpi.dictionary.chooseFolder")}
               </Button>
             </div>
           </div>
+
+          <Select
+            label={t("kpi.dictionary.fieldClassification")}
+            value={form.classification}
+            onChange={handleChange("classification")}
+            options={[
+              { value: "kpi", label: i18n.language === "ar" ? "مؤشر" : "KPI" },
+              {
+                value: "measurement",
+                label: i18n.language === "ar" ? "مقياس" : "Measurement",
+              },
+              {
+                value: "output",
+                label: i18n.language === "ar" ? "مخرج" : "Output",
+              },
+            ]}
+            placeholder={t("kpi.dictionary.selectClassification")}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Select
@@ -315,6 +357,26 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
               options={[
                 { value: "ascending", label: "Ascending" },
                 { value: "descending", label: "Descending" },
+              ]}
+            />
+            <Select
+              label={t("kpi.dictionary.fieldTargetRequirement")}
+              value={form.target_requirement}
+              onChange={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  target_requirement: v.target.value,
+                }))
+              }
+              options={[
+                {
+                  value: "mandatory",
+                  label: t("kpi.dictionary.targetMandatory"),
+                },
+                {
+                  value: "optional",
+                  label: t("kpi.dictionary.targetOptional"),
+                },
               ]}
             />
             <Select

@@ -110,6 +110,18 @@ export const CallHistory: React.FC<CallHistoryProps> = ({ userId }) => {
     })) ?? []),
   ];
 
+  const getUserName = (user: any) =>
+    [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
+    user?.username;
+
+  const selectedAgent =
+    !userId && selectedUser !== "all"
+      ? userData?.data.find((u: any) => u.id === selectedUser)
+      : undefined;
+  const selectedAgentId =
+    userId || (selectedUser !== "all" ? selectedUser : undefined);
+  const isAllView = !!viewAllCallLogs && !userId && selectedUser === "all";
+
   const calls = data?.data || [];
   const isPermissionError = error && (error as any)?.response?.status === 403;
 
@@ -227,9 +239,22 @@ export const CallHistory: React.FC<CallHistoryProps> = ({ userId }) => {
 
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold ">
-            {t("callCentre.recentCalls")}
-          </h2>
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold ">
+              {t("callCentre.recentCalls")}
+            </h2>
+            {selectedAgent ? (
+              <p className="text-sm text-slate-500 truncate">
+                <span className="font-medium text-blue-600">
+                  {getUserName(selectedAgent)}
+                </span>
+                {selectedAgent.email ? ` · ${selectedAgent.email}` : ""}
+                {selectedAgent.extension
+                  ? ` · Ext. ${selectedAgent.extension}`
+                  : ""}
+              </p>
+            ) : null}
+          </div>
           {viewAllCallLogs && !userId ? (
             <Select
               searchable
@@ -279,6 +304,8 @@ export const CallHistory: React.FC<CallHistoryProps> = ({ userId }) => {
                   getCallIcon={getCallIcon}
                   formatTimestamp={formatTimestamp}
                   formatDuration={formatDuration}
+                  selectedAgentId={selectedAgentId}
+                  isAllView={isAllView}
                   t={t}
                 />
               ))}
@@ -325,6 +352,8 @@ const CallHistoryItem: React.FC<{
   getCallIcon: (call: any) => any;
   formatTimestamp: (dateString: string) => string;
   formatDuration: (seconds?: number) => string;
+  selectedAgentId?: string;
+  isAllView?: boolean;
   t: any;
 }> = ({
   call,
@@ -332,6 +361,8 @@ const CallHistoryItem: React.FC<{
   getCallIcon,
   formatTimestamp,
   formatDuration,
+  selectedAgentId,
+  isAllView,
   t,
 }) => {
   const [showRecording, setShowRecording] = useState(false);
@@ -342,8 +373,39 @@ const CallHistoryItem: React.FC<{
   const isAnswered = call.status === "completed" || call.status === "answered";
   const Icon = getCallIcon(call);
 
+  const senderMatches =
+    !!selectedAgentId && String(call.sender_id) === String(selectedAgentId);
+  const receiverMatches =
+    !!selectedAgentId && String(call.receiver_id) === String(selectedAgentId);
+  const isHighlighted = senderMatches || receiverMatches;
+
+  const renderParty = (
+    label: string,
+    name?: string,
+    extension?: string,
+    phone?: string,
+    matches?: boolean,
+  ) => (
+    <div
+      className={`flex items-center gap-2 ${matches ? "font-semibold text-blue-700" : ""}`}
+    >
+      <span className="text-xs text-slate-400 w-9 shrink-0">{label}</span>
+      <span className="truncate">
+        {name || t("goals.metricImport.unknown", "Unknown")}
+      </span>
+      {(extension || phone) && (
+        <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md font-normal">
+          {extension ? "Ext. " : ""}
+          <CallablePhone number={extension || phone} className="text-xs" />
+        </span>
+      )}
+    </div>
+  );
+
   return (
-    <div className="p-4 hover:bg-slate-50 transition-colors group">
+    <div
+      className={`p-4 hover:bg-slate-50 transition-colors group ${isHighlighted ? "bg-blue-50/60 border-l-4 border-blue-500" : ""}`}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4 flex-1">
           <div
@@ -363,22 +425,43 @@ const CallHistoryItem: React.FC<{
             })}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className={`font-medium ${getStatusColor(call.status)}`}>
-                {call.other_party_name ||
-                  t("goals.metricImport.unknown", "Unknown")}
-              </h3>
-              {call.other_party_extension && (
-                <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
-                  Ext.{" "}
-                  <CallablePhone
-                    number={call.other_party_extension}
-                    showIcon={false}
-                    className="text-xs"
-                  />
-                </span>
-              )}
-            </div>
+            {isAllView ? (
+              <div
+                className={`text-sm font-medium ${getStatusColor(call.status)}`}
+              >
+                {renderParty(
+                  t("callCentre.from", "From"),
+                  call.sender_name,
+                  call.sender_extension,
+                  call.sender_phone,
+                  senderMatches,
+                )}
+                {renderParty(
+                  t("callCentre.to", "To"),
+                  call.receiver_name,
+                  call.receiver_extension,
+                  call.receiver_phone,
+                  receiverMatches,
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h3 className={`font-medium ${getStatusColor(call.status)}`}>
+                  {call.other_party_name ||
+                    t("goals.metricImport.unknown", "Unknown")}
+                </h3>
+                {call.other_party_extension && (
+                  <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
+                    Ext.{" "}
+                    <CallablePhone
+                      number={call.other_party_extension}
+                      showIcon={false}
+                      className="text-xs"
+                    />
+                  </span>
+                )}
+              </div>
+            )}
             <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
               <span className="capitalize">{getStatusLabel(call, t)}</span>
             </div>
@@ -411,30 +494,32 @@ const CallHistoryItem: React.FC<{
               <Headphones className="w-4 h-4" />
             </button>
           )}
-          <button
-            onClick={() => {
-              const number =
-                call.other_party_extension || call.other_party_phone;
-              if (number) {
-                window.dispatchEvent(
-                  new CustomEvent("initiate-call", {
-                    detail: { number },
-                  }),
-                );
+          {!isAllView && (
+            <button
+              onClick={() => {
+                const number =
+                  call.other_party_extension || call.other_party_phone;
+                if (number) {
+                  window.dispatchEvent(
+                    new CustomEvent("initiate-call", {
+                      detail: { number },
+                    }),
+                  );
+                }
+              }}
+              disabled={!call.other_party_extension && !call.other_party_phone}
+              className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+              title={
+                call.other_party_extension
+                  ? `Call ext. ${call.other_party_extension}`
+                  : call.other_party_phone
+                    ? `Call ${call.other_party_phone}`
+                    : "No extension"
               }
-            }}
-            disabled={!call.other_party_extension && !call.other_party_phone}
-            className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
-            title={
-              call.other_party_extension
-                ? `Call ext. ${call.other_party_extension}`
-                : call.other_party_phone
-                  ? `Call ${call.other_party_phone}`
-                  : "No extension"
-            }
-          >
-            <Phone className="w-4 h-4" />
-          </button>
+            >
+              <Phone className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
       {showRecording && call.recording_url && (

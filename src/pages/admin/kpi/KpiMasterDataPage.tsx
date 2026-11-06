@@ -42,6 +42,10 @@ import {
   useUpdateDomain,
   useDeleteDomain,
   useAwardCriteria,
+  useAwardKpiMeasures,
+  useCreateAwardKpiMeasure,
+  useUpdateAwardKpiMeasure,
+  useDeleteAwardKpiMeasure,
   useCreateAwardCriterion,
   useUpdateAwardCriterion,
   useDeleteAwardCriterion,
@@ -79,6 +83,7 @@ import type {
   Initiative,
   Domain,
   AwardCriterion,
+  AwardKpiMeasure,
   AwardSubCriterion,
   KpiDataSource,
   KpiSegmentationDimension,
@@ -90,6 +95,7 @@ import type {
   InitiativeRequest,
   DomainRequest,
   AwardCriterionRequest,
+  AwardKpiMeasureRequest,
   AwardSubCriterionRequest,
   KpiDataSourceRequest,
   KpiSegmentationDimensionRequest,
@@ -105,6 +111,7 @@ type EntityType =
   | "initiative"
   | "domain"
   | "award-criterion"
+  | "award-kpi-measure"
   | "award-sub-criterion"
   | "data-source"
   | "segmentation-dimension"
@@ -161,6 +168,10 @@ export const KpiMasterDataPage: React.FC = () => {
     { key: "domain", label: t("kpi.masterData.domains") },
     { key: "award-criterion", label: t("kpi.masterData.awardCriteria") },
     {
+      key: "award-kpi-measure",
+      label: t("kpi.masterData.awardKpiMeasures"),
+    },
+    {
       key: "award-sub-criterion",
       label: t("kpi.masterData.awardSubCriteria"),
     },
@@ -193,6 +204,7 @@ export const KpiMasterDataPage: React.FC = () => {
   const { data: initiatives } = useInitiatives();
   const { data: domains } = useDomains();
   const { data: awardCriteria } = useAwardCriteria();
+  const { data: awardKpiMeasures } = useAwardKpiMeasures();
   const { data: awardSubCriteria } = useAwardSubCriteria();
   const { data: dataSources } = useDataSources();
   const { data: segmentationDimensions } = useSegmentationDimensions();
@@ -226,6 +238,9 @@ export const KpiMasterDataPage: React.FC = () => {
   const createAwardCriterion = useCreateAwardCriterion();
   const updateAwardCriterion = useUpdateAwardCriterion();
   const deleteAwardCriterion = useDeleteAwardCriterion();
+  const createAwardKpiMeasure = useCreateAwardKpiMeasure();
+  const updateAwardKpiMeasure = useUpdateAwardKpiMeasure();
+  const deleteAwardKpiMeasure = useDeleteAwardKpiMeasure();
   const createAwardSubCriterion = useCreateAwardSubCriterion();
   const updateAwardSubCriterion = useUpdateAwardSubCriterion();
   const deleteAwardSubCriterion = useDeleteAwardSubCriterion();
@@ -299,6 +314,10 @@ export const KpiMasterDataPage: React.FC = () => {
       modalType === "award-sub-criterion" &&
       (!form.award_criterion_id || !form.sub_no)
     ) {
+      toast.error(t("kpi.masterData.requiredFieldsMissing"));
+      return;
+    }
+    if (modalType === "domain" && !form.type) {
       toast.error(t("kpi.masterData.requiredFieldsMissing"));
       return;
     }
@@ -400,6 +419,15 @@ export const KpiMasterDataPage: React.FC = () => {
         if (isEdit)
           await updateAwardCriterion.mutateAsync({ id: modalItem.id, data });
         else await createAwardCriterion.mutateAsync(data);
+      } else if (modalType === "award-kpi-measure") {
+        const data: AwardKpiMeasureRequest = {
+          name_en: form.name_en,
+          name_ar: form.name_ar,
+          ...(isEdit ? { version: modalItem.version } : {}),
+        };
+        if (isEdit)
+          await updateAwardKpiMeasure.mutateAsync({ id: modalItem.id, data });
+        else await createAwardKpiMeasure.mutateAsync(data);
       } else if (modalType === "award-sub-criterion") {
         const data: AwardSubCriterionRequest = {
           award_criterion_id: form.award_criterion_id,
@@ -454,6 +482,7 @@ export const KpiMasterDataPage: React.FC = () => {
       initiative: (i) => deleteInitiative.mutate(i),
       domain: (i) => deleteDomain.mutate(i),
       "award-criterion": (i) => deleteAwardCriterion.mutate(i),
+      "award-kpi-measure": (i) => deleteAwardKpiMeasure.mutate(i),
       "award-sub-criterion": (i) => deleteAwardSubCriterion.mutate(i),
       "data-source": (i) => deleteDataSource.mutate(i),
       "segmentation-dimension": (i) => deleteSegmentationDimension.mutate(i),
@@ -467,6 +496,9 @@ export const KpiMasterDataPage: React.FC = () => {
   const [importType, setImportType] = useState<EntityType>("pillar");
   // Criterion numbers created earlier in the current import file.
   const importedCriterionNos = useRef<Set<number>>(new Set());
+  // Duplicate keys (see importDuplicateKey) created earlier in the current
+  // import file, so a row repeated inside the same file is skipped too.
+  const importedKeys = useRef<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   const exportToExcel = async (data: any[], label: string) =>
@@ -489,6 +521,7 @@ export const KpiMasterDataPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     importedCriterionNos.current = new Set();
+    importedKeys.current = new Set();
 
     try {
       const workbook = new ExcelJS.Workbook();
@@ -593,6 +626,20 @@ export const KpiMasterDataPage: React.FC = () => {
       row.name_ar || row.NameAr || row.namear || row.arabicname || "",
     );
     if (!name_en) return "skipped";
+    // Skip records that already exist (or appeared earlier in this file)
+    // instead of creating a second copy.
+    const dupKey = importDuplicateKey(type, row, name_en);
+    if (dupKey !== null) {
+      if (
+        existingImportKeys(type).has(dupKey) ||
+        importedKeys.current.has(dupKey)
+      ) {
+        return "skipped";
+      }
+    }
+    const markImported = () => {
+      if (dupKey !== null) importedKeys.current.add(dupKey);
+    };
     if (type === "pillar") {
       await kpiMasterDataApi.createPillar({
         name_en,
@@ -679,6 +726,11 @@ export const KpiMasterDataPage: React.FC = () => {
         award_criterion_id: row.award_criterion_id,
         sub_no: row.sub_no || row.subNo || "1",
       } as AwardSubCriterionRequest);
+    } else if (type === "award-kpi-measure") {
+      await kpiMasterDataApi.createAwardKpiMeasure({
+        name_en,
+        name_ar,
+      } as AwardKpiMeasureRequest);
     } else if (type === "data-source") {
       await kpiMasterDataApi.createDataSource({
         name_en,
@@ -696,7 +748,63 @@ export const KpiMasterDataPage: React.FC = () => {
         contact_info: row.contact_info || row.ContactInfo || undefined,
       } as KpiOrganizationRequest);
     }
+    markImported();
     return "created";
+  };
+
+  // What makes two master-data records "the same" for import purposes —
+  // compared trimmed and case-insensitively. Child records are compared
+  // within their parent (e.g. a sub-criterion number within its criterion).
+  // Award criteria are matched by criterion number in submitImportRow.
+  const importDuplicateKey = (
+    type: EntityType,
+    row: any,
+    name: string,
+  ): string | null => {
+    const n = normKey(name);
+    switch (type) {
+      case "pillar":
+      case "enabler":
+      case "data-source":
+      case "award-kpi-measure":
+      case "segmentation-dimension":
+      case "organization":
+        return n;
+      case "domain":
+        return `${normKey(row.type)}|${n}`;
+      case "initiative":
+      case "operational-objective":
+        return `${normKey(row.goal_id)}|${n}`;
+      case "process":
+        return `${normKey(row.operational_objective_id)}|${n}`;
+      case "award-sub-criterion":
+        return `${normKey(row.award_criterion_id)}|${normKey(row.sub_no || row.subNo || "1")}`;
+      default:
+        return null;
+    }
+  };
+
+  const existingImportKeys = (type: EntityType): Set<string> => {
+    const list: any[] =
+      {
+        pillar: pillars,
+        enabler: enablers,
+        "data-source": dataSources,
+        "award-kpi-measure": awardKpiMeasures,
+        "segmentation-dimension": segmentationDimensions,
+        organization: organizations,
+        domain: domains,
+        initiative: initiatives,
+        "operational-objective": operationalObjectives,
+        process: processes,
+        "award-sub-criterion": awardSubCriteria,
+      }[type as string] ?? [];
+    const keys = new Set<string>();
+    for (const item of list) {
+      const key = importDuplicateKey(type, item, item.name_en ?? "");
+      if (key !== null) keys.add(key);
+    }
+    return keys;
   };
 
   const getDepartmentName = (departmentId?: string) => {
@@ -714,6 +822,7 @@ export const KpiMasterDataPage: React.FC = () => {
     initiative: "initiatives",
     domain: "domains",
     "award-criterion": "awardCriteria",
+    "award-kpi-measure": "awardKpiMeasures",
     "award-sub-criterion": "awardSubCriteria",
     "data-source": "dataSources",
     "segmentation-dimension": "segmentationDimensions",
@@ -742,7 +851,7 @@ export const KpiMasterDataPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 w-fit overflow-x-auto">
+      <div className="flex gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 w-fit overflow-x-auto scrollbar-hide">
         {isStandalone ? (
           <div className="px-4 py-2 text-sm font-medium">
             {tabs.find((t) => t.key === activeTab)?.label}
@@ -903,6 +1012,11 @@ export const KpiMasterDataPage: React.FC = () => {
           <MasterTable<Domain>
             data={domains ?? []}
             columns={[
+              {
+                header: "ID",
+                accessor: "code",
+                render: (r) => r.code?.toUpperCase() ?? "-",
+              },
               { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
               { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
               { header: t("kpi.masterData.type"), accessor: "type" },
@@ -1000,6 +1114,29 @@ export const KpiMasterDataPage: React.FC = () => {
               )
             }
             onImport={() => handleImportExcel("award-sub-criterion")}
+          />
+        )}
+        {activeTab === "award-kpi-measure" && (
+          <MasterTable<AwardKpiMeasure>
+            data={awardKpiMeasures ?? []}
+            columns={[
+              {
+                header: "ID",
+                accessor: "code",
+                render: (r) => r.code?.toUpperCase() ?? "-",
+              },
+              { header: t("kpi.masterData.nameEn"), accessor: "name_en" },
+              { header: t("kpi.masterData.nameAr"), accessor: "name_ar" },
+            ]}
+            emptyMessage={t("kpi.masterData.noAwardKpiMeasures")}
+            canManage={canManage}
+            onEdit={(item) => handleEdit("award-kpi-measure", item)}
+            onDelete={(id) => handleDelete("award-kpi-measure", id)}
+            onAdd={() => handleAdd("award-kpi-measure")}
+            onExport={() =>
+              exportToExcel(awardKpiMeasures ?? [], "AwardKpiMeasures")
+            }
+            onImport={() => handleImportExcel("award-kpi-measure")}
           />
         )}
         {activeTab === "data-source" && (
@@ -1274,9 +1411,20 @@ export const KpiMasterDataPage: React.FC = () => {
             </>
           )}
 
+          {(modalType === "award-kpi-measure" || modalType === "domain") &&
+            modalItem?.code && (
+              <Input
+                label="ID"
+                value={modalItem.code?.toUpperCase()}
+                readOnly
+                disabled
+                onChange={() => {}}
+              />
+            )}
+
           {modalType === "domain" && (
             <Select
-              label={t("kpi.masterData.type")}
+              label={`${t("kpi.masterData.type")} *`}
               options={[
                 {
                   value: "strategy",
@@ -1382,11 +1530,17 @@ const importQueryKey: Record<EntityType, string> = {
   initiative: "initiatives",
   domain: "domains",
   "award-criterion": "award-criteria",
+  "award-kpi-measure": "award-kpi-measures",
   "award-sub-criterion": "award-sub-criteria",
   "data-source": "data-sources",
   "segmentation-dimension": "segmentation-dimensions",
   organization: "organizations",
 };
+
+const normKey = (v: unknown) =>
+  String(v ?? "")
+    .trim()
+    .toLowerCase();
 
 const normHeaderKey = (h: string) =>
   h.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]/g, "");

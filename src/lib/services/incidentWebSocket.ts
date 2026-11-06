@@ -174,6 +174,7 @@ export function useIncidentWebSocket(
                 },
               );
               qc.invalidateQueries({ queryKey: ["incident", incidentId] });
+              qc.invalidateQueries({ queryKey: ["incidents", "v2-list"] });
               break;
 
             case "state_changed": {
@@ -202,6 +203,7 @@ export function useIncidentWebSocket(
               qc.invalidateQueries({
                 queryKey: ["incident", incidentId, "available-transitions"],
               });
+              qc.invalidateQueries({ queryKey: ["incidents", "v2-list"] });
               break;
             }
 
@@ -217,6 +219,10 @@ export function useIncidentWebSocket(
                 queryKey: ["incident", incidentId, "comments"],
               });
               qc.invalidateQueries({ queryKey: ["incident", incidentId] });
+              qc.invalidateQueries({
+                queryKey: ["incidents", "v2-list", "comments", incidentId],
+              });
+              qc.invalidateQueries({ queryKey: ["incidents", "v2-list"] });
               break;
             }
             case "attachment_added": {
@@ -234,6 +240,10 @@ export function useIncidentWebSocket(
                 queryKey: ["incident", incidentId, "attachments"],
               });
               qc.invalidateQueries({ queryKey: ["incident", incidentId] });
+              qc.invalidateQueries({
+                queryKey: ["incidents", "v2-list", "attachments", incidentId],
+              });
+              qc.invalidateQueries({ queryKey: ["incidents", "v2-list"] });
               break;
             }
 

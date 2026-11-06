@@ -22,6 +22,7 @@ import type {
   ProcessRequest,
   InitiativeRequest,
   DomainRequest,
+  AwardKpiMeasureRequest,
   AwardCriterionRequest,
   AwardSubCriterionRequest,
   OperationalKPIRequest,
@@ -32,6 +33,8 @@ import type {
   KpiCheckInRequest,
   KpiEntryRequest,
   KpiEntryUpdateRequest,
+  KpiEntryCorrectionRequest,
+  KpiEntry,
   KpiCollaboratorAssignmentRequest,
   KPIType,
   KpiOrganizationRequest,
@@ -422,6 +425,109 @@ export const useDeleteDomain = () => {
       toast.success(t("kpi.domainDeleted"));
     },
     onError: () => toast.error(t("kpi.domainDeleteFailed")),
+  });
+};
+
+// ─── Award KPIs and Measures ─────────────────────────────────────────────────
+
+export const useAwardKpiMeasures = () =>
+  useQuery({
+    queryKey: ["kpi", "award-kpi-measures"],
+    queryFn: async () => {
+      const res = await kpiMasterDataApi.listAwardKpiMeasures();
+      return res.data ?? [];
+    },
+  });
+
+export const useCreateAwardKpiMeasure = () => {
+  const qc = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: (data: AwardKpiMeasureRequest) =>
+      kpiMasterDataApi.createAwardKpiMeasure(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "award-kpi-measures"] });
+      toast.success(t("kpi.awardKpiMeasureCreated"));
+    },
+    onError: () => toast.error(t("kpi.awardKpiMeasureCreateFailed")),
+  });
+};
+
+const MISSING_VERSION = "MISSING_VERSION";
+
+export const useUpdateAwardKpiMeasure = () => {
+  const qc = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<AwardKpiMeasureRequest>;
+    }) => {
+      if (data.version == null) {
+        return Promise.reject(new Error(MISSING_VERSION));
+      }
+      return kpiMasterDataApi.updateAwardKpiMeasure(id, data);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "award-kpi-measures"] });
+      toast.success(t("kpi.awardKpiMeasureUpdated"));
+    },
+    onError: (error: unknown) => {
+      const e = error as {
+        message?: string;
+        response?: {
+          status?: number;
+          data?: {
+            error?: string;
+            message?: string;
+            errors?: Record<string, string>;
+          };
+        };
+      };
+      const status = e.response?.status;
+      const text = [
+        e.response?.data?.error,
+        e.response?.data?.message,
+        ...Object.values(e.response?.data?.errors ?? {}),
+        e.message,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      if (
+        e.message === MISSING_VERSION ||
+        text.includes("version is required")
+      ) {
+        toast.error(t("kpi.versionMissing"));
+      } else if (
+        status === 409 ||
+        text.includes("conflict") ||
+        text.includes("modified by another") ||
+        text.includes("version mismatch")
+      ) {
+        toast.error(t("kpi.updatedByAnotherUser"));
+        qc.invalidateQueries({ queryKey: ["kpi", "award-kpi-measures"] });
+      } else {
+        toast.error(t("kpi.awardKpiMeasureUpdateFailed"));
+      }
+    },
+  });
+};
+
+export const useDeleteAwardKpiMeasure = () => {
+  const qc = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: (id: string) => kpiMasterDataApi.deleteAwardKpiMeasure(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "award-kpi-measures"] });
+      toast.success(t("kpi.awardKpiMeasureDeleted"));
+    },
+    onError: () => toast.error(t("kpi.awardKpiMeasureDeleteFailed")),
   });
 };
 
@@ -1313,7 +1419,7 @@ export const useKpiStatusTransition = () => {
       qc.invalidateQueries({ queryKey: ["kpi", type, id, "transitions"] });
       toast.success("KPI status updated");
     },
-    onError: () => toast.error("Failed to update KPI status"),
+    onError: (err) => toast.error(getApiError(err)),
   });
 };
 
@@ -1332,26 +1438,42 @@ export const useKpiBenchmarks = (params?: {
   });
 
 export const useCreateKpiBenchmark = () => {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => kpiPerformanceApi.createBenchmark(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["kpi", "benchmarks"] });
-      toast.success("Benchmark created");
+      toast.success(t("kpi.benchmarks.created"));
     },
-    onError: () => toast.error("Failed to create benchmark"),
+    onError: () => toast.error(t("kpi.benchmarks.createFailed")),
+  });
+};
+
+export const useUpdateKpiBenchmark = () => {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      kpiPerformanceApi.updateBenchmark(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "benchmarks"] });
+      toast.success(t("kpi.benchmarks.updated"));
+    },
+    onError: () => toast.error(t("kpi.benchmarks.updateFailed")),
   });
 };
 
 export const useDeleteKpiBenchmark = () => {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => kpiPerformanceApi.deleteBenchmark(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["kpi", "benchmarks"] });
-      toast.success("Benchmark deleted");
+      toast.success(t("kpi.benchmarks.deleted"));
     },
-    onError: () => toast.error("Failed to delete benchmark"),
+    onError: () => toast.error(t("kpi.benchmarks.deleteFailed")),
   });
 };
 
@@ -1488,8 +1610,11 @@ export const useKpiCard = (type?: KPIType | string, id?: string) =>
 
 export const useKpiDashboard = (params?: {
   kpi_type?: string;
+  kpi?: string;
+  metric_id?: string;
   year?: number;
   quarter?: number;
+  month?: number;
   objective_id?: string;
   criteria_id?: string;
   sub_criteria_id?: string;
@@ -1737,6 +1862,71 @@ export const useUpdateKpiMetric = (type: string, id: string) => {
         queryKey: ["kpi", "engagement", type, id, "activity"],
       });
       toast.success("Metric updated");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useKpiBaselineRevisions = (metricId: string) =>
+  useQuery({
+    queryKey: ["kpi", "baseline-revisions", metricId],
+    queryFn: () => kpiEngagementApi.listBaselineRevisions(metricId),
+    enabled: !!metricId,
+  });
+
+export const useRequestBaselineRevision = (metricId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      new_value: number;
+      new_period?: string;
+      reason: string;
+    }) => kpiEngagementApi.requestBaselineRevision(metricId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "baseline-revisions", metricId],
+      });
+      toast.success("Baseline revision submitted for approval");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+export const useReviewBaselineRevision = (
+  type: string,
+  id: string,
+  metricId: string,
+) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      revisionId,
+      decision,
+      comment,
+    }: {
+      revisionId: string;
+      decision: "approve" | "reject";
+      comment?: string;
+    }) =>
+      kpiEngagementApi.reviewBaselineRevision(revisionId, {
+        decision,
+        comment,
+      }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({
+        queryKey: ["kpi", "baseline-revisions", metricId],
+      });
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "metrics"],
+      });
+      qc.invalidateQueries({
+        queryKey: ["kpi", "engagement", type, id, "activity"],
+      });
+      toast.success(
+        vars.decision === "approve"
+          ? "Baseline revision approved"
+          : "Baseline revision rejected",
+      );
     },
     onError: (err) => toast.error(getApiError(err)),
   });
@@ -2051,6 +2241,49 @@ export const useCreateKpiEntry = (type: string, id: string) => {
       });
       qc.invalidateQueries({ queryKey: ["kpi", "entries", "all"] });
       toast.success("Entry added");
+    },
+    onError: (err) => toast.error(getApiError(err)),
+  });
+};
+
+// Starts an adjustment/reversal of an approved entry — a new draft entry
+// that still has to be submitted and approved. Like useUpdateKpiEntry, the
+// entry's own kpi_type/kpi_id scope the cache invalidation.
+export const useCreateKpiEntryCorrection = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      entry,
+      data,
+    }: {
+      entry: KpiEntry;
+      data: KpiEntryCorrectionRequest;
+    }) => kpiEngagementApi.createEntryCorrection(entry.id, data),
+    onSuccess: (_res, { entry, data }) => {
+      qc.invalidateQueries({
+        queryKey: [
+          "kpi",
+          "engagement",
+          entry.kpi_type,
+          entry.kpi_id,
+          "entries",
+        ],
+      });
+      qc.invalidateQueries({
+        queryKey: [
+          "kpi",
+          "engagement",
+          entry.kpi_type,
+          entry.kpi_id,
+          "activity",
+        ],
+      });
+      qc.invalidateQueries({ queryKey: ["kpi", "entries", "all"] });
+      toast.success(
+        data.correction_type === "reversal"
+          ? "Reversal created as a draft — submit it for approval"
+          : "Adjustment created as a draft — submit it for approval",
+      );
     },
     onError: (err) => toast.error(getApiError(err)),
   });

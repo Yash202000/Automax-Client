@@ -1,6 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   AlertCircle,
@@ -14,8 +16,11 @@ import {
   HelpCircle,
   BarChart3,
   FileText,
-  ShieldAlert,
+  Save,
 } from "lucide-react";
+import { kpiComposedApi } from "../../../api/kpi";
+import { usePermissions } from "../../../hooks/usePermissions";
+import type { KPIType } from "../../../types/kpi";
 import {
   ComposedChart,
   Bar,
@@ -32,13 +37,18 @@ import {
   useKpiMetrics,
   useKpiMetricPeriodSeries,
   useKpiEntries,
+  useKpiCardDefinitions,
 } from "../../../hooks/useKpi";
 import {
   getBandColor,
   BAND_BAR_CLASS,
   BAND_TEXT_CLASS,
 } from "../../../utils/kpiBand";
-import { getYearOptions } from "../../../types/kpi";
+import {
+  DASHBOARD_PERIOD_OPTIONS,
+  getYearOptions,
+  periodMatchesFilter,
+} from "../../../types/kpi";
 import type { KpiAnnualRollupRow } from "../../../types/kpi";
 
 const typeColorMap: Record<string, string> = {
@@ -56,7 +66,9 @@ function formatValue(v: number | null): string {
 
 export const KpiSingleDashboardPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { type, id } = useParams<{ type: string; id: string }>();
+  const { data: kpiOptions } = useKpiCardDefinitions();
 
   const {
     data: dashboard,
@@ -70,8 +82,16 @@ export const KpiSingleDashboardPage: React.FC = () => {
     new Date().getFullYear(),
   );
   const [drillDownPeriod, setDrillDownPeriod] = useState<string | null>(null);
+  // Period filter: "q1".."q4" or "m1".."m12" (see DASHBOARD_PERIOD_OPTIONS);
+  // narrows the period trend to the periods overlapping it.
+  const [periodFilter, setPeriodFilter] = useState("");
 
-  const activeMetricId = selectedMetricId || metrics?.[0]?.id || "";
+  // A metric picked on another KPI isn't in this KPI's list; fall back to
+  // the first metric then.
+  const activeMetricId =
+    (metrics ?? []).find((m) => m.id === selectedMetricId)?.id ||
+    metrics?.[0]?.id ||
+    "";
   const { data: periodSeries } = useKpiMetricPeriodSeries(
     type ?? "",
     id ?? "",
@@ -84,6 +104,14 @@ export const KpiSingleDashboardPage: React.FC = () => {
     id ?? "",
     activeMetricId,
   );
+  const seriesPoints = useMemo(
+    () =>
+      (periodSeries?.points ?? []).filter((p) =>
+        periodMatchesFilter(p.period_code, periodFilter),
+      ),
+    [periodSeries, periodFilter],
+  );
+
   const drillDownEntries = useMemo(() => {
     if (!drillDownPeriod) return [];
     return (allEntriesForMetric ?? []).filter(
@@ -93,6 +121,53 @@ export const KpiSingleDashboardPage: React.FC = () => {
         e.status === "approved",
     );
   }, [allEntriesForMetric, drillDownPeriod, seriesYear]);
+
+  // Narrative fields — hooks must be before early returns
+  const { hasPermission } = usePermissions();
+  const canEditNarrative = hasPermission("perf:submit");
+  const queryClient = useQueryClient();
+
+  const [curveDescription, setCurveDescription] = useState(
+    dashboard?.curve_description ?? "",
+  );
+  const [shortcomingsDescription, setShortcomingsDescription] = useState(
+    dashboard?.shortcomings_description ?? "",
+  );
+  const [proposedImprovement, setProposedImprovement] = useState(
+    dashboard?.proposed_improvement ?? "",
+  );
+
+  useEffect(() => {
+    if (dashboard) {
+      setCurveDescription(dashboard.curve_description ?? "");
+      setShortcomingsDescription(dashboard.shortcomings_description ?? "");
+      setProposedImprovement(dashboard.proposed_improvement ?? "");
+    }
+  }, [dashboard]);
+
+  const narrativeDirty =
+    !!dashboard &&
+    (curveDescription !== (dashboard.curve_description ?? "") ||
+      shortcomingsDescription !== (dashboard.shortcomings_description ?? "") ||
+      proposedImprovement !== (dashboard.proposed_improvement ?? ""));
+
+  const saveNarrative = useMutation({
+    mutationFn: () =>
+      kpiComposedApi.updateNarrative(type as KPIType, id!, {
+        curve_description: curveDescription,
+        shortcomings_description: shortcomingsDescription,
+        proposed_improvement: proposedImprovement,
+      }),
+    onSuccess: () => {
+      toast.success(t("common.success", "Saved"));
+      queryClient.invalidateQueries({
+        queryKey: ["kpi", "single-dashboard", type, id],
+      });
+    },
+    onError: () => {
+      toast.error(t("common.failed", "Failed to save"));
+    },
+  });
 
   if (isLoading) {
     return (
@@ -121,14 +196,7 @@ export const KpiSingleDashboardPage: React.FC = () => {
     );
   }
 
-  const {
-    card,
-    annual_rollup,
-    trend_description,
-    justification,
-    corrective_action,
-    benchmarks,
-  } = dashboard;
+  const { card, annual_rollup, benchmarks } = dashboard;
   const bands = card.bands;
 
   const chartData = (annual_rollup ?? []).map((row: KpiAnnualRollupRow) => ({
@@ -239,6 +307,90 @@ export const KpiSingleDashboardPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Filters — KPI, Metric, Year and Period */}
+      <div className="flex flex-wrap items-center gap-3">
+        <select
+          aria-label={t("kpi.dashboard.kpi", "KPI")}
+          value={`${type}:${id}`}
+          onChange={(e) => {
+            const [nextType, nextId] = e.target.value.split(":");
+            setSelectedMetricId("");
+            setDrillDownPeriod(null);
+            navigate(`/goals/kpi/dictionary/${nextType}/${nextId}/dashboard`);
+          }}
+          className="max-w-[20rem] text-sm rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800 px-3 py-2 text-slate-700 dark:text-slate-300"
+        >
+          {!(kpiOptions ?? []).some((k) => k.id === id) && (
+            <option value={`${type}:${id}`}>
+              {card.code} — {card.name_en}
+            </option>
+          )}
+          {(kpiOptions ?? []).map((k) => (
+            <option key={`${k.type}:${k.id}`} value={`${k.type}:${k.id}`}>
+              {k.code} — {k.name_en}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label={t("kpi.dashboard.metric", "Metric")}
+          value={activeMetricId}
+          disabled={(metrics ?? []).length === 0}
+          onChange={(e) => {
+            setSelectedMetricId(e.target.value);
+            setDrillDownPeriod(null);
+          }}
+          className="max-w-[16rem] text-sm rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800 px-3 py-2 text-slate-700 dark:text-slate-300 disabled:opacity-60"
+        >
+          {(metrics ?? []).length === 0 && (
+            <option value="">
+              {t("kpi.dashboard.noMetrics", "No metrics")}
+            </option>
+          )}
+          {(metrics ?? []).map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label={t("kpi.targets.table.year", "Year")}
+          value={seriesYear}
+          onChange={(e) => {
+            setSeriesYear(Number(e.target.value));
+            setDrillDownPeriod(null);
+          }}
+          className="text-sm rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800 px-3 py-2 text-slate-700 dark:text-slate-300"
+        >
+          {getYearOptions().map((y) => (
+            <option key={y.value} value={y.value}>
+              {y.label}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label={t("kpi.dashboard.period", "Period")}
+          value={periodFilter}
+          onChange={(e) => {
+            setPeriodFilter(e.target.value);
+            setDrillDownPeriod(null);
+          }}
+          className="text-sm rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800 px-3 py-2 text-slate-700 dark:text-slate-300"
+        >
+          <option value="">
+            {t("kpi.dashboard.allPeriods", "All Periods")}
+          </option>
+          {DASHBOARD_PERIOD_OPTIONS.map((g) => (
+            <optgroup key={g.group} label={g.group}>
+              {g.options.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </div>
+
       {/* Annual Rollup Table + Legend */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 overflow-hidden">
@@ -281,7 +433,11 @@ export const KpiSingleDashboardPage: React.FC = () => {
                     return (
                       <tr
                         key={row.year}
-                        className="border-b border-slate-100 dark:border-slate-700/30 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                        className={`border-b border-slate-100 dark:border-slate-700/30 hover:bg-slate-50 dark:hover:bg-slate-800/50 ${
+                          row.year === seriesYear
+                            ? "bg-blue-50/60 dark:bg-blue-900/20"
+                            : ""
+                        }`}
                       >
                         <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                           <span className="inline-flex items-center gap-1.5">
@@ -386,39 +542,9 @@ export const KpiSingleDashboardPage: React.FC = () => {
                 "Monthly Performance — Baseline, Target & Actual",
               )}
             </h3>
-            <div className="flex items-center gap-2">
-              <select
-                value={activeMetricId}
-                onChange={(e) => {
-                  setSelectedMetricId(e.target.value);
-                  setDrillDownPeriod(null);
-                }}
-                className="text-sm rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800 px-3 py-1.5 text-slate-700 dark:text-slate-300"
-              >
-                {(metrics ?? []).map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={seriesYear}
-                onChange={(e) => {
-                  setSeriesYear(Number(e.target.value));
-                  setDrillDownPeriod(null);
-                }}
-                className="text-sm rounded-lg border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800 px-3 py-1.5 text-slate-700 dark:text-slate-300"
-              >
-                {getYearOptions().map((y) => (
-                  <option key={y.value} value={y.value}>
-                    {y.label}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
-          {!periodSeries || periodSeries.points.length === 0 ? (
+          {seriesPoints.length === 0 ? (
             <p className="text-sm text-slate-500 text-center py-8">
               {t("kpi.dashboard.noTrendData", "No trend data")}
             </p>
@@ -426,12 +552,12 @@ export const KpiSingleDashboardPage: React.FC = () => {
             <>
               <ResponsiveContainer width="100%" height={300}>
                 <ComposedChart
-                  data={periodSeries.points}
+                  data={seriesPoints}
                   margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
                   onClick={(state) => {
                     const idx = Number(state?.activeTooltipIndex);
                     if (!Number.isFinite(idx)) return;
-                    const point = periodSeries.points[idx];
+                    const point = seriesPoints[idx];
                     if (point?.has_data) {
                       setDrillDownPeriod(
                         point.period_code === drillDownPeriod
@@ -456,7 +582,7 @@ export const KpiSingleDashboardPage: React.FC = () => {
                       if (!active || !payload || payload.length === 0)
                         return null;
                       const p = payload[0]
-                        .payload as (typeof periodSeries.points)[number];
+                        .payload as (typeof seriesPoints)[number];
                       return (
                         <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-xs shadow-lg space-y-1">
                           <p className="font-semibold text-slate-900 dark:text-white">
@@ -525,9 +651,8 @@ export const KpiSingleDashboardPage: React.FC = () => {
                 <div className="mt-4 rounded-lg border border-slate-200 dark:border-slate-700/60 p-4">
                   <p className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
                     Approved entries for{" "}
-                    {periodSeries.points.find(
-                      (p) => p.period_code === drillDownPeriod,
-                    )?.period_label ?? drillDownPeriod}
+                    {seriesPoints.find((p) => p.period_code === drillDownPeriod)
+                      ?.period_label ?? drillDownPeriod}
                   </p>
                   {drillDownEntries.length === 0 ? (
                     <p className="text-sm text-slate-400">
@@ -632,42 +757,114 @@ export const KpiSingleDashboardPage: React.FC = () => {
         )}
       </div>
 
-      {/* Trend / Justification / Corrective Action narrative */}
+      {/* Narrative — Curve / Shortcomings / Proposed Improvement */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-700/60">
+        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <FileText className="w-5 h-5 text-slate-400" />
             {t("kpi.dashboard.narrative", "Narrative")}
           </h2>
+          {canEditNarrative && narrativeDirty && (
+            <button
+              type="button"
+              disabled={saveNarrative.isPending}
+              onClick={() => saveNarrative.mutate()}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-60 transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              {saveNarrative.isPending
+                ? t("common.loading", "Saving…")
+                : t("common.save", "Save")}
+            </button>
+          )}
         </div>
         <div className="px-6 py-5 space-y-5">
+          {/* Curve Description */}
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              {t("kpi.performance.detail.trend", "Trend Description")}
+              {t("kpi.dashboard.curveDescription", "Curve Description")}
             </label>
-            <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-              {trend_description || "-"}
-            </p>
+            {canEditNarrative ? (
+              <textarea
+                dir="auto"
+                rows={3}
+                disabled={saveNarrative.isPending}
+                value={curveDescription}
+                onChange={(e) => setCurveDescription(e.target.value)}
+                placeholder={t(
+                  "kpi.dashboard.curveDescriptionPlaceholder",
+                  "Describe what the curve shows…",
+                )}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            ) : (
+              <p
+                dir="auto"
+                className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap"
+              >
+                {curveDescription || "-"}
+              </p>
+            )}
           </div>
+          {/* Shortcomings & Production */}
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              {t("kpi.performance.detail.justification", "Justification")}
-            </label>
-            <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-              {justification || "-"}
-            </p>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-              <ShieldAlert className="w-3.5 h-3.5" />
               {t(
-                "kpi.performance.detail.correctiveAction",
-                "Corrective Action Proposal",
+                "kpi.dashboard.shortcomingsDescription",
+                "Explaining Shortcomings and Boosting Production",
               )}
             </label>
-            <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-              {corrective_action || "-"}
-            </p>
+            {canEditNarrative ? (
+              <textarea
+                dir="auto"
+                rows={3}
+                disabled={saveNarrative.isPending}
+                value={shortcomingsDescription}
+                onChange={(e) => setShortcomingsDescription(e.target.value)}
+                placeholder={t(
+                  "kpi.dashboard.shortcomingsPlaceholder",
+                  "Explain shortcomings and production factors…",
+                )}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            ) : (
+              <p
+                dir="auto"
+                className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap"
+              >
+                {shortcomingsDescription || "-"}
+              </p>
+            )}
+          </div>
+          {/* Proposed Improvement */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+              {t(
+                "kpi.dashboard.proposedImprovement",
+                "The Proposed Improvement Measure",
+              )}
+            </label>
+            {canEditNarrative ? (
+              <textarea
+                dir="auto"
+                rows={3}
+                disabled={saveNarrative.isPending}
+                value={proposedImprovement}
+                onChange={(e) => setProposedImprovement(e.target.value)}
+                placeholder={t(
+                  "kpi.dashboard.improvementPlaceholder",
+                  "Describe the proposed improvement measure…",
+                )}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            ) : (
+              <p
+                dir="auto"
+                className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap"
+              >
+                {proposedImprovement || "-"}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -698,6 +895,15 @@ export const KpiSingleDashboardPage: React.FC = () => {
                     {t("kpi.benchmarks.benchmark", "Benchmark Achievement")}
                   </th>
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
+                    {t("kpi.benchmarks.municipality1")}
+                  </th>
+                  <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
+                    {t("kpi.benchmarks.municipality2")}
+                  </th>
+                  <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
+                    {t("kpi.benchmarks.municipality3")}
+                  </th>
+                  <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
                     {t("kpi.benchmarks.variance", "Variance")}
                   </th>
                 </tr>
@@ -720,6 +926,33 @@ export const KpiSingleDashboardPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right tabular-nums text-slate-700 dark:text-slate-300">
                       {b.benchmark_achievement}
+                    </td>
+                    <td
+                      className="px-6 py-4 text-right tabular-nums text-slate-700 dark:text-slate-300"
+                      title={
+                        b.municipality1_label ||
+                        t("kpi.benchmarks.municipality1")
+                      }
+                    >
+                      {b.municipality1 != null ? `${b.municipality1}%` : "-"}
+                    </td>
+                    <td
+                      className="px-6 py-4 text-right tabular-nums text-slate-700 dark:text-slate-300"
+                      title={
+                        b.municipality2_label ||
+                        t("kpi.benchmarks.municipality2")
+                      }
+                    >
+                      {b.municipality2 != null ? `${b.municipality2}%` : "-"}
+                    </td>
+                    <td
+                      className="px-6 py-4 text-right tabular-nums text-slate-700 dark:text-slate-300"
+                      title={
+                        b.municipality3_label ||
+                        t("kpi.benchmarks.municipality3")
+                      }
+                    >
+                      {b.municipality3 != null ? `${b.municipality3}%` : "-"}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <span

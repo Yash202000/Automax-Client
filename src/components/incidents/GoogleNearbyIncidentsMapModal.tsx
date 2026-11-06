@@ -454,6 +454,7 @@ export default function GoogleNearbyIncidentsMapModal({
         classificationId,
         page: 1,
         limit: 100,
+        radius: radiusMeters,
       }),
     enabled:
       isOpen && !!classificationId && latitude != null && longitude != null,
@@ -733,7 +734,9 @@ export default function GoogleNearbyIncidentsMapModal({
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>{radiusKm}km Circle</span>
+                <span>
+                  {t("incidents.nearby.radiusCircle", { radius: radiusKm })}
+                </span>
               </button>
             </div>
 

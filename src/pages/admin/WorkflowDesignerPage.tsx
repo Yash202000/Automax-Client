@@ -1406,6 +1406,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       transition.field_changes?.map((f) => ({
         field_name: f.field_name,
         label: f.label,
+        label_ar: f.label_ar,
         is_required: f.is_required,
         department_type_filter: f.department_type_filter || "",
         sort_order: f.sort_order,
@@ -1704,6 +1705,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       {
         field_name: "priority",
         label: "",
+        label_ar: "",
         is_required: false,
         sort_order: fieldChanges.length,
       },
@@ -5458,6 +5460,21 @@ export const WorkflowDesignerPage: React.FC = () => {
                             value={fc.label || ""}
                             onChange={(e) =>
                               updateFieldChange(index, "label", e.target.value)
+                            }
+                            className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
+                          />
+                          <input
+                            type="text"
+                            placeholder={t(
+                              "workflows.labelEGSelectDepartmentAr",
+                            )}
+                            value={fc.label_ar || ""}
+                            onChange={(e) =>
+                              updateFieldChange(
+                                index,
+                                "label_ar",
+                                e.target.value,
+                              )
                             }
                             className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm"
                           />

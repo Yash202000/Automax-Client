@@ -132,8 +132,8 @@ export const KpiCardPage: React.FC = () => {
     {
       icon: <Users className="w-5 h-5 text-teal-600 dark:text-teal-400" />,
       bg: "bg-teal-50 dark:bg-teal-900/20",
-      label: "Related Units",
-      value: card.related_units_label,
+      label: "Related Departments",
+      value: card.related_departments_label,
     },
   ];
 
