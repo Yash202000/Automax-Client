@@ -1,4 +1,5 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +59,10 @@ const Modal = ({
     full: "max-w-[95vw]",
   };
 
-  return (
+  // Portal to <body> so the modal escapes any stacking context created by
+  // ancestors (e.g. the page-level `animate-fade-in` wrapper), which otherwise
+  // leaves the sticky app header / sidebar painted on top of the overlay.
+  return createPortal(
     <div className="fixed inset-0 z-[1001] flex items-center justify-center p-4 sm:p-6">
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
@@ -66,7 +70,9 @@ const Modal = ({
       />
       <div
         className={cn(
-          "relative w-full bg-[hsl(var(--card))] rounded-xl shadow-2xl flex flex-col animate-in zoom-in-95 fade-in duration-200",
+          // Cap height to the viewport so tall content never pushes the top of
+          // the dialog off-screen; ModalBody (flex-1 overflow-y-auto) scrolls.
+          "relative w-full max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] bg-[hsl(var(--card))] rounded-xl shadow-2xl flex flex-col animate-in zoom-in-95 fade-in duration-200",
           sizeClasses[size],
           className,
         )}
@@ -81,7 +87,8 @@ const Modal = ({
         )}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
