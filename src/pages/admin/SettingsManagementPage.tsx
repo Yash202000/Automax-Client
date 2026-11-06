@@ -58,6 +58,8 @@ const toSettingsForm = (data?: Settings) => ({
   time_format: data?.time_format || "",
   default_language: data?.default_language || "",
   show_evaluate_button: data?.show_evaluate_button ?? false,
+  error_log_retention_value: 12,
+  error_log_retention_unit: "months" as "days" | "months",
   auth_setting: {
     totp_enabled: data?.auth_setting?.totp_enabled ?? false,
     show_forgot_password: data?.auth_setting?.show_forgot_password ?? true,
@@ -818,6 +820,45 @@ export const SettingsManagementPage: React.FC = () => {
                 />
               </button>
             </div>
+          </div>
+        </div>
+        <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
+          <h3 className="text-sm font-semibold text-[hsl(var(--foreground))]">
+            {t("settings.errorLogRetention", "Error Log Retention")}
+          </h3>
+          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 mb-4">
+            {t(
+              "settings.errorLogRetentionDesc",
+              "Error logs older than this period are deleted automatically.",
+            )}
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              min={1}
+              max={3650}
+              value={formData.error_log_retention_value}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  error_log_retention_value: Number(e.target.value),
+                }))
+              }
+              className="w-28 px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
+            />
+            <select
+              value={formData.error_log_retention_unit}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  error_log_retention_unit: e.target.value as "days" | "months",
+                }))
+              }
+              className="px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
+            >
+              <option value="days">{t("settings.days", "Days")}</option>
+              <option value="months">{t("settings.months", "Months")}</option>
+            </select>
           </div>
         </div>
 
