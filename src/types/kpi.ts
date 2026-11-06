@@ -637,8 +637,11 @@ export interface KpiBenchmark {
   benchmark_achievement: number;
   variance: number;
   municipality1?: number | null;
+  municipality1_label?: string;
   municipality2?: number | null;
+  municipality2_label?: string;
   municipality3?: number | null;
+  municipality3_label?: string;
   notes: string;
   created_at: string;
 }
@@ -654,8 +657,11 @@ export interface KpiBenchmarkRequest {
   internal_achievement?: number;
   benchmark_achievement?: number;
   municipality1?: number;
+  municipality1_label?: string;
   municipality2?: number;
+  municipality2_label?: string;
   municipality3?: number;
+  municipality3_label?: string;
   notes?: string;
 }
 
