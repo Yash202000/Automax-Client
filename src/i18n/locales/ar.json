@@ -4132,7 +4132,7 @@
       "operationalObjectives": "الأهداف الرئيسية",
       "processes": "الأهداف التشغيلية",
       "initiatives": "المبادرات",
-      "domains": "المجالات",
+      "domains":  "معيار الجائزة", 
       "awardCriteria": "معايير الجوائز",
       "awardKpiMeasures": "مؤشرات وقياسات الجائزة",
       "awardSubCriteria": "المعايير الفرعية للجوائز",
