@@ -138,6 +138,9 @@ export function IncidentEditPage() {
   const [lookupValues, setLookupValues] = useState<Record<string, any>>({});
   const [lookupValuesSeeded, setLookupValuesSeeded] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [coordinateInputError, setCoordinateInputError] = useState<
+    string | undefined
+  >();
   const [attachments, setAttachments] = useState<File[]>([]);
   const [callerNameParts, setCallerNameParts] = useState({
     first: "",
@@ -764,6 +767,11 @@ export function IncidentEditPage() {
       }
     }
 
+    // An incomplete or out-of-range manual latitude/longitude blocks saving.
+    if (coordinateInputError) {
+      newErrors.geolocation = coordinateInputError;
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -1099,7 +1107,8 @@ export function IncidentEditPage() {
 
             {/* Additional Details */}
             {(incidentLookupCategories.some((cat) => cat.code !== "PRIORITY") ||
-              workflowRequiredFields.includes("geolocation")) && (
+              workflowRequiredFields.includes("geolocation") ||
+              workflowOptionalFields.includes("geolocation")) && (
               <Card className="p-6">
                 <h2 className="text-lg font-semibold mb-4">
                   {t("incidents.additionalDetails", "Additional Details")}
@@ -1128,7 +1137,8 @@ export function IncidentEditPage() {
                         />
                       );
                     })}
-                  {workflowRequiredFields.includes("geolocation") && (
+                  {(workflowRequiredFields.includes("geolocation") ||
+                    workflowOptionalFields.includes("geolocation")) && (
                     <div className="col-span-2">
                       <LocationPicker
                         label={t("incidents.geolocation", "Geolocation")}
@@ -1147,9 +1157,13 @@ export function IncidentEditPage() {
                             : undefined
                         }
                         onChange={handleLocationChange}
-                        required
+                        required={workflowRequiredFields.includes(
+                          "geolocation",
+                        )}
                         error={errors.geolocation}
                         onToggleExpand={() => setShowLocationModal(true)}
+                        showCoordinateInputs={isEPM940}
+                        onCoordinateErrorChange={setCoordinateInputError}
                       />
 
                       <LocationPickerModal

@@ -895,6 +895,15 @@ export const KpiSingleDashboardPage: React.FC = () => {
                     {t("kpi.benchmarks.benchmark", "Benchmark Achievement")}
                   </th>
                   <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
+                    {t("kpi.benchmarks.municipality1")}
+                  </th>
+                  <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
+                    {t("kpi.benchmarks.municipality2")}
+                  </th>
+                  <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
+                    {t("kpi.benchmarks.municipality3")}
+                  </th>
+                  <th className="px-6 py-3 ltr:text-right rtl:text-left text-xs font-semibold text-slate-500 uppercase">
                     {t("kpi.benchmarks.variance", "Variance")}
                   </th>
                 </tr>
@@ -917,6 +926,33 @@ export const KpiSingleDashboardPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right tabular-nums text-slate-700 dark:text-slate-300">
                       {b.benchmark_achievement}
+                    </td>
+                    <td
+                      className="px-6 py-4 text-right tabular-nums text-slate-700 dark:text-slate-300"
+                      title={
+                        b.municipality1_label ||
+                        t("kpi.benchmarks.municipality1")
+                      }
+                    >
+                      {b.municipality1 != null ? `${b.municipality1}%` : "-"}
+                    </td>
+                    <td
+                      className="px-6 py-4 text-right tabular-nums text-slate-700 dark:text-slate-300"
+                      title={
+                        b.municipality2_label ||
+                        t("kpi.benchmarks.municipality2")
+                      }
+                    >
+                      {b.municipality2 != null ? `${b.municipality2}%` : "-"}
+                    </td>
+                    <td
+                      className="px-6 py-4 text-right tabular-nums text-slate-700 dark:text-slate-300"
+                      title={
+                        b.municipality3_label ||
+                        t("kpi.benchmarks.municipality3")
+                      }
+                    >
+                      {b.municipality3 != null ? `${b.municipality3}%` : "-"}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <span

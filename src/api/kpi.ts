@@ -819,6 +819,13 @@ export const kpiPerformanceApi = {
     const res = await apiClient.post("/kpi/benchmarks", data);
     return res.data;
   },
+  updateBenchmark: async (
+    id: string,
+    data: KpiBenchmarkRequest,
+  ): Promise<ApiResponse<KpiBenchmark>> => {
+    const res = await apiClient.put(`/kpi/benchmarks/${id}`, data);
+    return res.data;
+  },
   deleteBenchmark: async (id: string): Promise<ApiResponse<void>> => {
     const res = await apiClient.delete(`/kpi/benchmarks/${id}`);
     return res.data;
@@ -961,6 +968,20 @@ const postKpiImport = async (
 };
 
 export const kpiDictionaryImportApi = {
+  downloadTemplate: async (language: "en" | "ar"): Promise<void> => {
+    const res = await apiClient.get("/kpi/dictionary-import/template", {
+      params: { lang: language },
+      responseType: "blob",
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `kpi_dictionary_template_${language}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
   validate: (file: File, options: KpiImportOptions) =>
     postKpiImport("validate", file, options),
   commit: (file: File, options: KpiImportOptions) =>

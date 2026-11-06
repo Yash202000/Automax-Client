@@ -185,6 +185,9 @@ export function IncidentCreatePage() {
   // Guard against duplicate calls triggered by LocationPicker's internal lat/lng useEffect
   const lastProcessedGeoRef = useRef<string | null>(null);
   const [gisData, setGISData] = useState<any>(null);
+  const [coordinateInputError, setCoordinateInputError] = useState<
+    string | undefined
+  >();
   const { incomingCallNumber, incomingCallName } = useSoftphoneStore();
 
   const isEPM940 =
@@ -1467,6 +1470,11 @@ export function IncidentCreatePage() {
       if (attachmentError) newErrors.attachments = attachmentError;
     }
 
+    // An incomplete or out-of-range manual latitude/longitude blocks creation.
+    if (coordinateInputError) {
+      newErrors.geolocation = coordinateInputError;
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -2113,6 +2121,8 @@ export function IncidentCreatePage() {
                         )}
                         error={errors.geolocation}
                         onToggleExpand={() => setShowLocationModal(true)}
+                        showCoordinateInputs={isEPM940}
+                        onCoordinateErrorChange={setCoordinateInputError}
                       />
 
                       <LocationPickerModal

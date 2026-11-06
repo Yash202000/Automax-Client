@@ -423,6 +423,7 @@ export const KpiMasterDataPage: React.FC = () => {
         const data: AwardKpiMeasureRequest = {
           name_en: form.name_en,
           name_ar: form.name_ar,
+          ...(isEdit ? { version: modalItem.version } : {}),
         };
         if (isEdit)
           await updateAwardKpiMeasure.mutateAsync({ id: modalItem.id, data });

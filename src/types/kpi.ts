@@ -636,6 +636,12 @@ export interface KpiBenchmark {
   internal_achievement: number;
   benchmark_achievement: number;
   variance: number;
+  municipality1?: number | null;
+  municipality1_label?: string;
+  municipality2?: number | null;
+  municipality2_label?: string;
+  municipality3?: number | null;
+  municipality3_label?: string;
   notes: string;
   created_at: string;
 }
@@ -650,6 +656,12 @@ export interface KpiBenchmarkRequest {
   benchmark_entity: string;
   internal_achievement?: number;
   benchmark_achievement?: number;
+  municipality1?: number;
+  municipality1_label?: string;
+  municipality2?: number;
+  municipality2_label?: string;
+  municipality3?: number;
+  municipality3_label?: string;
   notes?: string;
 }
 
@@ -747,11 +759,15 @@ export interface AwardKpiMeasure {
   code: string;
   name_en: string;
   name_ar: string;
+  /** Optimistic-locking version; must be echoed back on update. */
+  version?: number;
 }
 
 export interface AwardKpiMeasureRequest {
   name_en: string;
   name_ar?: string;
+  /** Required by the backend on update (optimistic locking). */
+  version?: number;
 }
 
 export interface DomainRequest {

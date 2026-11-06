@@ -22,7 +22,6 @@ import {
   Phone,
   Smartphone,
   TriangleAlert,
-  User,
   X,
   ZoomIn,
 } from "lucide-react";
@@ -301,6 +300,13 @@ export function DetailsTab({
   const reporterPhone =
     incident.reporter?.phone || incident.reporter_phone || "";
   const reporterAltPhone = incident.reporter?.alternate_mobile || "";
+  const copyContact = async (value: string) => {
+    if (await copyText(value)) {
+      toast.success(t("incidents.copied"));
+    } else {
+      toast.error(t("incidents.copyFailed"));
+    }
+  };
 
   // Dynamic lookup values grouped by category — same as IncidentDetailPage.
   const groupedLookupValues = useMemo(() => {
@@ -350,19 +356,7 @@ export function DetailsTab({
     return map;
   }, [statusChangeRevisionsData]);
 
-  // Caller Information visibility — same gate as IncidentDetailPage:
-  // hidden on EPM940 except for web source, and only with contact data.
   const lookupGroups = Object.entries(groupedLookupValues);
-  const isEPM940Client =
-    window.APP_CONFIG?.CLIENT === "EPM940" ||
-    import.meta.env.VITE_CLIENT === "EPM940";
-  const showCallerInfo =
-    (!isEPM940Client || incident.source?.toLowerCase() === "web") &&
-    !!(
-      incident.reporter_name ||
-      incident.reporter_email ||
-      incident.reporter_phone
-    );
 
   // Location recurrence — same searchNearby source as IncidentDetailPage.
   const configuredRadius =
@@ -683,9 +677,9 @@ export function DetailsTab({
         </div>
       </div>
 
-      {/* caller & reporter + approval history */}
+      {/* reporter + approval history */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* Card 1: Caller & Reporter */}
+        {/* Card 1: Reporter */}
         <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl p-3.5 flex flex-col shadow-sm justify-start min-w-0">
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-[hsl(var(--border))]">
             <div className="flex items-center gap-2">
@@ -693,102 +687,24 @@ export function DetailsTab({
                 <Phone className="h-3.5 w-3.5" />
               </div>
               <h3 className="text-xs font-semibold text-[hsl(var(--foreground))] uppercase tracking-wider leading-none">
-                {t("incidents.callerAndReporter")}
+                {t("incidents.reporter")}
               </h3>
             </div>
           </div>
           <div className="flex flex-col gap-2 text-xs w-full">
             <div className="bg-[hsl(var(--muted)/0.6)] border border-[hsl(var(--border))] rounded-lg p-2.5 flex flex-col space-y-2 hover:border-[hsl(var(--border))] transition-all justify-start w-full">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1 text-[10px] uppercase font-mono font-semibold text-primary bg-primary/10 border border-primary/30 px-1.5 py-0.5 rounded">
-                  <Phone className="h-2 w-2" /> {t("incidents.caller")}
-                </span>
-              </div>
-              {/* caller = form-entered contact snapshot, same flat
-                        fields as the old Caller Information section */}
-              <div className="space-y-1.5">
-                <div>
-                  <span className="text-[10px] text-[hsl(var(--muted-foreground))] block leading-tight">
-                    {t("common.name")}
-                  </span>
-                  <span className="text-xs font-bold text-[hsl(var(--foreground))] leading-tight">
-                    {showCallerInfo && incident.reporter_name
-                      ? incident.reporter_name
-                      : "—"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-[hsl(var(--muted-foreground))] block leading-tight">
-                    {t("incidents.phoneLabel")}
-                  </span>
-                  <div className="flex items-center justify-between gap-1 mt-0.5">
-                    {showCallerInfo && incident.reporter_phone ? (
-                      <a
-                        className="text-primary font-mono text-xs font-medium hover:underline flex items-center gap-1 truncate"
-                        href={`tel:${incident.reporter_phone}`}
-                      >
-                        <Smartphone className="h-2.5 w-2.5 text-[hsl(var(--muted-foreground))] shrink-0" />
-                        <span className="truncate">
-                          {incident.reporter_phone}
-                        </span>
-                      </a>
-                    ) : (
-                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                        —
-                      </span>
-                    )}
-                    {showCallerInfo && incident.reporter_phone ? (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!incident.reporter_phone) return;
-                          if (await copyText(incident.reporter_phone)) {
-                            toast.success(t("incidents.copied"));
-                          } else {
-                            toast.error(t("incidents.copyFailed"));
-                          }
-                        }}
-                        className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--muted-foreground))] p-0.5 transition-colors shrink-0"
-                        title={t("incidents.copyPhone")}
-                      >
-                        <Copy className="h-2.5 w-2.5" />
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-[10px] text-[hsl(var(--muted-foreground))] block leading-tight">
-                    {t("incidents.email")}
-                  </span>
-                  {showCallerInfo && incident.reporter_email ? (
-                    <a
-                      className="text-[hsl(var(--foreground))] font-mono text-[11px] font-medium hover:text-primary hover:underline truncate block leading-tight mt-0.5"
-                      href={`mailto:${incident.reporter_email}`}
-                      title={incident.reporter_email}
-                    >
-                      {incident.reporter_email}
-                    </a>
-                  ) : (
-                    <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                      —
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="bg-[hsl(var(--muted)/0.6)] border border-[hsl(var(--border))] rounded-lg p-2.5 flex flex-col space-y-2 hover:border-[hsl(var(--border))] transition-all justify-start w-full">
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <span className="inline-flex items-center gap-1 text-[10px] uppercase font-mono font-semibold text-primary bg-primary/10 border border-primary/30 px-1.5 py-0.5 rounded">
                   <User className="h-2 w-2 text-primary" />{" "}
                   {t("incidents.reporter")}
                 </span>
-              </div>
-              <div className="space-y-1.5">
+              </div> */}
+              <div className="space-y-3">
                 <div>
                   <span className="text-[10px] text-[hsl(var(--muted-foreground))] block leading-tight">
                     {t("common.name")}
                   </span>
-                  <span className="text-xs font-bold text-[hsl(var(--foreground))] leading-tight">
+                  <span className="text-sm font-bold text-[hsl(var(--foreground))] leading-tight">
                     {reporterName}
                   </span>
                 </div>
@@ -796,65 +712,84 @@ export function DetailsTab({
                   <span className="text-[10px] text-[hsl(var(--muted-foreground))] block leading-tight">
                     {t("incidents.phoneLabel")}
                   </span>
-                  <div className="flex items-center justify-between gap-1 mt-0.5">
+                  <div className="flex flex-col items-start mt-0.5">
                     {reporterPhone ? (
-                      <a
-                        className="text-primary font-mono text-xs font-medium hover:underline flex items-center gap-1 truncate"
-                        href={`tel:${reporterPhone}`}
-                      >
-                        <Smartphone className="h-2.5 w-2.5 text-[hsl(var(--muted-foreground))] shrink-0" />
-                        <span className="truncate">{reporterPhone}</span>
-                      </a>
+                      <div className="inline-flex max-w-full items-center gap-1">
+                        <a
+                          className="inline-flex max-w-full items-center gap-1 text-primary text-sm font-medium hover:underline"
+                          href={`tel:${reporterPhone}`}
+                        >
+                          <Smartphone className="h-2.5 w-2.5 text-[hsl(var(--muted-foreground))] shrink-0" />
+                          <span className="break-all whitespace-normal">
+                            {reporterPhone}
+                          </span>
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => copyContact(reporterPhone)}
+                          className="text-[hsl(var(--muted-foreground))] p-0.5 transition-colors shrink-0 cursor-pointer"
+                          title={t("incidents.copyPhone")}
+                        >
+                          <Copy className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
                     ) : (
-                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                      <span className="text-sm text-[hsl(var(--muted-foreground))]">
                         —
                       </span>
                     )}
-                    {reporterPhone ? (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (await copyText(reporterPhone)) {
-                            toast.success(t("incidents.copied"));
-                          } else {
-                            toast.error(t("incidents.copyFailed"));
-                          }
-                        }}
-                        className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--muted-foreground))] p-0.5 transition-colors shrink-0"
-                        title={t("incidents.copyPhone")}
-                      >
-                        <Copy className="h-2.5 w-2.5" />
-                      </button>
-                    ) : null}
+
+                    {reporterAltPhone && (
+                      <div className="inline-flex max-w-full items-center gap-1 mt-1">
+                        <a
+                          className="inline-flex max-w-full items-center gap-1 text-primary text-sm font-medium hover:underline"
+                          href={`tel:${reporterAltPhone}`}
+                          title={t(
+                            "users.alternateMobile",
+                            "Alternate Mobile Number",
+                          )}
+                        >
+                          <Smartphone className="h-2.5 w-2.5 text-[hsl(var(--muted-foreground))] shrink-0" />
+                          <span className="break-all whitespace-normal">
+                            {reporterAltPhone}
+                          </span>
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => copyContact(reporterAltPhone)}
+                          className="text-[hsl(var(--muted-foreground))] p-0.5 transition-colors shrink-0 cursor-pointer"
+                          title={t("incidents.copyPhone")}
+                        >
+                          <Copy className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  {reporterAltPhone ? (
-                    <div className="flex items-center justify-between gap-1 mt-1">
-                      <a
-                        className="text-primary font-mono text-xs font-medium hover:underline flex items-center gap-1 truncate"
-                        href={`tel:${reporterAltPhone}`}
-                        title={t(
-                          "users.alternateMobile",
-                          "Alternate Mobile Number",
-                        )}
-                      >
-                        <Smartphone className="h-2.5 w-2.5 text-[hsl(var(--muted-foreground))] shrink-0" />
-                        <span className="truncate">{reporterAltPhone}</span>
-                      </a>
-                    </div>
-                  ) : null}
                 </div>
                 <div>
                   <span className="text-[10px] text-[hsl(var(--muted-foreground))] block leading-tight">
                     {t("incidents.email")}
                   </span>
                   {reporterEmail ? (
-                    <a
-                      className="text-[hsl(var(--foreground))] font-mono text-[11px] font-medium hover:text-primary hover:underline truncate block leading-tight mt-0.5"
-                      href={`mailto:${reporterEmail}`}
-                      title={reporterEmail}
-                    >
-                      {reporterEmail}
-                    </a>
+                    <div className="inline-flex max-w-full items-center gap-1 mt-0.5">
+                      <a
+                        className="min-w-0 text-[hsl(var(--foreground))] text-xs font-medium hover:text-primary hover:underline truncate"
+                        href={`mailto:${reporterEmail}`}
+                        title={reporterEmail}
+                      >
+                        {reporterEmail}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => copyContact(reporterEmail)}
+                        className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--muted-foreground))] p-0.5 transition-colors shrink-0 cursor-pointer"
+                        title={t("incidents.copyEmail", "Copy email")}
+                      >
+                        <Copy className="h-2.5 w-2.5" />
+                      </button>
+                    </div>
                   ) : (
                     <span className="text-xs text-[hsl(var(--muted-foreground))]">
                       —

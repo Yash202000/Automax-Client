@@ -453,6 +453,8 @@ export const useCreateAwardKpiMeasure = () => {
   });
 };
 
+const MISSING_VERSION = "MISSING_VERSION";
+
 export const useUpdateAwardKpiMeasure = () => {
   const qc = useQueryClient();
   const { t } = useTranslation();
@@ -463,12 +465,56 @@ export const useUpdateAwardKpiMeasure = () => {
     }: {
       id: string;
       data: Partial<AwardKpiMeasureRequest>;
-    }) => kpiMasterDataApi.updateAwardKpiMeasure(id, data),
+    }) => {
+      if (data.version == null) {
+        return Promise.reject(new Error(MISSING_VERSION));
+      }
+      return kpiMasterDataApi.updateAwardKpiMeasure(id, data);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["kpi", "award-kpi-measures"] });
       toast.success(t("kpi.awardKpiMeasureUpdated"));
     },
-    onError: () => toast.error(t("kpi.awardKpiMeasureUpdateFailed")),
+    onError: (error: unknown) => {
+      const e = error as {
+        message?: string;
+        response?: {
+          status?: number;
+          data?: {
+            error?: string;
+            message?: string;
+            errors?: Record<string, string>;
+          };
+        };
+      };
+      const status = e.response?.status;
+      const text = [
+        e.response?.data?.error,
+        e.response?.data?.message,
+        ...Object.values(e.response?.data?.errors ?? {}),
+        e.message,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      if (
+        e.message === MISSING_VERSION ||
+        text.includes("version is required")
+      ) {
+        toast.error(t("kpi.versionMissing"));
+      } else if (
+        status === 409 ||
+        text.includes("conflict") ||
+        text.includes("modified by another") ||
+        text.includes("version mismatch")
+      ) {
+        toast.error(t("kpi.updatedByAnotherUser"));
+        qc.invalidateQueries({ queryKey: ["kpi", "award-kpi-measures"] });
+      } else {
+        toast.error(t("kpi.awardKpiMeasureUpdateFailed"));
+      }
+    },
   });
 };
 
@@ -1392,26 +1438,42 @@ export const useKpiBenchmarks = (params?: {
   });
 
 export const useCreateKpiBenchmark = () => {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => kpiPerformanceApi.createBenchmark(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["kpi", "benchmarks"] });
-      toast.success("Benchmark created");
+      toast.success(t("kpi.benchmarks.created"));
     },
-    onError: () => toast.error("Failed to create benchmark"),
+    onError: () => toast.error(t("kpi.benchmarks.createFailed")),
+  });
+};
+
+export const useUpdateKpiBenchmark = () => {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      kpiPerformanceApi.updateBenchmark(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi", "benchmarks"] });
+      toast.success(t("kpi.benchmarks.updated"));
+    },
+    onError: () => toast.error(t("kpi.benchmarks.updateFailed")),
   });
 };
 
 export const useDeleteKpiBenchmark = () => {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => kpiPerformanceApi.deleteBenchmark(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["kpi", "benchmarks"] });
-      toast.success("Benchmark deleted");
+      toast.success(t("kpi.benchmarks.deleted"));
     },
-    onError: () => toast.error("Failed to delete benchmark"),
+    onError: () => toast.error(t("kpi.benchmarks.deleteFailed")),
   });
 };
 
