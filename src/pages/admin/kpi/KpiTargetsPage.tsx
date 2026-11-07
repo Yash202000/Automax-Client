@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Crosshair,
@@ -8,6 +8,7 @@ import {
   X,
   HelpCircle,
   History,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -790,13 +791,23 @@ export const KpiTargetsPage: React.FC = () => {
             </p>
           </div>
         </div>
+
         {canSetTargets && kpiAccess.canOnAny("manage_targets") && (
-          <Button
-            leftIcon={<Plus className="w-4 h-4" />}
-            onClick={handleOpenCreate}
-          >
-            {t("kpi.targets.setTarget")}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/goals/kpi/targets/import"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              {t("kpi.targetsImport.button")}
+            </Link>
+            <Button
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={handleOpenCreate}
+            >
+              {t("kpi.targets.setTarget")}
+            </Button>
+          </div>
         )}
       </div>
 

@@ -1,7 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams, Link } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   Database,
   Plus,
@@ -13,7 +13,6 @@ import {
   Upload,
 } from "lucide-react";
 
-import ExcelJS from "exceljs";
 import { toast } from "sonner";
 import { KpiObjectivesTree } from "../../../components/kpi/KpiObjectivesTree";
 import {
@@ -74,7 +73,6 @@ import { Input } from "../../../components/ui/Input";
 import { Button } from "../../../components/ui/Button";
 import { Select } from "../../../components/ui/SelectInput";
 import { departmentApi } from "../../../api/admin";
-import { kpiMasterDataApi } from "../../../api/kpi";
 import { exportToExcel as exportToExcelUtil } from "../../../utils/exportExcel";
 import type {
   Pillar,
@@ -159,6 +157,7 @@ export const KpiMasterDataPage: React.FC = () => {
   const { t } = useTranslation();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const tabParam = searchParams.get("tab") as EntityType | null;
   const tabs: { key: EntityType; label: string }[] = [
     { key: "pillar", label: t("kpi.masterData.pillars") },
@@ -491,16 +490,6 @@ export const KpiMasterDataPage: React.FC = () => {
     actions[type]?.(id);
   };
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [importType, setImportType] = useState<EntityType>("pillar");
-  // Criterion numbers created earlier in the current import file.
-  const importedCriterionNos = useRef<Set<number>>(new Set());
-  // Duplicate keys (see importDuplicateKey) created earlier in the current
-  // import file, so a row repeated inside the same file is skipped too.
-  const importedKeys = useRef<Set<string>>(new Set());
-  const queryClient = useQueryClient();
-
   const exportToExcel = async (data: any[], label: string) =>
     await exportToExcelUtil(
       data.map((r) => ({
@@ -512,299 +501,13 @@ export const KpiMasterDataPage: React.FC = () => {
       t("common.exported"),
     );
 
+  // Import now runs through the server-side template → validate → commit
+  // flow for every master-data tab, so all fields (including parent
+  // references and Domain/Award Measure metadata) are validated with a
+  // row-level report instead of being written row by row from the browser.
   const handleImportExcel = (type: EntityType) => {
-    setImportType(type);
-    fileInputRef.current?.click();
-  };
-
-  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    importedCriterionNos.current = new Set();
-    importedKeys.current = new Set();
-
-    try {
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(await file.arrayBuffer());
-
-      const worksheet = workbook.worksheets[0];
-      if (!worksheet) {
-        toast.error(t("common.invalidFile"));
-        return;
-      }
-
-      const rows: Record<string, unknown>[] = [];
-      let headers: string[] = [];
-
-      worksheet.eachRow((row, rowNumber) => {
-        const values = (row.values as unknown[]).slice(1).map(cellText);
-
-        if (rowNumber === 1) {
-          headers = values.map((header) => String(header ?? "").trim());
-        } else {
-          // Each value is stored under its header as written AND under a
-          // normalized key ("Criterion No." / "criterion_no" → "criterionno"),
-          // so files with human-readable headers import too.
-          const obj: Record<string, unknown> = { __row: rowNumber };
-          headers.forEach((header, index) => {
-            obj[header] = values[index];
-            obj[normHeaderKey(header)] = values[index];
-          });
-          rows.push(obj);
-        }
-      });
-
-      if (!rows.length) {
-        toast.error(t("common.emptyFile"));
-        return;
-      }
-
-      const validRows = rows.filter((row) => !!rowNameEn(row));
-
-      let imported = 0;
-      let skipped = 0;
-      const failures: string[] = [];
-
-      for (const row of validRows) {
-        try {
-          const outcome = await submitImportRow(importType, row);
-          if (outcome === "skipped") skipped++;
-          else imported++;
-        } catch (err) {
-          failures.push(
-            `${t("kpi.masterData.importRow", { row: row.__row })}: ${importErrorMessage(err)}`,
-          );
-        }
-      }
-      // Rows are created through the API directly (not the create hooks,
-      // which toast on every row), so refresh the list once here.
-      if (imported) {
-        queryClient.invalidateQueries({
-          queryKey: ["kpi", importQueryKey[importType]],
-        });
-      }
-
-      const summary = t("kpi.masterData.importSummary", {
-        imported,
-        skipped,
-        failed: failures.length,
-      });
-      if (failures.length) {
-        toast.error(summary, {
-          description: failures.slice(0, 5).join("\n"),
-          duration: 10000,
-        });
-      } else if (imported) {
-        toast.success(summary);
-      } else {
-        toast.info(summary);
-      }
-    } catch {
-      toast.error(t("common.invalidFile"));
-    } finally {
-      e.target.value = "";
-    }
-  };
-
-  const resolveOwnerId = (row: any): string | undefined => {
-    if (row.owner_id) return row.owner_id;
-    const ownerName =
-      row.owner_name || row.OwnerName || row.owner || row.Owner || "";
-    if (!ownerName) return undefined;
-    const dept = departments.find(
-      (d) => d.name?.toLowerCase() === ownerName.toLowerCase(),
-    );
-    return dept?.id;
-  };
-
-  const submitImportRow = async (
-    type: EntityType,
-    row: any,
-  ): Promise<"created" | "skipped"> => {
-    const name_en = rowNameEn(row);
-    const name_ar = String(
-      row.name_ar || row.NameAr || row.namear || row.arabicname || "",
-    );
-    if (!name_en) return "skipped";
-    // Skip records that already exist (or appeared earlier in this file)
-    // instead of creating a second copy.
-    const dupKey = importDuplicateKey(type, row, name_en);
-    if (dupKey !== null) {
-      if (
-        existingImportKeys(type).has(dupKey) ||
-        importedKeys.current.has(dupKey)
-      ) {
-        return "skipped";
-      }
-    }
-    const markImported = () => {
-      if (dupKey !== null) importedKeys.current.add(dupKey);
-    };
-    if (type === "pillar") {
-      await kpiMasterDataApi.createPillar({
-        name_en,
-        name_ar,
-        owner_id: resolveOwnerId(row),
-      } as PillarRequest);
-    } else if (type === "enabler") {
-      await kpiMasterDataApi.createEnabler({
-        name_en,
-        name_ar,
-        owner_id: resolveOwnerId(row),
-      } as EnablerRequest);
-    } else if (type === "operational-objective") {
-      await kpiMasterDataApi.createOperationalObjective({
-        name_en,
-        name_ar,
-        goal_id: row.goal_id,
-        pillar_id: row.pillar_id || undefined,
-        enabler_id: row.enabler_id || undefined,
-      } as OperationalObjectiveRequest);
-    } else if (type === "process") {
-      await kpiMasterDataApi.createProcess({
-        name_en,
-        name_ar,
-        operational_objective_id: row.operational_objective_id,
-        goal_id: row.goal_id,
-        pillar_id: row.pillar_id || undefined,
-        enabler_id: row.enabler_id || undefined,
-        department_id: row.department_id || undefined,
-        unit: row.unit || undefined,
-      } as ProcessRequest);
-    } else if (type === "initiative") {
-      await kpiMasterDataApi.createInitiative({
-        name_en,
-        name_ar,
-        goal_id: row.goal_id,
-        objective_id: row.objective_id || undefined,
-        pillar_id: row.pillar_id || undefined,
-        enabler_id: row.enabler_id || undefined,
-        owner_id: resolveOwnerId(row),
-        status: row.status || undefined,
-      } as InitiativeRequest);
-    } else if (type === "domain") {
-      await kpiMasterDataApi.createDomain({
-        name_en,
-        name_ar,
-        type: row.type || "",
-      } as DomainRequest);
-    } else if (type === "award-criterion") {
-      // Criterion No. is unique and mandatory — never default it (the old
-      // fallback of 1 made every row after the first collide). Numbers that
-      // already exist are skipped, so re-importing an export is harmless.
-      const raw =
-        row.criterion_no ??
-        row.criterionno ??
-        row.criterionnumber ??
-        row.criterion ??
-        row.no ??
-        "";
-      const criterion_no = Number(String(raw).trim());
-      if (!Number.isInteger(criterion_no) || criterion_no <= 0) {
-        throw new Error(
-          t("kpi.masterData.importInvalidCriterionNo", { value: String(raw) }),
-        );
-      }
-      if (
-        (awardCriteria ?? []).some(
-          (c: AwardCriterion) => c.criterion_no === criterion_no,
-        ) ||
-        importedCriterionNos.current.has(criterion_no)
-      ) {
-        return "skipped";
-      }
-      await kpiMasterDataApi.createAwardCriterion({
-        name_en,
-        name_ar,
-        criterion_no,
-      } as AwardCriterionRequest);
-      importedCriterionNos.current.add(criterion_no);
-    } else if (type === "award-sub-criterion") {
-      await kpiMasterDataApi.createAwardSubCriterion({
-        name_en,
-        name_ar,
-        award_criterion_id: row.award_criterion_id,
-        sub_no: row.sub_no || row.subNo || "1",
-      } as AwardSubCriterionRequest);
-    } else if (type === "award-kpi-measure") {
-      await kpiMasterDataApi.createAwardKpiMeasure({
-        name_en,
-        name_ar,
-      } as AwardKpiMeasureRequest);
-    } else if (type === "data-source") {
-      await kpiMasterDataApi.createDataSource({
-        name_en,
-        name_ar,
-      } as KpiDataSourceRequest);
-    } else if (type === "segmentation-dimension") {
-      await kpiMasterDataApi.createSegmentationDimension({
-        name_en,
-        name_ar,
-      } as KpiSegmentationDimensionRequest);
-    } else if (type === "organization") {
-      await kpiMasterDataApi.createOrganization({
-        name_en,
-        name_ar,
-        contact_info: row.contact_info || row.ContactInfo || undefined,
-      } as KpiOrganizationRequest);
-    }
-    markImported();
-    return "created";
-  };
-
-  // What makes two master-data records "the same" for import purposes —
-  // compared trimmed and case-insensitively. Child records are compared
-  // within their parent (e.g. a sub-criterion number within its criterion).
-  // Award criteria are matched by criterion number in submitImportRow.
-  const importDuplicateKey = (
-    type: EntityType,
-    row: any,
-    name: string,
-  ): string | null => {
-    const n = normKey(name);
-    switch (type) {
-      case "pillar":
-      case "enabler":
-      case "data-source":
-      case "award-kpi-measure":
-      case "segmentation-dimension":
-      case "organization":
-        return n;
-      case "domain":
-        return `${normKey(row.type)}|${n}`;
-      case "initiative":
-      case "operational-objective":
-        return `${normKey(row.goal_id)}|${n}`;
-      case "process":
-        return `${normKey(row.operational_objective_id)}|${n}`;
-      case "award-sub-criterion":
-        return `${normKey(row.award_criterion_id)}|${normKey(row.sub_no || row.subNo || "1")}`;
-      default:
-        return null;
-    }
-  };
-
-  const existingImportKeys = (type: EntityType): Set<string> => {
-    const list: any[] =
-      {
-        pillar: pillars,
-        enabler: enablers,
-        "data-source": dataSources,
-        "award-kpi-measure": awardKpiMeasures,
-        "segmentation-dimension": segmentationDimensions,
-        organization: organizations,
-        domain: domains,
-        initiative: initiatives,
-        "operational-objective": operationalObjectives,
-        process: processes,
-        "award-sub-criterion": awardSubCriteria,
-      }[type as string] ?? [];
-    const keys = new Set<string>();
-    for (const item of list) {
-      const key = importDuplicateKey(type, item, item.name_en ?? "");
-      if (key !== null) keys.add(key);
-    }
-    return keys;
+    if (type === "objectives-tree") return;
+    navigate(`/goals/kpi/master-data/import?type=${type}`);
   };
 
   const getDepartmentName = (departmentId?: string) => {
@@ -1213,14 +916,6 @@ export const KpiMasterDataPage: React.FC = () => {
         )}
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".xlsx,.xls"
-        className="hidden"
-        onChange={onFileChange}
-      />
-
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} size="lg">
         <div className="max-h-[75vh] overflow-y-auto p-6 space-y-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -1499,82 +1194,6 @@ interface Column<T> {
   accessor: keyof T | ((item: T) => string | number | boolean);
   render?: (item: T) => React.ReactNode;
 }
-
-// ExcelJS returns rich-text, formula and hyperlink cells as objects; reduce
-// every cell to its displayed text/number.
-const cellText = (v: unknown): unknown => {
-  if (v === null || v === undefined) return "";
-  if (v instanceof Date) return v.toISOString();
-  if (typeof v === "object") {
-    const o = v as {
-      richText?: { text: string }[];
-      result?: unknown;
-      text?: unknown;
-    };
-    if (Array.isArray(o.richText))
-      return o.richText.map((r) => r.text).join("");
-    if ("result" in o) return cellText(o.result);
-    if ("text" in o) return cellText(o.text);
-    return "";
-  }
-  return typeof v === "string" ? v.trim() : v;
-};
-
-// List query key (under "kpi") refreshed after an import of each type.
-const importQueryKey: Record<EntityType, string> = {
-  pillar: "pillars",
-  enabler: "enablers",
-  "operational-objective": "operational-objectives",
-  process: "processes",
-  "objectives-tree": "operational-objectives",
-  initiative: "initiatives",
-  domain: "domains",
-  "award-criterion": "award-criteria",
-  "award-kpi-measure": "award-kpi-measures",
-  "award-sub-criterion": "award-sub-criteria",
-  "data-source": "data-sources",
-  "segmentation-dimension": "segmentation-dimensions",
-  organization: "organizations",
-};
-
-const normKey = (v: unknown) =>
-  String(v ?? "")
-    .trim()
-    .toLowerCase();
-
-const normHeaderKey = (h: string) =>
-  h.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]/g, "");
-
-const rowNameEn = (row: Record<string, unknown>) =>
-  String(
-    row.name_en ||
-      row.NameEn ||
-      row.Name ||
-      row.nameen ||
-      row.name ||
-      row.englishname ||
-      "",
-  ).trim();
-
-const importErrorMessage = (err: unknown): string => {
-  const e = err as {
-    message?: string;
-    response?: {
-      data?: {
-        message?: string;
-        error?: string;
-        errors?: { field?: string; message?: string }[];
-      };
-    };
-  };
-  const data = e?.response?.data;
-  if (data?.errors?.length) {
-    return data.errors
-      .map((x) => [x.field, x.message].filter(Boolean).join(": "))
-      .join("; ");
-  }
-  return data?.message || data?.error || e?.message || "Unknown error";
-};
 
 function MasterTable<T extends { id: string }>({
   data,
