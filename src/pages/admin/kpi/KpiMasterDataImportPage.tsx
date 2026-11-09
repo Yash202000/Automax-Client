@@ -82,7 +82,7 @@ export const KpiMasterDataImportPage: React.FC = () => {
     canUpdateExisting: () => true,
   };
 
-  return <KpiImportPage config={config} />;
+  return <KpiImportPage key={type} config={config} />;
 };
 
 export default KpiMasterDataImportPage;
