@@ -858,6 +858,8 @@ export interface WorkflowState {
   escalation_policy?: EscalationPolicy;
   is_mergable: boolean;
   is_ai_qa: boolean;
+  /** When true the incident's assignee cannot be changed from the edit screen while in this state. */
+  lock_assignee?: boolean;
   /** When true this state requires a duration selection before entering
    *  and triggers automatic reversion if not closed in time. */
   is_ready_to_close: boolean;
@@ -1032,6 +1034,7 @@ export interface WorkflowStateCreateRequest {
   sla_hours?: number;
   is_mergable?: boolean;
   is_ai_qa?: boolean;
+  lock_assignee?: boolean;
   is_ready_to_close?: boolean;
   is_partial_close?: boolean;
   duration_options?: string[];
@@ -1055,6 +1058,7 @@ export interface WorkflowStateUpdateRequest {
   sla_hours?: number;
   is_mergable?: boolean;
   is_ai_qa?: boolean;
+  lock_assignee?: boolean;
   is_ready_to_close?: boolean;
   is_partial_close?: boolean;
   duration_options?: string[];

@@ -125,6 +125,7 @@ interface StateFormData {
   escalation_policy_id: string | undefined;
   is_mergable: boolean;
   is_ai_qa: boolean;
+  lock_assignee: boolean;
   is_ready_to_close: boolean;
   is_partial_close: boolean;
   duration_options: { value: number | undefined; unit: string }[];
@@ -196,6 +197,7 @@ const initialStateFormData: StateFormData = {
   escalation_policy_id: undefined,
   is_mergable: false,
   is_ai_qa: false,
+  lock_assignee: false,
   is_ready_to_close: false,
   is_partial_close: false,
   duration_options: [],
@@ -1267,6 +1269,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       escalation_policy_id: state.escalation_policy_id || "",
       is_mergable: state.is_mergable || false,
       is_ai_qa: state.is_ai_qa || false,
+      lock_assignee: state.lock_assignee || false,
       is_ready_to_close: state.is_ready_to_close || false,
       is_partial_close: state.is_partial_close || false,
       duration_options: (state.duration_options || [])
@@ -1523,6 +1526,7 @@ export const WorkflowDesignerPage: React.FC = () => {
       escalation_policy_id: stateFormData.escalation_policy_id || "",
       is_mergable: stateFormData.is_mergable,
       is_ai_qa: stateFormData.is_ai_qa,
+      lock_assignee: stateFormData.lock_assignee,
       is_ready_to_close: stateFormData.is_ready_to_close,
       is_partial_close: stateFormData.is_partial_close,
       duration_options: stateFormData.duration_options
@@ -3769,6 +3773,30 @@ export const WorkflowDesignerPage: React.FC = () => {
                   </label>
                   <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))] ml-7">
                     {t("workflows.aiQualityAuditDesc")}
+                  </p>
+                </div>
+                <div>
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={stateFormData.lock_assignee}
+                      onChange={(e) =>
+                        setStateFormData({
+                          ...stateFormData,
+                          lock_assignee: e.target.checked,
+                        })
+                      }
+                      className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--primary))] focus:ring-[hsl(var(--primary))]"
+                    />
+                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+                      {t("workflows.lockAssigneeStatus", "Lock Assignee")}
+                    </span>
+                  </label>
+                  <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))] ml-7">
+                    {t(
+                      "workflows.lockAssigneeDesc",
+                      "The assignee of incidents in this state is read-only on the Edit Incident screen.",
+                    )}
                   </p>
                 </div>
                 {/* Closing Duration (Partial Close) */}
