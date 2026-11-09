@@ -14,6 +14,7 @@ import {
   useKpiBaselineRevisions,
   useRequestBaselineRevision,
   useReviewBaselineRevision,
+  useKpiAccess,
 } from "../../hooks/useKpi";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useAuthStore } from "../../stores/authStore";
@@ -48,7 +49,13 @@ interface Props {
 // locked for the cycle, so changing it means requesting a revision that
 // another user with kpi:approve approves (the backend enforces both rules).
 export function BaselineRevisionPanel({ kpiType, kpiId, metric }: Props) {
-  const { canUpdateKpi, canApproveKpi } = usePermissions();
+  const permissions = usePermissions();
+  const kpiAccess = useKpiAccess();
+  // Role permission and the collaborator role on this KPI must both allow it.
+  const canUpdateKpi = () =>
+    permissions.canUpdateKpi() && kpiAccess.can(kpiType, kpiId, "edit_kpi");
+  const canApproveKpi = () =>
+    permissions.canApproveKpi() && kpiAccess.can(kpiType, kpiId, "approve");
   const currentUser = useAuthStore((state) => state.user);
   const { data } = useKpiBaselineRevisions(metric.id);
   const revisions = data?.data ?? [];

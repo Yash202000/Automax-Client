@@ -26,6 +26,7 @@ import {
   useStrategicKPIs,
   useOperationalKPIs,
   useAwardKPIs,
+  useKpiAccess,
 } from "../../../hooks/useKpi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import type {
@@ -85,6 +86,7 @@ const SortIcon: React.FC<{
 export const KpiDictionaryPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { canUpdateKpi, canCreateKpi } = usePermissions();
+  const kpiAccess = useKpiAccess();
   const [activeTab, setActiveTab] = useState<DictTab>("strategic");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -514,15 +516,16 @@ export const KpiDictionaryPage: React.FC = () => {
                           >
                             <Crosshair className="w-4 h-4" />
                           </Link>
-                          {canUpdateKpi() && (
-                            <Link
-                              to={editHref(kpi)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-colors"
-                              title="Edit"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Link>
-                          )}
+                          {canUpdateKpi() &&
+                            kpiAccess.can(activeTab, kpi.id, "edit_kpi") && (
+                              <Link
+                                to={editHref(kpi)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-colors"
+                                title="Edit"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Link>
+                            )}
                         </div>
                       </td>
                     </tr>

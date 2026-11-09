@@ -11,6 +11,7 @@ import {
   useDataSources,
   useOrganizations,
   useKpiDocumentaFolderInfo,
+  useKpiAccess,
 } from "../../../hooks/useKpi";
 import { departmentApi } from "../../../api/admin";
 import { Button } from "../../../components/ui/Button";
@@ -19,6 +20,8 @@ import { MultiSelect } from "../../../components/ui/MultiSelect";
 import { DocumentaFolderPicker } from "../../../components/kpi/DocumentaFolderPicker";
 import { KpiTaxonomyFields } from "../../../components/kpi/KpiTaxonomyFields";
 import type { AwardKPIRequest, KPIOwnerType } from "../../../types/kpi";
+import { KpiNoAccess } from "../../../components/kpi/KpiNoAccess";
+import { isKpiAccessDenied } from "../../../utils/kpiAccess";
 
 export const KpiDictionaryFormAwardPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -27,7 +30,10 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
   const isEdit = !!id;
   const createKpi = useCreateAwardKPI();
   const updateKpi = useUpdateAwardKPI();
-  const { data: existingData } = useAwardKPIDetail(id ?? "");
+  const { data: existingData, error: existingError } = useAwardKPIDetail(
+    id ?? "",
+  );
+  const kpiAccess = useKpiAccess();
 
   const { data: dataSourcesData } = useDataSources();
   const { data: organizationsData } = useOrganizations();
@@ -162,6 +168,18 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       navigate("/goals/kpi/dictionary");
     }
   };
+
+  // Editing needs a collaborator role on this KPI that allows it (KPI
+  // Owner) or the Super Admin; the backend enforces the same.
+  if (
+    isEdit &&
+    (isKpiAccessDenied(existingError) ||
+      (!kpiAccess.isLoading && !kpiAccess.can("award", id, "edit_kpi")))
+  ) {
+    return (
+      <KpiNoAccess message="Only the KPI Owner or an administrator can edit this KPI." />
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">

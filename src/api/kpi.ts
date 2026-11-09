@@ -1,6 +1,7 @@
 import apiClient from "./client";
 import type { ApiResponse } from "../types";
 import type {
+  MyKpiAccess,
   Pillar,
   PillarRequest,
   Enabler,
@@ -986,6 +987,14 @@ export const kpiDictionaryImportApi = {
     postKpiImport("validate", file, options),
   commit: (file: File, options: KpiImportOptions) =>
     postKpiImport("commit", file, options),
+};
+
+export const kpiAccessApi = {
+  // The current user's KPI collaborator assignments and allowed actions.
+  getMyAccess: async (): Promise<ApiResponse<MyKpiAccess>> => {
+    const res = await apiClient.get("/kpi/my-access");
+    return res.data;
+  },
 };
 
 export const kpiDashboardApi = {
