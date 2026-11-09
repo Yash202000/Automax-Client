@@ -83,9 +83,15 @@ export const CommunicationsPage: React.FC = () => {
   );
   const [page, setPage] = useState<number>(1);
 
+  // Allows deep links such as /call-centre/communications?status=failed (e.g. from the Error Log)
+  const initialStatus = ((): "" | "sent" | "failed" => {
+    const value = new URLSearchParams(window.location.search).get("status");
+    return value === "failed" || value === "sent" ? value : "";
+  })();
+
   const [filters, setFilters] = useState({
     category: "inbox" as Category,
-    status: "" as "" | "sent" | "failed",
+    status: initialStatus,
     startDate: undefined as Date | undefined,
     endDate: undefined as Date | undefined,
     recipient: "",

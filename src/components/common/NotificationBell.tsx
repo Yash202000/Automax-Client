@@ -45,6 +45,11 @@ export const NotificationBell: React.FC = () => {
     type?: string,
     id?: string,
   ) => {
+    const errorMatch = subject.match(/Critical error.*?(ERR-\d+)/i);
+    if (errorMatch) {
+      navigate(`/admin/error-logs?search=${errorMatch[1]}`);
+      return;
+    }
     if (type && id) {
       switch (type.toLowerCase()) {
         case "incident":

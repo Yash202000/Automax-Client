@@ -71,6 +71,7 @@ import { Avatar, AvatarBadge, AvatarFallback } from "@/ui/avatar";
 import { getAvatarName } from "@/lib/utils";
 import { VirtualizedList } from "@/components/ui/virtualized-list";
 import { generateRecordTitle } from "@/utils/generateLocalizedTitle";
+import { errorLogApi } from "../../api/errorLogs";
 import { useImageValidation } from "@/hooks/useImageValidation";
 import { useAttachmentPolicy } from "@/hooks/useAttachmentPolicy";
 import {
@@ -318,6 +319,15 @@ export function IncidentCreatePage() {
     }
     const oversized = files.find(isAttachmentOversized);
     if (oversized) {
+      void errorLogApi.Report({
+        module: "attachment",
+        action: "Upload attachment",
+        error_type: "file_too_large",
+        severity: "low",
+        message: "Attachment exceeds the maximum allowed size",
+        details: `size=${oversized.size} bytes, limit=${MAX_ATTACHMENT_SIZE_MB}MB, type=${oversized.type}`,
+        related_label: oversized.name,
+      });
       return t("incidents.attachmentTooLarge", {
         name: oversized.name,
         max: MAX_ATTACHMENT_SIZE_MB,
