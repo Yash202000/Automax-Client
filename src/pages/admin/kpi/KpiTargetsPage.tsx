@@ -18,6 +18,7 @@ import {
   useTransitionKpiTarget,
   useKpiCardDefinitions,
   useKpiMetricsByCode,
+  useKpiAccess,
 } from "../../../hooks/useKpi";
 import { Button } from "../../../components/ui/Button";
 import { Modal } from "../../../components/ui/Modal";
@@ -328,6 +329,9 @@ export const KpiTargetsPage: React.FC = () => {
   const canDeleteTargets = hasPermission(PERMISSIONS.TARGETS_DELETE);
   const canApproveTargets = hasPermission(PERMISSIONS.TARGETS_APPROVE);
   const canRejectTargets = hasPermission(PERMISSIONS.TARGETS_REJECT);
+  // On top of the role permissions, the user's collaborator role on each
+  // target's KPI must allow the action (the backend enforces the same).
+  const kpiAccess = useKpiAccess();
   const [searchParams, setSearchParams] = useSearchParams();
   const currentYear = new Date().getFullYear();
 
@@ -786,7 +790,7 @@ export const KpiTargetsPage: React.FC = () => {
             </p>
           </div>
         </div>
-        {canSetTargets && (
+        {canSetTargets && kpiAccess.canOnAny("manage_targets") && (
           <Button
             leftIcon={<Plus className="w-4 h-4" />}
             onClick={handleOpenCreate}
@@ -967,10 +971,34 @@ export const KpiTargetsPage: React.FC = () => {
                       onReject: handleRejectTarget,
                     },
                     {
-                      set: canSetTargets,
-                      delete: canDeleteTargets,
-                      approve: canApproveTargets,
-                      reject: canRejectTargets,
+                      set:
+                        canSetTargets &&
+                        kpiAccess.canByCode(
+                          target.kpi_type,
+                          target.kpi_code,
+                          "manage_targets",
+                        ),
+                      delete:
+                        canDeleteTargets &&
+                        kpiAccess.canByCode(
+                          target.kpi_type,
+                          target.kpi_code,
+                          "manage_targets",
+                        ),
+                      approve:
+                        canApproveTargets &&
+                        kpiAccess.canByCode(
+                          target.kpi_type,
+                          target.kpi_code,
+                          "approve",
+                        ),
+                      reject:
+                        canRejectTargets &&
+                        kpiAccess.canByCode(
+                          target.kpi_type,
+                          target.kpi_code,
+                          "approve",
+                        ),
                     },
                   );
                   return (
@@ -1510,31 +1538,38 @@ export const KpiTargetsPage: React.FC = () => {
           >
             {formReadOnly ? "Close" : "Cancel"}
           </Button>
-          {!formReadOnly && canSetTargets && (
-            <>
-              <Button
-                variant="outline"
-                onClick={handleSaveDraft}
-                disabled={isSavingTarget || isFormulaMetric}
-              >
-                {isSavingTarget
-                  ? "Saving..."
-                  : isFormulaMetric
-                    ? "Phase 2 Only"
-                    : "Save Draft"}
-              </Button>
-              <Button
-                onClick={handleSubmitTarget}
-                disabled={isSavingTarget || isFormulaMetric}
-              >
-                {isSavingTarget
-                  ? "Saving..."
-                  : isFormulaMetric
-                    ? "Phase 2 Only"
-                    : "Submit Target"}
-              </Button>
-            </>
-          )}
+          {!formReadOnly &&
+            canSetTargets &&
+            (!formKpiCode ||
+              kpiAccess.canByCode(
+                formKpiType,
+                formKpiCode,
+                "manage_targets",
+              )) && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleSaveDraft}
+                  disabled={isSavingTarget || isFormulaMetric}
+                >
+                  {isSavingTarget
+                    ? "Saving..."
+                    : isFormulaMetric
+                      ? "Phase 2 Only"
+                      : "Save Draft"}
+                </Button>
+                <Button
+                  onClick={handleSubmitTarget}
+                  disabled={isSavingTarget || isFormulaMetric}
+                >
+                  {isSavingTarget
+                    ? "Saving..."
+                    : isFormulaMetric
+                      ? "Phase 2 Only"
+                      : "Submit Target"}
+                </Button>
+              </>
+            )}
         </div>
       </div>
 

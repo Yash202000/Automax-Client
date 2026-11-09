@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { useKpiCard } from "../../../hooks/useKpi";
 import { BAND_BAR_CLASS, BAND_TEXT_CLASS } from "../../../utils/kpiBand";
+import { KpiNoAccess } from "../../../components/kpi/KpiNoAccess";
+import { isKpiAccessDenied } from "../../../utils/kpiAccess";
 
 // Same maps used across the KPI dictionary/detail pages — reused here so the
 // card reads consistently with the rest of the module.
@@ -67,6 +69,10 @@ export const KpiCardPage: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  if (isKpiAccessDenied(error)) {
+    return <KpiNoAccess />;
   }
 
   if (error || !card) {

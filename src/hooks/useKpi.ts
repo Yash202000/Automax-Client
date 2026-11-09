@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -10,6 +11,7 @@ import {
   kpiDashboardApi,
   kpiEngagementApi,
   kpiComposedApi,
+  kpiAccessApi,
   kpiDocumentaApi,
 } from "../api/kpi";
 import apiClient from "../api/client";
@@ -36,6 +38,7 @@ import type {
   KpiEntryCorrectionRequest,
   KpiEntry,
   KpiCollaboratorAssignmentRequest,
+  KpiAction,
   KPIType,
   KpiOrganizationRequest,
   KpiDocumentaAnchorParams,
@@ -1768,6 +1771,63 @@ export const useKpiMetricPeriodSeries = (
     enabled: !!type && !!id && !!metricId && !!year,
   });
 
+// The current user's per-KPI access. Refetched whenever a page mounts so
+// assignment changes apply on the next page load without signing out.
+export const useKpiAccess = () => {
+  const { data, isLoading } = useQuery({
+    queryKey: ["kpi", "my-access"],
+    queryFn: async () => (await kpiAccessApi.getMyAccess()).data,
+    staleTime: 0,
+  });
+  const isSuperAdmin = data?.is_super_admin ?? false;
+  const kpis = useMemo(() => data?.kpis ?? [], [data]);
+
+  const can = useCallback(
+    (kpiType: string, kpiId: string, action: KpiAction) =>
+      isSuperAdmin ||
+      kpis.some(
+        (k) =>
+          k.kpi_type === kpiType &&
+          k.kpi_id === kpiId &&
+          k.actions.includes(action),
+      ),
+    [isSuperAdmin, kpis],
+  );
+  // For records that reference their KPI by type + code (targets).
+  const canByCode = useCallback(
+    (kpiType: string, kpiCode: string, action: KpiAction) =>
+      isSuperAdmin ||
+      kpis.some(
+        (k) =>
+          k.kpi_type === kpiType &&
+          k.kpi_code === kpiCode &&
+          k.actions.includes(action),
+      ),
+    [isSuperAdmin, kpis],
+  );
+  // Whether the user may perform action on at least one KPI.
+  const canOnAny = useCallback(
+    (action: KpiAction) =>
+      isSuperAdmin || kpis.some((k) => k.actions.includes(action)),
+    [isSuperAdmin, kpis],
+  );
+  const collaboratorType = useCallback(
+    (kpiType: string, kpiId: string) =>
+      kpis.find((k) => k.kpi_type === kpiType && k.kpi_id === kpiId)
+        ?.collaborator_type,
+    [kpis],
+  );
+
+  return {
+    isLoading,
+    isSuperAdmin,
+    can,
+    canByCode,
+    canOnAny,
+    collaboratorType,
+  };
+};
+
 export const useKpiCardDefinitions = (params?: {
   type?: string;
   search?: string;
@@ -2450,6 +2510,7 @@ export const useCreateKpiCollaboratorAssignment = (
       qc.invalidateQueries({
         queryKey: ["kpi", "collaborator-assignments", type, id],
       });
+      qc.invalidateQueries({ queryKey: ["kpi", "my-access"] });
       qc.invalidateQueries({
         queryKey: ["kpi", "engagement", type, id, "activity"],
       });
@@ -2476,6 +2537,7 @@ export const useUpdateKpiCollaboratorAssignment = (
       qc.invalidateQueries({
         queryKey: ["kpi", "collaborator-assignments", type, id],
       });
+      qc.invalidateQueries({ queryKey: ["kpi", "my-access"] });
       qc.invalidateQueries({
         queryKey: ["kpi", "engagement", type, id, "activity"],
       });
@@ -2497,6 +2559,7 @@ export const useDeleteKpiCollaboratorAssignment = (
       qc.invalidateQueries({
         queryKey: ["kpi", "collaborator-assignments", type, id],
       });
+      qc.invalidateQueries({ queryKey: ["kpi", "my-access"] });
       qc.invalidateQueries({
         queryKey: ["kpi", "engagement", type, id, "activity"],
       });

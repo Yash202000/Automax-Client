@@ -38,6 +38,7 @@ import {
   useKpiMetricPeriodSeries,
   useKpiEntries,
   useKpiCardDefinitions,
+  useKpiAccess,
 } from "../../../hooks/useKpi";
 import {
   getBandColor,
@@ -50,6 +51,8 @@ import {
   periodMatchesFilter,
 } from "../../../types/kpi";
 import type { KpiAnnualRollupRow } from "../../../types/kpi";
+import { KpiNoAccess } from "../../../components/kpi/KpiNoAccess";
+import { isKpiAccessDenied } from "../../../utils/kpiAccess";
 
 const typeColorMap: Record<string, string> = {
   strategic: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
@@ -124,7 +127,10 @@ export const KpiSingleDashboardPage: React.FC = () => {
 
   // Narrative fields — hooks must be before early returns
   const { hasPermission } = usePermissions();
-  const canEditNarrative = hasPermission("perf:submit");
+  const kpiAccess = useKpiAccess();
+  const canEditNarrative =
+    hasPermission("perf:submit") &&
+    kpiAccess.can(type ?? "", id ?? "", "create_entry");
   const queryClient = useQueryClient();
 
   const [curveDescription, setCurveDescription] = useState(
@@ -175,6 +181,10 @@ export const KpiSingleDashboardPage: React.FC = () => {
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
+  }
+
+  if (isKpiAccessDenied(error)) {
+    return <KpiNoAccess />;
   }
 
   if (error || !dashboard) {

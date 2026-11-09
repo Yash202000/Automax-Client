@@ -1831,6 +1831,33 @@ export interface CollaboratorPermissionMatrix {
   critical_constraint: string;
 }
 
+// What a user may do on one KPI, granted by their collaborator assignment
+// (the Collaborators tab Permission Matrix). The backend enforces the same
+// rules on top of the role permissions.
+export type KpiAction =
+  | "view"
+  | "edit_kpi"
+  | "contribute"
+  | "create_entry"
+  | "submit_entry"
+  | "review"
+  | "approve"
+  | "manage_targets"
+  | "manage_collaborators";
+
+export interface KpiAssignmentAccess {
+  kpi_type: string;
+  kpi_id: string;
+  kpi_code: string;
+  collaborator_type: string;
+  actions: KpiAction[];
+}
+
+export interface MyKpiAccess {
+  is_super_admin: boolean;
+  kpis: KpiAssignmentAccess[];
+}
+
 export const COLLABORATOR_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: "KPI Owner", label: "KPI Owner" },
   { value: "Data Contributor", label: "Data Contributor" },

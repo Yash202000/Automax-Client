@@ -63,6 +63,7 @@ import {
   useOperationalObjectives,
   useKpiMetricDisplayRollup,
   useKpiCompositeScoreLatest,
+  useKpiAccess,
 } from "../../../hooks/useKpi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { useAuthStore } from "../../../stores/authStore";
@@ -81,6 +82,8 @@ import { ViewEntriesModal } from "../../../components/kpi/ViewEntriesModal";
 import { CollaboratorsTab } from "../../../components/kpi/CollaboratorsTab";
 import { KpiEvidenceUploadModal } from "../../../components/kpi/KpiEvidenceUploadModal";
 import { BaselineRevisionPanel } from "../../../components/kpi/BaselineRevisionPanel";
+import { KpiNoAccess } from "../../../components/kpi/KpiNoAccess";
+import { isKpiAccessDenied } from "../../../utils/kpiAccess";
 import { BaselinePeriodPicker } from "../../../components/kpi/BaselinePeriodPicker";
 import type {
   KpiCheckInStatus,
@@ -94,6 +97,7 @@ import type {
   WorkflowTransitionBrief,
 } from "../../../types/kpi";
 import { formatBaselinePeriod } from "../../../types/kpi";
+import type { KpiAction } from "../../../types/kpi";
 
 const statusColorMap: Record<string, string> = {
   draft: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -187,6 +191,8 @@ interface MetricRollupCardProps {
   // enforced server-side too (see kpi_entry_handler.go CreateEntry), this
   // just keeps the button from inviting a request that will be rejected.
   kpiIsActive: boolean;
+  // Hidden when the user's collaborator role cannot create entries.
+  canAddEntry: boolean;
 }
 
 const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
@@ -200,6 +206,7 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
   formatValue,
   statusBadgeClass,
   kpiIsActive,
+  canAddEntry,
 }) => {
   // The server resolves which period to show: the real current period if it
   // has data, otherwise the most recent period that does — so a metric
@@ -363,22 +370,24 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
         <Button size="sm" variant="outline" onClick={onViewEntries}>
           Entries
         </Button>
-        <Button
-          size="sm"
-          disabled={
-            m.metric_status === "Inactive" ||
-            m.metric_status === "Archived" ||
-            !kpiIsActive
-          }
-          title={
-            !kpiIsActive
-              ? "Metric entries can only be added while the KPI is Active"
-              : undefined
-          }
-          onClick={onAddEntry}
-        >
-          Add Entry
-        </Button>
+        {canAddEntry && (
+          <Button
+            size="sm"
+            disabled={
+              m.metric_status === "Inactive" ||
+              m.metric_status === "Archived" ||
+              !kpiIsActive
+            }
+            title={
+              !kpiIsActive
+                ? "Metric entries can only be added while the KPI is Active"
+                : undefined
+            }
+            onClick={onAddEntry}
+          >
+            Add Entry
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -391,7 +400,21 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { type, id } = useParams<{ type: string; id: string }>();
   const navigate = useNavigate();
-  const { canUpdateKpi, canAssignKpi } = usePermissions();
+  const permissions = usePermissions();
+  const kpiAccess = useKpiAccess();
+  // An action needs both the role permission and the user's collaborator
+  // role on this KPI (Permission Matrix); the backend enforces the same.
+  const canOnKpi = (action: KpiAction) =>
+    kpiAccess.can(type ?? "", id ?? "", action);
+  const canUpdateKpi = () => permissions.canUpdateKpi() && canOnKpi("edit_kpi");
+  const canAssignKpi = () =>
+    permissions.canAssignKpi() && canOnKpi("manage_collaborators");
+  const canAddEvidence = () =>
+    permissions.canUpdateKpi() && canOnKpi("create_entry");
+  const canContribute = () =>
+    permissions.canUpdateKpi() && canOnKpi("contribute");
+  const canAddEntry = () =>
+    permissions.canSubmitKpiPerformance() && canOnKpi("create_entry");
   const currentUser = useAuthStore((state) => state.user);
 
   const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -771,6 +794,10 @@ export const KpiDictionaryDetailPage: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  if (isKpiAccessDenied(error)) {
+    return <KpiNoAccess />;
   }
 
   if (error || !kpi) {
@@ -2169,6 +2196,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   formatValue={formatMetricValue}
                   statusBadgeClass={metricStatusBadgeClass}
                   kpiIsActive={kpi.activation_status === "active"}
+                  canAddEntry={canAddEntry()}
                 />
               ))}
             </div>
@@ -2635,7 +2663,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
               Evidence Summaries ({(evidenceList ?? []).length})
             </h2>
             <div className="flex items-center gap-3">
-              {canUpdateKpi() && (
+              {canAddEvidence() && (
                 <Button
                   size="sm"
                   leftIcon={<Plus className="w-4 h-4" />}
@@ -2722,7 +2750,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                      {canUpdateKpi() && (
+                      {canAddEvidence() && (
                         <button
                           onClick={(ev) => {
                             ev.stopPropagation();
@@ -2811,7 +2839,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       {/* ── Check-ins Tab ─────────────────────────── */}
       {activeTab === "check-ins" && (
         <div className="space-y-6">
-          {canUpdateKpi() && (
+          {canContribute() && (
             <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div className="sm:col-span-1">
@@ -2872,7 +2900,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                         · {formatDate(ci.created_at)}
                       </span>
                     </div>
-                    {canUpdateKpi() && (
+                    {canContribute() && (
                       <button
                         onClick={() => {
                           if (window.confirm("Delete this check-in?")) {
@@ -2927,29 +2955,31 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       {/* ── Comments Tab ──────────────────────────── */}
       {activeTab === "comments" && (
         <div className="space-y-6">
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-              Add a Comment
-            </h2>
-            <div className="space-y-3">
-              <textarea
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Write a comment..."
-                rows={3}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              />
-              <div className="flex justify-end">
-                <Button
-                  leftIcon={<Send className="w-4 h-4" />}
-                  onClick={handleAddComment}
-                  disabled={addComment.isPending || !commentText.trim()}
-                >
-                  {addComment.isPending ? "Posting..." : "Post"}
-                </Button>
+          {canContribute() && (
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/80 p-6">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                Add a Comment
+              </h2>
+              <div className="space-y-3">
+                <textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Write a comment..."
+                  rows={3}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+                <div className="flex justify-end">
+                  <Button
+                    leftIcon={<Send className="w-4 h-4" />}
+                    onClick={handleAddComment}
+                    disabled={addComment.isPending || !commentText.trim()}
+                  >
+                    {addComment.isPending ? "Posting..." : "Post"}
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {(commentData?.data ?? []).length > 0 ? (
             <div className="space-y-4">

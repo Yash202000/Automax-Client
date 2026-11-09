@@ -22,6 +22,7 @@ import {
   useDeleteKpiEntry,
   useKpiAvailableEntryTransitions,
   useTransitionKpiEntry,
+  useKpiAccess,
 } from "../../hooks/useKpi";
 import { usePermissions } from "../../hooks/usePermissions";
 import { kpiTransitionPermissionCode } from "../../utils/kpiTransitionPermission";
@@ -227,7 +228,11 @@ export const ViewEntriesModal: React.FC<ViewEntriesModalProps> = ({
   const { data: entries, isLoading } = useKpiEntries(kpiType, kpiId, metricId);
   const { data: metrics } = useKpiMetrics(kpiType, kpiId);
   const { hasPermission } = usePermissions();
-  const canEdit = hasPermission("perf:submit");
+  const kpiAccess = useKpiAccess();
+  // Role permission and the collaborator role on this KPI must both allow it.
+  const canEdit =
+    hasPermission("perf:submit") &&
+    kpiAccess.can(kpiType, kpiId, "create_entry");
 
   const deleteEntry = useDeleteKpiEntry();
   const transitionEntry = useTransitionKpiEntry();

@@ -28,6 +28,7 @@ import {
   useKpiAvailableEntryTransitions,
   useKpiEntryHistory,
   useTransitionKpiEntry,
+  useKpiAccess,
 } from "../../../hooks/useKpi";
 import { usePermissions } from "../../../hooks/usePermissions";
 import { kpiTransitionPermissionCode } from "../../../utils/kpiTransitionPermission";
@@ -566,7 +567,12 @@ export const KpiEntriesPage: React.FC = () => {
   const limit = 20;
 
   const { hasPermission } = usePermissions();
-  const canEdit = hasPermission("perf:submit");
+  const kpiAccess = useKpiAccess();
+  // Role permission and the collaborator role on the entry's KPI must both
+  // allow it.
+  const canEdit = (entry: KpiEntry) =>
+    hasPermission("perf:submit") &&
+    kpiAccess.can(entry.kpi_type, entry.kpi_id, "create_entry");
 
   const deleteEntry = useDeleteKpiEntry();
   const transitionEntry = useTransitionKpiEntry();
@@ -810,7 +816,7 @@ export const KpiEntriesPage: React.FC = () => {
                             <Eye className="w-4 h-4" />
                             View
                           </button>
-                          {entry.status === "draft" && canEdit && (
+                          {entry.status === "draft" && canEdit(entry) && (
                             <>
                               <button
                                 onClick={() => setEditTarget(entry)}
@@ -828,7 +834,7 @@ export const KpiEntriesPage: React.FC = () => {
                               </button>
                             </>
                           )}
-                          {entry.status === "approved" && canEdit && (
+                          {entry.status === "approved" && canEdit(entry) && (
                             <button
                               onClick={() => setCorrectTarget(entry)}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap"
@@ -877,7 +883,7 @@ export const KpiEntriesPage: React.FC = () => {
       {/* Entry Detail Modal */}
       <EntryDetailModal
         entry={selectedEntry}
-        canEdit={canEdit}
+        canEdit={!!selectedEntry && canEdit(selectedEntry)}
         onClose={() => setSelectedEntry(null)}
         onEdit={(entry) => {
           setSelectedEntry(null);
