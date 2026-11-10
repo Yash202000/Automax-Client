@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Search,
@@ -18,6 +18,8 @@ import {
   AlertTriangle,
   Clock,
   X,
+  Download,
+  Filter,
 } from "lucide-react";
 import { Button } from "../../components/ui";
 import { cn } from "@/lib/utils";
@@ -29,6 +31,7 @@ import { toast } from "sonner";
 import usePermissions from "@/hooks/usePermissions";
 import { PERMISSIONS } from "@/constants/permissions";
 import type { EscalationPolicy } from "@/types";
+import EscalationLogView from "@/components/escalation/EscalationLogView";
 
 // ─── Sub-types ───────────────────────────────────────────────────────────────
 
@@ -813,163 +816,19 @@ const GroupsTab: React.FC = () => {
   );
 };
 
-// ─── Tab: Breach Audit Log ────────────────────────────────────────────────────
-
 const BreachLogTab: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const [search, setSearch] = useState("");
-
-  // TODO: wire up real API endpoint when available
-  const { data, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ["escalation-sla-log"],
-    queryFn: async () => {
-      const res = await fetch("/api/v1/admin/escalation-sla", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      if (!res.ok) throw new Error(t("escalation.breachLog.loadError"));
-      return res.json();
-    },
-    retry: false,
-  });
-
-  const records = (data?.data || []) as any[];
-
-  const filtered = useMemo(() => {
-    if (!search) return records;
-    return records.filter(
-      (r) =>
-        r.incident_number?.toLowerCase().includes(search.toLowerCase()) ||
-        r.escalation_type?.toLowerCase().includes(search.toLowerCase()),
-    );
-  }, [records, search]);
-
-  const formatDate = (d?: string) => {
-    if (!d) return "-";
-    return new Date(d).toLocaleString(
-      i18n.language === "ar" ? "ar-SA" : "en-US",
-      {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      },
-    );
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("escalation.breachLog.search")}
-            className="w-full pl-9 pr-3 h-9 text-sm rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
-          />
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          isLoading={isRefetching}
-          leftIcon={<RefreshCw className="w-4 h-4" />}
-        >
-          {t("common.refresh")}
-        </Button>
-      </div>
-
-      <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm">
-        {isLoading ? (
-          <div className="p-12 text-center">
-            <div className="w-10 h-10 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-[hsl(var(--muted-foreground))]">
-              {t("common.loading")}
-            </p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-12 text-center">
-            <AlertTriangle className="w-10 h-10 text-[hsl(var(--muted-foreground))] mx-auto mb-3" />
-            <h3 className="font-semibold text-[hsl(var(--foreground))] mb-1">
-              {t("escalation.breachLog.noRecords")}
-            </h3>
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              {t("escalation.breachLog.noRecordsHint")}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
-                  {[
-                    "escalation.breachLog.incident",
-                    "escalation.breachLog.type",
-                    "escalation.breachLog.state",
-                    "escalation.breachLog.step",
-                    "escalation.channel",
-                    "escalation.breachLog.sentAt",
-                  ].map((key) => (
-                    <th key={key} className="px-5 py-3.5 text-start">
-                      <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider whitespace-nowrap">
-                        {t(key)}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[hsl(var(--border))]">
-                {filtered.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="hover:bg-[hsl(var(--muted)/0.4)] transition-colors"
-                  >
-                    <td className="px-5 py-3.5">
-                      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[hsl(var(--primary))]">
-                        <FileText className="w-3.5 h-3.5" />
-                        {r.incident_number || r.incident_id?.slice(0, 8)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20">
-                        {r.escalation_type}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-[hsl(var(--foreground))]">
-                      {r.state_name || "—"}
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-[hsl(var(--foreground))]">
-                      {r.step_order != null
-                        ? t("escalation.breachLog.stepNumber", {
-                            count: r.step_order,
-                          })
-                        : "—"}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))]">
-                        {r.channel}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-[hsl(var(--muted-foreground))]">
-                      {formatDate(r.sent_at)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return <EscalationLogView />;
 };
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 type Tab = "policies" | "groups" | "breach-log";
 
-const TABS: { id: Tab; labelKey: string; icon: React.ReactNode }[] = [
+const MANAGEMENT_TABS: {
+  id: Tab;
+  labelKey: string;
+  icon: React.ReactNode;
+}[] = [
   {
     id: "policies",
     labelKey: "escalation.tabs.policies",
@@ -980,21 +839,53 @@ const TABS: { id: Tab; labelKey: string; icon: React.ReactNode }[] = [
     labelKey: "escalation.tabs.groups",
     icon: <Users className="w-4 h-4" />,
   },
-  // {
-  //   id: "breach-log",
-  //   labelKey: "escalation.tabs.breachLog",
-  //   icon: <AlertTriangle className="w-4 h-4" />,
-  // },
 ];
+
+const LOG_TAB: {
+  id: Tab;
+  labelKey: string;
+  icon: React.ReactNode;
+} = {
+  id: "breach-log",
+  labelKey: "escalation.tabs.breachLog",
+  icon: <AlertTriangle className="w-4 h-4" />,
+};
 
 export const EscalationConfigPage: React.FC = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<Tab>("policies");
+  const { hasPermission } = usePermissions();
+  const canManageEscalation = hasPermission(PERMISSIONS.ESCALATION_GROUPS_VIEW);
+  const canViewLog = hasPermission(PERMISSIONS.ESCALATION_LOGS_VIEW);
+  const [activeTab, setActiveTab] = useState<Tab>(
+    canManageEscalation ? "policies" : "breach-log",
+  );
+
+  const visibleTabs = [
+    ...(canManageEscalation ? MANAGEMENT_TABS : []),
+    ...(canViewLog ? [LOG_TAB] : []),
+  ];
+  const effectiveTab = visibleTabs.some((tab) => tab.id === activeTab)
+    ? activeTab
+    : visibleTabs[0]?.id;
+
+  useEffect(() => {
+    if (effectiveTab !== "breach-log") return;
+
+    const rootOverflow = document.documentElement.style.overflow;
+    const bodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.documentElement.style.overflow = rootOverflow;
+      document.body.style.overflow = bodyOverflow;
+    };
+  }, [effectiveTab]);
 
   return (
-    <div className="space-y-6">
+    <div className="flex h-full min-h-0 flex-col gap-6">
       {/* Page header */}
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-3">
         <div className="p-2 rounded-lg bg-[hsl(var(--primary)/0.1)]">
           <ShieldAlert className="w-5 h-5 text-[hsl(var(--primary))]" />
         </div>
@@ -1009,15 +900,15 @@ export const EscalationConfigPage: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-[hsl(var(--border))]">
+      <div className="shrink-0 border-b border-[hsl(var(--border))]">
         <div className="flex gap-1">
-          {TABS.map(({ id, labelKey, icon }) => (
+          {visibleTabs.map(({ id, labelKey, icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
               className={cn(
                 "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
-                activeTab === id
+                effectiveTab === id
                   ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
                   : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:border-[hsl(var(--border))]",
               )}
@@ -1029,10 +920,11 @@ export const EscalationConfigPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tab content */}
-      {activeTab === "policies" && <PoliciesTab />}
-      {activeTab === "groups" && <GroupsTab />}
-      {activeTab === "breach-log" && <BreachLogTab />}
+      <div>
+        {effectiveTab === "policies" && <PoliciesTab />}
+        {effectiveTab === "groups" && <GroupsTab />}
+        {effectiveTab === "breach-log" && canViewLog && <BreachLogTab />}
+      </div>
     </div>
   );
 };

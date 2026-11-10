@@ -147,6 +147,8 @@ export const PERMISSIONS = {
   ESCALATION_GROUPS_ASSIGN_USERS: "escalation-groups:assign_users",
   ESCALATION_GROUPS_MANAGE_RULES: "escalation-groups:manage_rules",
   ESCALATION_POLICY_CREATE: "escalation-policies:create",
+  ESCALATION_LOGS_VIEW: "escalation-logs:view",
+  ESCALATION_LOGS_EXPORT: "escalation-logs:export",
 
   // Goal permissions
   GOALS_VIEW: "goals:view",
