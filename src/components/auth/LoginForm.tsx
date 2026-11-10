@@ -18,9 +18,12 @@ import { Button, Input, Checkbox } from "../ui";
 import { authApi } from "../../api/auth";
 import { ssoApi } from "../../api/sso";
 import { ldapApi, isADOtpChallenge } from "../../api/ldap";
+import { nafathApi } from "../../api/nafath";
+import type { NafathPending } from "../../api/nafath";
 import { useAuthStore } from "../../stores/authStore";
 import type { User } from "../../types";
 import { OTPInput } from "./OTPInput";
+import { NafathApproval } from "./NafathApproval";
 import { useSettings } from "@/contexts/SettingsContext";
 import { otpApi } from "@/api/otp";
 
@@ -95,6 +98,10 @@ export const LoginForm: React.FC = () => {
   // AD-Baseer second step: set when /ldap/login asks for the mobile OTP.
   const [adChallengeId, setAdChallengeId] = useState<string | null>(null);
   const [adOtp, setAdOtp] = useState("");
+  // Nafath: set while waiting for the person to approve in the Nafath app.
+  const [nafathPending, setNafathPending] = useState<NafathPending | null>(
+    null,
+  );
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
   const setUser = useAuthStore((state) => state.setUser);
@@ -184,6 +191,7 @@ export const LoginForm: React.FC = () => {
     setAdPassword("");
     setAdChallengeId(null);
     setAdOtp("");
+    setNafathPending(null);
   };
 
   const apiErrorOf = (err: unknown) => {
@@ -209,6 +217,25 @@ export const LoginForm: React.FC = () => {
     if (!nationalId.trim()) return;
     setIsLoading(true);
     setError("");
+
+    try {
+      const response = await nafathApi.start(nationalId.trim());
+      if (response.success && response.data) {
+        setNafathPending(response.data);
+      } else {
+        setError(response.error || t("auth.loginError"));
+      }
+      setIsLoading(false);
+      return;
+    } catch (err: unknown) {
+      const { message, code } = apiErrorOf(err);
+      // Without Nafath on the server, fall back to the National ID login.
+      if (code !== "nafath_disabled") {
+        setError(message);
+        setIsLoading(false);
+        return;
+      }
+    }
 
     try {
       const response = await ssoApi.login({ national_id: nationalId });
@@ -441,13 +468,34 @@ export const LoginForm: React.FC = () => {
         </div>
       )}
 
-      {isSso ? (
+      {isSso && nafathPending ? (
+        <NafathApproval
+          initial={nafathPending}
+          onApproved={(data) =>
+            completeLogin({
+              user: data.user,
+              token: data.token,
+              refreshToken: data.refresh_token,
+            })
+          }
+          onFailed={(message) => {
+            setNafathPending(null);
+            setError(message);
+          }}
+          onCancel={() => {
+            setNafathPending(null);
+            setError("");
+          }}
+        />
+      ) : isSso ? (
         <form onSubmit={handleSsoLogin} className="space-y-5" noValidate>
           <Input
             label={t("auth.nationalId")}
             placeholder={t("auth.nationalIdPlaceholder")}
             value={nationalId}
-            onChange={(e) => setNationalId(e.target.value)}
+            onChange={(e) => setNationalId(e.target.value.replace(/\D/g, ""))}
+            inputMode="numeric"
+            maxLength={10}
             leftIcon={<Fingerprint className="w-5 h-5" />}
           />
 

@@ -31,6 +31,7 @@ import {
   EyeOff,
   ChevronDown,
   FileSpreadsheet,
+  Fingerprint,
 } from "lucide-react";
 import {
   Button,
@@ -79,9 +80,18 @@ interface UserFormData {
   role_ids: string[];
   is_active: boolean;
   is_ad_user: boolean;
+  // Nafath login: on = national_id is required and saved; off = removed.
+  nafath_login: boolean;
+  national_id: string;
   bypass_login_totp?: boolean;
   enable_login_totp?: boolean;
 }
+
+// A real National ID (citizen 1…, Iqama 2…). Users without one hold a random
+// placeholder in national_id, which must be shown as empty.
+const NATIONAL_ID_REGEX = /^[12]\d{9}$/;
+const realNationalId = (id?: string) =>
+  id && NATIONAL_ID_REGEX.test(id) ? id : "";
 
 const ToggleSwitch: React.FC<{
   checked: boolean;
@@ -129,8 +139,79 @@ const TotpToggleRow: React.FC<{
   </div>
 );
 
+// Nafath login toggle with its National ID field, shown in the add and edit
+// user forms while Nafath login is enabled (like the AD user toggle).
+const NafathLoginFields: React.FC<{
+  enabled: boolean;
+  nationalId: string;
+  error?: string;
+  description?: string;
+  onEnabledChange: (checked: boolean) => void;
+  onNationalIdChange: (value: string) => void;
+  inputClassName: string;
+  renderError: (message?: string) => React.ReactNode;
+}> = ({
+  enabled,
+  nationalId,
+  error,
+  description,
+  onEnabledChange,
+  onNationalIdChange,
+  inputClassName,
+  renderError,
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-3">
+      <TotpToggleRow
+        title={t("users.nafathUserToggle", "Nafath login (National ID)")}
+        description={
+          description ??
+          t(
+            "users.nafathUserToggleDesc",
+            "Signs in with the National ID and approval in the Nafath app.",
+          )
+        }
+        checked={enabled}
+        onChange={onEnabledChange}
+      />
+      {enabled && (
+        <div>
+          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+            {t("users.nationalId", "National ID / Iqama number")}{" "}
+            <span className="text-[hsl(var(--destructive))]">*</span>
+          </label>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={10}
+            placeholder="1xxxxxxxxx"
+            value={nationalId}
+            onChange={(e) =>
+              onNationalIdChange(e.target.value.replace(/\D/g, ""))
+            }
+            className={inputClassName}
+            data-testid="national-id-input"
+          />
+          {renderError(error)}
+          <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+            {t(
+              "users.nationalIdHint",
+              "10 digits: starts with 1 for citizens, 2 for residents (Iqama).",
+            )}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 type UserFieldErrors = Partial<
-  Record<"email" | "username" | "password" | "phone" | "form", string>
+  Record<
+    "email" | "username" | "password" | "phone" | "national_id" | "form",
+    string
+  >
 >;
 
 const USER_PASSWORD_POLICY_REGEX =
@@ -160,6 +241,8 @@ const initialFormData: UserFormData = {
   role_ids: [],
   is_active: true,
   is_ad_user: false,
+  nafath_login: false,
+  national_id: "",
 };
 
 export const UsersPage: React.FC = () => {
@@ -193,6 +276,7 @@ export const UsersPage: React.FC = () => {
   });
   const adDirectoryEnabled = directoryStatus?.enabled ?? false;
   const adUsersEnabled = directoryStatus?.ad_users ?? false;
+  const nafathUsersEnabled = directoryStatus?.nafath_users ?? false;
   const canPasswordReset = hasPermission(PERMISSIONS.USER_RESET_PASSWORD);
 
   const [search, setSearch] = useState("");
@@ -236,6 +320,8 @@ export const UsersPage: React.FC = () => {
     classification_ids: [] as string[],
     role_ids: [] as string[],
     is_ad_user: false,
+    nafath_login: false,
+    national_id: "",
     bypass_login_totp: false,
     enable_login_totp: false,
   });
@@ -686,6 +772,10 @@ export const UsersPage: React.FC = () => {
 
     const lowerMessage = message.toLowerCase();
 
+    if (/national id|nafath|الهوية|نفاذ/.test(lowerMessage)) {
+      return { national_id: message };
+    }
+
     if (lowerMessage.includes("email")) {
       return { email: message };
     }
@@ -919,6 +1009,8 @@ export const UsersPage: React.FC = () => {
       classification_ids: [],
       role_ids: [],
       is_ad_user: false,
+      nafath_login: false,
+      national_id: "",
       bypass_login_totp: false,
       enable_login_totp: false,
     });
@@ -945,6 +1037,8 @@ export const UsersPage: React.FC = () => {
       classification_ids: [],
       role_ids: [],
       is_ad_user: false,
+      nafath_login: false,
+      national_id: "",
       bypass_login_totp: false,
       enable_login_totp: false,
     });
@@ -996,6 +1090,17 @@ export const UsersPage: React.FC = () => {
       errors.phone = t("users.invalidPhone");
     }
 
+    if (
+      nafathUsersEnabled &&
+      createFormData.nafath_login &&
+      !NATIONAL_ID_REGEX.test(createFormData.national_id)
+    ) {
+      errors.national_id = t(
+        "users.nationalIdInvalid",
+        "Enter a 10-digit National ID starting with 1 (citizen) or 2 (Iqama).",
+      );
+    }
+
     setCreateFormErrors(errors);
     if (Object.keys(errors).length > 0) {
       toast.error(t("errors.validationError"));
@@ -1005,6 +1110,10 @@ export const UsersPage: React.FC = () => {
     createMutation.mutate({
       data: {
         ...createFormData,
+        national_id:
+          nafathUsersEnabled && createFormData.nafath_login
+            ? createFormData.national_id
+            : "",
         password: createFormData.is_ad_user ? "" : createFormData.password,
         extension: "",
         phone: createFormData.phone.trim(),
@@ -1065,6 +1174,8 @@ export const UsersPage: React.FC = () => {
       role_ids: user.roles?.map((r) => r.id) || [],
       is_active: user.is_active,
       is_ad_user: !!user.is_ad_user,
+      nafath_login: !!realNationalId(user.national_id),
+      national_id: realNationalId(user.national_id),
       bypass_login_totp: user.bypass_login_totp ?? false,
       enable_login_totp: user.enable_login_totp ?? false,
     });
@@ -1114,6 +1225,17 @@ export const UsersPage: React.FC = () => {
       errors.phone = t("users.invalidPhone");
     }
 
+    if (
+      nafathUsersEnabled &&
+      formData.nafath_login &&
+      !NATIONAL_ID_REGEX.test(formData.national_id)
+    ) {
+      errors.national_id = t(
+        "users.nationalIdInvalid",
+        "Enter a 10-digit National ID starting with 1 (citizen) or 2 (Iqama).",
+      );
+    }
+
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) {
       toast.error(t("errors.validationError"));
@@ -1139,6 +1261,12 @@ export const UsersPage: React.FC = () => {
       role_ids: formData.role_ids,
       is_active: formData.is_active,
       is_ad_user: formData.is_ad_user,
+      // Only sent while Nafath is enabled; off = remove the National ID.
+      national_id: nafathUsersEnabled
+        ? formData.nafath_login
+          ? formData.national_id
+          : ""
+        : undefined,
       bypass_login_totp: showEditBypassTotpToggle
         ? !!formData.bypass_login_totp
         : false,
@@ -2159,6 +2287,18 @@ export const UsersPage: React.FC = () => {
                                   AD
                                 </span>
                               )}
+                              {realNationalId(user.national_id) && (
+                                <span
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 rounded-full"
+                                  title={t(
+                                    "users.nafathBadgeTitle",
+                                    "Can sign in with Nafath",
+                                  )}
+                                >
+                                  <Fingerprint className="w-3 h-3" />
+                                  {t("users.nafathBadge", "Nafath")}
+                                </span>
+                              )}
                             </p>
                             <p className="text-sm text-[hsl(var(--muted-foreground))]">
                               @{user.username}
@@ -2899,6 +3039,42 @@ export const UsersPage: React.FC = () => {
                   />
                 )}
 
+                {/* Nafath login (National ID) */}
+                {nafathUsersEnabled && (
+                  <NafathLoginFields
+                    enabled={formData.nafath_login}
+                    nationalId={formData.national_id}
+                    error={formErrors?.national_id}
+                    description={
+                      !formData.nafath_login &&
+                      realNationalId(editingUser.national_id)
+                        ? t(
+                            "users.nafathSwitchOffDesc",
+                            "The National ID will be removed. The user will no longer be able to sign in with Nafath.",
+                          )
+                        : undefined
+                    }
+                    onEnabledChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        nafath_login: checked,
+                      }))
+                    }
+                    onNationalIdChange={(value) => {
+                      setFormData((prev) => ({ ...prev, national_id: value }));
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        national_id: undefined,
+                      }));
+                    }}
+                    inputClassName={getInputClassName(
+                      !!formErrors?.national_id,
+                      "font-mono",
+                    )}
+                    renderError={renderFieldError}
+                  />
+                )}
+
                 {/* Login TOTP override */}
                 {showEditBypassTotpToggle && (
                   <TotpToggleRow
@@ -3140,6 +3316,36 @@ export const UsersPage: React.FC = () => {
                         password: undefined,
                       }));
                     }}
+                  />
+                )}
+
+                {/* Nafath login (National ID) */}
+                {nafathUsersEnabled && (
+                  <NafathLoginFields
+                    enabled={createFormData.nafath_login}
+                    nationalId={createFormData.national_id}
+                    error={createFormErrors.national_id}
+                    onEnabledChange={(checked) =>
+                      setCreateFormData((prev) => ({
+                        ...prev,
+                        nafath_login: checked,
+                      }))
+                    }
+                    onNationalIdChange={(value) => {
+                      setCreateFormData((prev) => ({
+                        ...prev,
+                        national_id: value,
+                      }));
+                      setCreateFormErrors((prev) => ({
+                        ...prev,
+                        national_id: undefined,
+                      }));
+                    }}
+                    inputClassName={getInputClassName(
+                      !!createFormErrors.national_id,
+                      "font-mono",
+                    )}
+                    renderError={renderFieldError}
                   />
                 )}
 
