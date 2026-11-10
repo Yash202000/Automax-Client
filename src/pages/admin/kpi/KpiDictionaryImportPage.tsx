@@ -23,6 +23,34 @@ import type {
   KpiImportResult,
 } from "../../../types/kpi";
 
+export type KpiImportPageApi = {
+  validate: (
+    _file: File,
+    _options: KpiImportOptions,
+  ) => Promise<{ data?: KpiImportResult }>;
+  commit: (
+    _file: File,
+    _options: KpiImportOptions,
+  ) => Promise<{ data?: KpiImportResult }>;
+  downloadTemplate?: (_language: "en" | "ar") => Promise<void>;
+};
+
+export interface KpiImportPageConfig {
+  /** i18n namespace holding the shared import copy, e.g. kpi.dictionaryImport. */
+  ns: string;
+  categories: string[];
+  api: KpiImportPageApi;
+  backTo: string;
+  backLabelKey: string;
+  goTo: string;
+  goToLabelKey: string;
+  /**
+   * Whether the signed-in user may overwrite existing records. Defaults to
+   * kpi:update (Dictionary/Metrics); Targets passes its own targets:set check.
+   */
+  canUpdateExisting?: () => boolean;
+}
+
 // Record categories in the order the backend reports them.
 const CATEGORIES = [
   "department",
@@ -120,10 +148,14 @@ const errorMessage = (err: unknown, fallback: string) => {
   return e?.response?.data?.message || e?.response?.data?.error || fallback;
 };
 
-export const KpiDictionaryImportPage: React.FC = () => {
-  const { t } = useTranslation();
+export const KpiImportPage: React.FC<{ config: KpiImportPageConfig }> = ({
+  config,
+}) => {
+  const { t, i18n } = useTranslation();
+  const ns = config.ns;
   const queryClient = useQueryClient();
   const { canUpdateKpi } = usePermissions();
+  const canUpdateExisting = config.canUpdateExisting ?? canUpdateKpi;
   const fileInput = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
@@ -134,6 +166,7 @@ export const KpiDictionaryImportPage: React.FC = () => {
   const [preview, setPreview] = useState<KpiImportResult | null>(null);
   const [completed, setCompleted] = useState<KpiImportResult | null>(null);
   const [busy, setBusy] = useState<"validate" | "commit" | null>(null);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [tab, setTab] = useState<"errors" | "warnings" | "records">("errors");
   const [actionFilter, setActionFilter] = useState<string>("");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
@@ -147,16 +180,33 @@ export const KpiDictionaryImportPage: React.FC = () => {
     if (fileInput.current) fileInput.current.value = "";
   };
 
+  const downloadTemplate = async () => {
+    if (!config.api.downloadTemplate) return;
+    setDownloadingTemplate(true);
+    try {
+      const language = (i18n.resolvedLanguage ?? i18n.language)
+        .toLowerCase()
+        .startsWith("ar")
+        ? "ar"
+        : "en";
+      await config.api.downloadTemplate(language);
+    } catch {
+      toast.error(t(`${ns}.templateDownloadFailed`));
+    } finally {
+      setDownloadingTemplate(false);
+    }
+  };
+
   const validate = async (f: File, opts: KpiImportOptions) => {
     setBusy("validate");
     try {
-      const res = await kpiDictionaryImportApi.validate(f, opts);
+      const res = await config.api.validate(f, opts);
       if (res.data) {
         setPreview(res.data);
         setTab(res.data.errors.length ? "errors" : "records");
       }
     } catch (err) {
-      toast.error(errorMessage(err, t("kpi.dictionaryImport.validateFailed")));
+      toast.error(errorMessage(err, t(`${ns}.validateFailed`)));
     } finally {
       setBusy(null);
     }
@@ -174,20 +224,18 @@ export const KpiDictionaryImportPage: React.FC = () => {
     if (!file || !preview?.can_commit) return;
     setBusy("commit");
     try {
-      const res = await kpiDictionaryImportApi.commit(file, options);
+      const res = await config.api.commit(file, options);
       if (res.data) {
         setCompleted(res.data);
         if (res.data.committed) {
-          toast.success(t("kpi.dictionaryImport.committed"));
+          toast.success(t(`${ns}.committed`));
           queryClient.invalidateQueries({ queryKey: ["kpi"] });
         } else {
-          toast.error(
-            res.data.commit_error || t("kpi.dictionaryImport.commitFailed"),
-          );
+          toast.error(res.data.commit_error || t(`${ns}.commitFailed`));
         }
       }
     } catch (err) {
-      toast.error(errorMessage(err, t("kpi.dictionaryImport.commitFailed")));
+      toast.error(errorMessage(err, t(`${ns}.commitFailed`)));
     } finally {
       setBusy(null);
     }
@@ -206,8 +254,8 @@ export const KpiDictionaryImportPage: React.FC = () => {
     [result, actionFilter, categoryFilter],
   );
 
-  const catLabel = (c: string) => t(`kpi.dictionaryImport.categories.${c}`, c);
-  const actionLabel = (a: string) => t(`kpi.dictionaryImport.actions.${a}`, a);
+  const catLabel = (c: string) => t(`${ns}.categories.${c}`, c);
+  const actionLabel = (a: string) => t(`${ns}.actions.${a}`, a);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -218,20 +266,37 @@ export const KpiDictionaryImportPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {t("kpi.dictionaryImport.title")}
+              {t(`${ns}.title`)}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {t("kpi.dictionaryImport.subtitle")}
+              {t(`${ns}.subtitle`)}
             </p>
           </div>
         </div>
-        <Link
-          to="/goals/kpi/dictionary"
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
-          {t("kpi.dictionaryImport.backToDictionary")}
-        </Link>
+        <div className="flex items-center gap-2">
+          {config.api.downloadTemplate && (
+            <button
+              type="button"
+              onClick={downloadTemplate}
+              disabled={downloadingTemplate}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              {downloadingTemplate ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {t(`${ns}.downloadTemplate`)}
+            </button>
+          )}
+          <Link
+            to={config.backTo}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
+            {t(config.backLabelKey)}
+          </Link>
+        </div>
       </div>
 
       {/* Step 1 — upload + options */}
@@ -260,12 +325,10 @@ export const KpiDictionaryImportPage: React.FC = () => {
               </p>
             ) : (
               <p className="text-sm text-slate-600 dark:text-slate-300">
-                {t("kpi.dictionaryImport.dropHint")}
+                {t(`${ns}.dropHint`)}
               </p>
             )}
-            <p className="text-xs text-slate-400">
-              {t("kpi.dictionaryImport.formatHint")}
-            </p>
+            <p className="text-xs text-slate-400">{t(`${ns}.formatHint`)}</p>
             <input
               ref={fileInput}
               type="file"
@@ -282,27 +345,29 @@ export const KpiDictionaryImportPage: React.FC = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-                {t("kpi.dictionaryImport.existingMode")}
+                {t(`${ns}.existingMode`)}
               </legend>
               {(["skip", "update"] as const).map((m) => (
                 <label
                   key={m}
-                  className={`flex items-start gap-2 text-sm ${m === "update" && !canUpdateKpi() ? "opacity-50" : "cursor-pointer"}`}
+                  className={`flex items-start gap-2 text-sm ${m === "update" && !canUpdateExisting() ? "opacity-50" : "cursor-pointer"}`}
                 >
                   <input
                     type="radio"
                     name="existing_mode"
                     checked={options.existing_mode === m}
-                    disabled={(m === "update" && !canUpdateKpi()) || !!busy}
+                    disabled={
+                      (m === "update" && !canUpdateExisting()) || !!busy
+                    }
                     onChange={() => changeOption({ existing_mode: m })}
                     className="mt-0.5"
                   />
                   <span>
                     <span className="font-medium text-slate-900 dark:text-white">
-                      {t(`kpi.dictionaryImport.existing_${m}`)}
+                      {t(`${ns}.existing_${m}`)}
                     </span>
                     <span className="block text-xs text-slate-500 dark:text-slate-400">
-                      {t(`kpi.dictionaryImport.existing_${m}_hint`)}
+                      {t(`${ns}.existing_${m}_hint`)}
                     </span>
                   </span>
                 </label>
@@ -310,7 +375,7 @@ export const KpiDictionaryImportPage: React.FC = () => {
             </fieldset>
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-                {t("kpi.dictionaryImport.errorMode")}
+                {t(`${ns}.errorMode`)}
               </legend>
               {(["skip_invalid", "abort"] as const).map((m) => (
                 <label
@@ -327,10 +392,10 @@ export const KpiDictionaryImportPage: React.FC = () => {
                   />
                   <span>
                     <span className="font-medium text-slate-900 dark:text-white">
-                      {t(`kpi.dictionaryImport.errors_${m}`)}
+                      {t(`${ns}.errors_${m}`)}
                     </span>
                     <span className="block text-xs text-slate-500 dark:text-slate-400">
-                      {t(`kpi.dictionaryImport.errors_${m}_hint`)}
+                      {t(`${ns}.errors_${m}_hint`)}
                     </span>
                   </span>
                 </label>
@@ -350,7 +415,7 @@ export const KpiDictionaryImportPage: React.FC = () => {
                 ) : (
                   <CheckCircle2 className="w-4 h-4" />
                 )}
-                {t("kpi.dictionaryImport.validate")}
+                {t(`${ns}.validate`)}
               </button>
             </div>
           )}
@@ -374,8 +439,8 @@ export const KpiDictionaryImportPage: React.FC = () => {
           <div className="flex-1">
             <p className="font-semibold text-slate-900 dark:text-white">
               {completed.committed
-                ? t("kpi.dictionaryImport.completedTitle")
-                : t("kpi.dictionaryImport.rolledBackTitle")}
+                ? t(`${ns}.completedTitle`)
+                : t(`${ns}.rolledBackTitle`)}
             </p>
             {completed.commit_error && (
               <p className="text-sm text-red-700 dark:text-red-400 mt-1">
@@ -408,8 +473,8 @@ export const KpiDictionaryImportPage: React.FC = () => {
               >
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {completed
-                    ? t(`kpi.dictionaryImport.totals.${k}`)
-                    : t(`kpi.dictionaryImport.totalsPreview.${k}`)}
+                    ? t(`${ns}.totals.${k}`)
+                    : t(`${ns}.totalsPreview.${k}`)}
                 </p>
                 <p className={`text-2xl font-bold ${color}`}>
                   {result.totals[k]}
@@ -423,7 +488,7 @@ export const KpiDictionaryImportPage: React.FC = () => {
               <thead className="bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400 text-xs uppercase">
                 <tr>
                   <th className="px-4 py-2 text-start">
-                    {t("kpi.dictionaryImport.category")}
+                    {t(`${ns}.category`)}
                   </th>
                   <th className="px-4 py-2 text-end">
                     {actionLabel("create")}
@@ -443,40 +508,48 @@ export const KpiDictionaryImportPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                {CATEGORIES.filter((c) => {
-                  const n = result.categories[c];
-                  return (
-                    n &&
-                    n.created +
-                      n.updated +
-                      n.skipped +
-                      n.rejected +
-                      n.rolled_back >
-                      0
-                  );
-                }).map((c) => {
-                  const n = result.categories[c];
-                  return (
-                    <tr key={c}>
-                      <td className="px-4 py-2 text-slate-900 dark:text-white">
-                        {catLabel(c)}
-                      </td>
-                      <td className="px-4 py-2 text-end">{n.created || "–"}</td>
-                      <td className="px-4 py-2 text-end">{n.updated || "–"}</td>
-                      <td className="px-4 py-2 text-end">{n.skipped || "–"}</td>
-                      <td
-                        className={`px-4 py-2 text-end ${n.rejected ? "text-red-600 font-medium" : ""}`}
-                      >
-                        {n.rejected || "–"}
-                      </td>
-                      {completed && !completed.committed && (
-                        <td className="px-4 py-2 text-end">
-                          {n.rolled_back || "–"}
+                {config.categories
+                  .filter((c) => {
+                    const n = result.categories[c];
+                    return (
+                      n &&
+                      n.created +
+                        n.updated +
+                        n.skipped +
+                        n.rejected +
+                        n.rolled_back >
+                        0
+                    );
+                  })
+                  .map((c) => {
+                    const n = result.categories[c];
+                    return (
+                      <tr key={c}>
+                        <td className="px-4 py-2 text-slate-900 dark:text-white">
+                          {catLabel(c)}
                         </td>
-                      )}
-                    </tr>
-                  );
-                })}
+                        <td className="px-4 py-2 text-end">
+                          {n.created || "–"}
+                        </td>
+                        <td className="px-4 py-2 text-end">
+                          {n.updated || "–"}
+                        </td>
+                        <td className="px-4 py-2 text-end">
+                          {n.skipped || "–"}
+                        </td>
+                        <td
+                          className={`px-4 py-2 text-end ${n.rejected ? "text-red-600 font-medium" : ""}`}
+                        >
+                          {n.rejected || "–"}
+                        </td>
+                        {completed && !completed.committed && (
+                          <td className="px-4 py-2 text-end">
+                            {n.rolled_back || "–"}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
@@ -500,15 +573,16 @@ export const KpiDictionaryImportPage: React.FC = () => {
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  {t(`kpi.dictionaryImport.tabs.${k}`)} ({count})
+                  {t(`${ns}.tabs.${k}`)} ({count})
                 </button>
               ))}
             </div>
 
             {tab !== "records" ? (
               <IssueTable
+                ns={ns}
                 issues={tab === "errors" ? result.errors : result.warnings}
-                empty={t(`kpi.dictionaryImport.no_${tab}`)}
+                empty={t(`${ns}.no_${tab}`)}
               />
             ) : (
               <div>
@@ -518,9 +592,7 @@ export const KpiDictionaryImportPage: React.FC = () => {
                     onChange={(e) => setActionFilter(e.target.value)}
                     className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
                   >
-                    <option value="">
-                      {t("kpi.dictionaryImport.allActions")}
-                    </option>
+                    <option value="">{t(`${ns}.allActions`)}</option>
                     {(
                       [
                         "create",
@@ -540,10 +612,8 @@ export const KpiDictionaryImportPage: React.FC = () => {
                     onChange={(e) => setCategoryFilter(e.target.value)}
                     className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
                   >
-                    <option value="">
-                      {t("kpi.dictionaryImport.allCategories")}
-                    </option>
-                    {CATEGORIES.map((c) => (
+                    <option value="">{t(`${ns}.allCategories`)}</option>
+                    {config.categories.map((c) => (
                       <option key={c} value={c}>
                         {catLabel(c)}
                       </option>
@@ -555,25 +625,23 @@ export const KpiDictionaryImportPage: React.FC = () => {
                     <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-xs uppercase">
                       <tr>
                         <th className="px-4 py-2 text-start">
-                          {t("kpi.dictionaryImport.action")}
+                          {t(`${ns}.action`)}
                         </th>
                         <th className="px-4 py-2 text-start">
-                          {t("kpi.dictionaryImport.category")}
+                          {t(`${ns}.category`)}
                         </th>
                         <th className="px-4 py-2 text-start">
-                          {t("kpi.dictionaryImport.record")}
+                          {t(`${ns}.record`)}
                         </th>
                         <th className="px-4 py-2 text-start">
-                          {t("kpi.dictionaryImport.name")}
+                          {t(`${ns}.name`)}
                         </th>
                         <th className="px-4 py-2 text-start">
-                          {t("kpi.dictionaryImport.worksheet")}
+                          {t(`${ns}.worksheet`)}
                         </th>
-                        <th className="px-4 py-2 text-end">
-                          {t("kpi.dictionaryImport.row")}
-                        </th>
+                        <th className="px-4 py-2 text-end">{t(`${ns}.row`)}</th>
                         <th className="px-4 py-2 text-start">
-                          {t("kpi.dictionaryImport.reason")}
+                          {t(`${ns}.reason`)}
                         </th>
                       </tr>
                     </thead>
@@ -616,7 +684,7 @@ export const KpiDictionaryImportPage: React.FC = () => {
                             colSpan={7}
                             className="px-4 py-6 text-center text-slate-400"
                           >
-                            {t("kpi.dictionaryImport.noRecords")}
+                            {t(`${ns}.noRecords`)}
                           </td>
                         </tr>
                       )}
@@ -633,7 +701,7 @@ export const KpiDictionaryImportPage: React.FC = () => {
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
               <Download className="w-4 h-4" />
-              {t("kpi.dictionaryImport.downloadReport")}
+              {t(`${ns}.downloadReport`)}
             </button>
             {completed ? (
               <div className="flex gap-2">
@@ -641,13 +709,13 @@ export const KpiDictionaryImportPage: React.FC = () => {
                   onClick={reset}
                   className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                 >
-                  {t("kpi.dictionaryImport.importAnother")}
+                  {t(`${ns}.importAnother`)}
                 </button>
                 <Link
-                  to="/goals/kpi/dictionary"
+                  to={config.backTo}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
                 >
-                  {t("kpi.dictionaryImport.goToDictionary")}
+                  {t(config.goToLabelKey)}
                 </Link>
               </div>
             ) : (
@@ -656,8 +724,8 @@ export const KpiDictionaryImportPage: React.FC = () => {
                   <span className="text-xs text-red-600 dark:text-red-400">
                     {result.options.error_mode === "abort" &&
                     result.errors.length > 0
-                      ? t("kpi.dictionaryImport.blockedByErrors")
-                      : t("kpi.dictionaryImport.nothingToCommit")}
+                      ? t(`${ns}.blockedByErrors`)
+                      : t(`${ns}.nothingToCommit`)}
                   </span>
                 )}
                 <button
@@ -665,7 +733,7 @@ export const KpiDictionaryImportPage: React.FC = () => {
                   disabled={!!busy}
                   className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
                 >
-                  {t("kpi.dictionaryImport.cancel")}
+                  {t(`${ns}.cancel`)}
                 </button>
                 <button
                   onClick={commit}
@@ -677,7 +745,7 @@ export const KpiDictionaryImportPage: React.FC = () => {
                   ) : (
                     <CheckCircle2 className="w-4 h-4" />
                   )}
-                  {t("kpi.dictionaryImport.commit")}
+                  {t(`${ns}.commit`)}
                 </button>
               </div>
             )}
@@ -688,10 +756,11 @@ export const KpiDictionaryImportPage: React.FC = () => {
   );
 };
 
-const IssueTable: React.FC<{ issues: KpiImportIssue[]; empty: string }> = ({
-  issues,
-  empty,
-}) => {
+const IssueTable: React.FC<{
+  ns: string;
+  issues: KpiImportIssue[];
+  empty: string;
+}> = ({ ns, issues, empty }) => {
   const { t } = useTranslation();
   if (issues.length === 0) {
     return (
@@ -703,21 +772,11 @@ const IssueTable: React.FC<{ issues: KpiImportIssue[]; empty: string }> = ({
       <table className="w-full text-sm">
         <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-xs uppercase">
           <tr>
-            <th className="px-4 py-2 text-start">
-              {t("kpi.dictionaryImport.worksheet")}
-            </th>
-            <th className="px-4 py-2 text-end">
-              {t("kpi.dictionaryImport.row")}
-            </th>
-            <th className="px-4 py-2 text-start">
-              {t("kpi.dictionaryImport.record")}
-            </th>
-            <th className="px-4 py-2 text-start">
-              {t("kpi.dictionaryImport.field")}
-            </th>
-            <th className="px-4 py-2 text-start">
-              {t("kpi.dictionaryImport.description")}
-            </th>
+            <th className="px-4 py-2 text-start">{t(`${ns}.worksheet`)}</th>
+            <th className="px-4 py-2 text-end">{t(`${ns}.row`)}</th>
+            <th className="px-4 py-2 text-start">{t(`${ns}.record`)}</th>
+            <th className="px-4 py-2 text-start">{t(`${ns}.field`)}</th>
+            <th className="px-4 py-2 text-start">{t(`${ns}.description`)}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -745,5 +804,19 @@ const IssueTable: React.FC<{ issues: KpiImportIssue[]; empty: string }> = ({
     </div>
   );
 };
+
+const DICTIONARY_IMPORT_CONFIG: KpiImportPageConfig = {
+  ns: "kpi.dictionaryImport",
+  categories: CATEGORIES,
+  api: kpiDictionaryImportApi,
+  backTo: "/goals/kpi/dictionary",
+  backLabelKey: "kpi.dictionaryImport.backToDictionary",
+  goTo: "/goals/kpi/dictionary",
+  goToLabelKey: "kpi.dictionaryImport.goToDictionary",
+};
+
+export const KpiDictionaryImportPage: React.FC = () => (
+  <KpiImportPage config={DICTIONARY_IMPORT_CONFIG} />
+);
 
 export default KpiDictionaryImportPage;

@@ -997,6 +997,130 @@ export const kpiAccessApi = {
   },
 };
 
+// KPI Metrics bulk import: template → validate → commit, one KpiMetric per row.
+const postKpiMetricsImport = async (
+  step: "validate" | "commit",
+  file: File,
+  options: KpiImportOptions,
+): Promise<ApiResponse<KpiImportResult>> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("existing_mode", options.existing_mode);
+  formData.append("error_mode", options.error_mode);
+  const res = await apiClient.post(`/kpi/metrics-import/${step}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+export const kpiMetricsImportApi = {
+  downloadTemplate: async (language: "en" | "ar"): Promise<void> => {
+    const res = await apiClient.get("/kpi/metrics-import/template", {
+      params: { lang: language },
+      responseType: "blob",
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `kpi_metrics_template_${language}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+  validate: (file: File, options: KpiImportOptions) =>
+    postKpiMetricsImport("validate", file, options),
+  commit: (file: File, options: KpiImportOptions) =>
+    postKpiMetricsImport("commit", file, options),
+};
+
+// KPI Targets bulk import: template → validate → commit for existing KPIs.
+const postKpiTargetsImport = async (
+  step: "validate" | "commit",
+  file: File,
+  options: KpiImportOptions,
+): Promise<ApiResponse<KpiImportResult>> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("existing_mode", options.existing_mode);
+  formData.append("error_mode", options.error_mode);
+  const res = await apiClient.post(`/kpi/targets-import/${step}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+export const kpiTargetsImportApi = {
+  downloadTemplate: async (language: "en" | "ar"): Promise<void> => {
+    const res = await apiClient.get("/kpi/targets-import/template", {
+      params: { lang: language },
+      responseType: "blob",
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `kpi_targets_template_${language}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+  validate: (file: File, options: KpiImportOptions) =>
+    postKpiTargetsImport("validate", file, options),
+  commit: (file: File, options: KpiImportOptions) =>
+    postKpiTargetsImport("commit", file, options),
+};
+
+// KPI Master Data bulk import: one entity type per workbook via the type query.
+const postKpiMasterDataImport = async (
+  step: "validate" | "commit",
+  entityType: string,
+  file: File,
+  options: KpiImportOptions,
+): Promise<ApiResponse<KpiImportResult>> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("existing_mode", options.existing_mode);
+  formData.append("error_mode", options.error_mode);
+  const res = await apiClient.post(
+    `/kpi/master-data-import/${step}`,
+    formData,
+    {
+      params: { type: entityType },
+      headers: { "Content-Type": "multipart/form-data" },
+    },
+  );
+  return res.data;
+};
+
+// Keep downloaded template names aligned with the Master Data labels.
+const masterDataImportFileSlug = (entityType: string): string => {
+  if (entityType === "operational-objective") return "parent_objectives";
+  if (entityType === "process") return "operational_objectives";
+  return entityType;
+};
+
+export const kpiMasterDataImportApi = (entityType: string) => ({
+  downloadTemplate: async (language: "en" | "ar"): Promise<void> => {
+    const res = await apiClient.get("/kpi/master-data-import/template", {
+      params: { type: entityType, lang: language },
+      responseType: "blob",
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `kpi_master_data_${masterDataImportFileSlug(entityType)}_${language}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+  validate: (file: File, options: KpiImportOptions) =>
+    postKpiMasterDataImport("validate", entityType, file, options),
+  commit: (file: File, options: KpiImportOptions) =>
+    postKpiMasterDataImport("commit", entityType, file, options),
+});
+
 export const kpiDashboardApi = {
   getDashboard: async (params?: {
     kpi_type?: string;
