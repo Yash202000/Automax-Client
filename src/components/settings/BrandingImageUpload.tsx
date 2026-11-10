@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { DragEvent, KeyboardEvent } from "react";
+import type { CSSProperties, DragEvent, KeyboardEvent } from "react";
 import {
   ImagePlus,
   Loader2,
@@ -26,7 +26,7 @@ const ACCEPT =
   "image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/x-icon,.ico";
 
 /** Checkerboard so transparent logos remain visible. */
-const CHECKERBOARD: React.CSSProperties = {
+const CHECKERBOARD: CSSProperties = {
   backgroundImage:
     "linear-gradient(45deg, hsl(var(--muted)) 25%, transparent 25%), linear-gradient(-45deg, hsl(var(--muted)) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, hsl(var(--muted)) 75%), linear-gradient(-45deg, transparent 75%, hsl(var(--muted)) 75%)",
   backgroundSize: "16px 16px",
