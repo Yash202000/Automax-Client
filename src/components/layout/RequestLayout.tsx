@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { publicUrl, resolveLogoUrl } from "../../utils/publicUrl";
-import { useSettings } from "../../contexts/SettingsContext";
+import { BrandLogo } from "@/components/common/BrandLogo";
 import {
   Outlet,
   NavLink,
@@ -46,9 +45,6 @@ import { NotificationBell } from "../common/NotificationBell";
 
 export const RequestLayout: React.FC = () => {
   const { t } = useTranslation();
-  const { settings } = useSettings();
-  const navLogo =
-    resolveLogoUrl(settings?.logo_small_url) ?? publicUrl("epm-logo.png");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -148,11 +144,7 @@ export const RequestLayout: React.FC = () => {
         className={`h-[70px] flex items-center ${collapsed ? "justify-center px-2" : "px-5"} border-b border-white/5`}
       >
         <div className="flex items-center gap-3">
-          <img
-            src={navLogo}
-            alt={settings?.logo_alt_text || "Automax"}
-            className={collapsed ? "h-8 w-auto" : "h-10 w-auto"}
-          />
+          <BrandLogo className={collapsed ? "h-8 w-auto" : "h-10 w-auto"} />
         </div>
       </div>
 

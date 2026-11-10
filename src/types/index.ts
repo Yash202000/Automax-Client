@@ -2000,6 +2000,14 @@ export interface Settings {
   };
   sms_max_length: number;
   updated_at: string;
+  /**
+   * Uploaded branding images keyed by the settings field they replace
+   * (e.g. logo_url → ".../attachments/{id}/preview"). Takes precedence over
+   * the plain field value when present.
+   */
+  // Values are normally URL strings, but are read defensively (see
+  // resolveLogoUrl) in case the API returns attachment objects.
+  settings_attachments?: Partial<Record<string, unknown>> | null;
 }
 
 export interface SettingsUpdateRequest {

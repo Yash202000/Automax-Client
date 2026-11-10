@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { settingsApi } from "../api/settings";
 import type { Settings } from "../types";
 import { hexToHSL } from "@/lib/utils";
-import { resolveLogoUrl } from "../utils/publicUrl";
+import { publicUrl, resolveBrandingImage } from "../utils/publicUrl";
 
 interface SettingsContextType {
   settings: Settings | null;
@@ -37,11 +37,11 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({
     root.style.setProperty("--accent", hexToHSL(settings.accent_color));
   }, [settings]);
 
-  // Favicon from settings (file name in public/ or full URL); keeps the
-  // default from index.html when unset.
+  // Favicon from settings (uploaded attachment, file name in public/ or full
+  // URL); falls back to the bundled favicon when unset.
+  const faviconHref =
+    resolveBrandingImage(settings, "favicon_url") ?? publicUrl("favicon.svg");
   useEffect(() => {
-    const href = resolveLogoUrl(settings?.favicon_url);
-    if (!href) return;
     let link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
     if (!link) {
       link = document.createElement("link");
@@ -49,8 +49,8 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({
       document.head.appendChild(link);
     }
     link.removeAttribute("type");
-    link.href = href;
-  }, [settings?.favicon_url]);
+    link.href = faviconHref;
+  }, [faviconHref]);
 
   return (
     <SettingsContext.Provider value={{ settings, isLoading }}>
@@ -66,4 +66,20 @@ export const useSettings = () => {
     throw new Error("useSettings must be used within a SettingsProvider");
   }
   return context;
+};
+
+/** Shared resolved branding URLs and safe application defaults. */
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAppBranding = () => {
+  const { settings } = useSettings();
+  return {
+    settings,
+    mainLogo:
+      resolveBrandingImage(settings, "logo_url") ?? publicUrl("epm-logo.png"),
+    smallLogo:
+      resolveBrandingImage(settings, "logo_small_url") ??
+      publicUrl("epm-logo.png"),
+    favicon: resolveBrandingImage(settings, "favicon_url"),
+    logoAlt: settings?.logo_alt_text || settings?.app_name || "Automax",
+  };
 };
