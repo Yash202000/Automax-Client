@@ -163,6 +163,7 @@ export const userApi = {
       username: string;
       password: string;
       is_ad_user?: boolean;
+      national_id?: string;
       first_name?: string;
       last_name?: string;
       phone?: string;
@@ -185,6 +186,7 @@ export const userApi = {
       formData.append("username", data.username);
       formData.append("password", data.password);
       if (data.is_ad_user) formData.append("is_ad_user", "true");
+      if (data.national_id) formData.append("national_id", data.national_id);
       if (data.first_name) formData.append("first_name", data.first_name);
       if (data.last_name) formData.append("last_name", data.last_name);
       if (data.phone) formData.append("phone", data.phone);

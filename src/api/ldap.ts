@@ -88,12 +88,17 @@ export const ldapApi = {
   },
 
   // Whether the AD directory can be browsed over LDAP ("Add AD User" picker).
-  // enabled: LDAP directory can be browsed; ad_users: AD users can be created.
+  // enabled: LDAP directory can be browsed; ad_users: AD users can be created;
+  // nafath_users: National IDs (Nafath login) can be set on users.
   directoryStatus: async (): Promise<
-    ApiResponse<{ enabled: boolean; ad_users: boolean }>
+    ApiResponse<{ enabled: boolean; ad_users: boolean; nafath_users?: boolean }>
   > => {
     const response = await apiClient.get<
-      ApiResponse<{ enabled: boolean; ad_users: boolean }>
+      ApiResponse<{
+        enabled: boolean;
+        ad_users: boolean;
+        nafath_users?: boolean;
+      }>
     >("/ldap/directory-status");
     return response.data;
   },

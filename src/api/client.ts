@@ -120,6 +120,11 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Nafath login 401s mean the login request expired, not the session.
+    if (originalRequest.url?.includes("/auth/nafath/")) {
+      return Promise.reject(error);
+    }
+
     // If this is the refresh token request itself failing, redirect to login
     if (originalRequest.url?.includes("/auth/refresh")) {
       redirectToLogin();
