@@ -8,18 +8,13 @@ import {
   getCurrentLanguage,
   supportedLanguages,
 } from "../../i18n";
-import {
-  publicUrl,
-  resolveLogoUrl as resolveLogo,
-} from "../../utils/publicUrl";
+import { publicUrl } from "../../utils/publicUrl";
 import { useTheme } from "@/hooks/useTheme";
-import { useSettings } from "../../contexts/SettingsContext";
+import { useAppBranding } from "../../contexts/SettingsContext";
 
 export const AuthLayout: React.FC = () => {
   const { t } = useTranslation();
-  const { settings } = useSettings();
-  const mainLogo = resolveLogo(settings?.logo_url);
-  const logoAlt = settings?.logo_alt_text || "Automax";
+  const { mainLogo, logoAlt } = useAppBranding();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage());

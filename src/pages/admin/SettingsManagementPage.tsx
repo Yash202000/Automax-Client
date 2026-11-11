@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { settingsApi } from "../../api/settings";
@@ -19,13 +19,13 @@ import {
   Globe,
   Mail,
   Phone,
-  Upload,
   ToggleLeft,
   ShieldCheck,
   Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui";
 import { AttachmentConfigCard } from "@/components/settings/AttachmentConfigCard";
+import { BrandingImageUpload } from "@/components/settings/BrandingImageUpload";
+import { brandingAttachment } from "@/utils/publicUrl";
 import { UnsavedChangesDialog } from "@/components/common/UnsavedChangesDialog";
 import { useUnsavedChangesPrompt } from "@/hooks/useUnsavedChangesPrompt";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
@@ -124,7 +124,23 @@ export const SettingsManagementPage: React.FC = () => {
     [settingsResponse],
   );
   const [formData, setFormData] = useState(savedSettings);
-  React.useEffect(() => setFormData(savedSettings), [savedSettings]);
+  const [brandingUploadCount, setBrandingUploadCount] = useState(0);
+  // When saved settings change (initial load, save, or a branding upload),
+  // adopt the server values but keep any fields the user is still editing.
+  const prevSavedRef = useRef(savedSettings);
+  React.useEffect(() => {
+    const prevSaved = prevSavedRef.current;
+    prevSavedRef.current = savedSettings;
+    setFormData((current) => {
+      const next = { ...savedSettings };
+      for (const key of Object.keys(next) as (keyof typeof next)[]) {
+        if (!isSame(current[key], prevSaved[key])) {
+          (next as Record<string, unknown>)[key] = current[key];
+        }
+      }
+      return next;
+    });
+  }, [savedSettings]);
 
   // Config API (attachment_config)
   const { data: attachmentConfig, isError: attachmentConfigFailed } = useQuery({
@@ -167,6 +183,15 @@ export const SettingsManagementPage: React.FC = () => {
       );
     },
   });
+  const isBusy = saveMutation.isPending || brandingUploadCount > 0;
+  const trackBrandingUpload = (uploading: boolean) =>
+    setBrandingUploadCount((count) =>
+      Math.max(0, count + (uploading ? 1 : -1)),
+    );
+  // Branding uploads are saved server-side; refetch so the page, header and
+  // favicon (SettingsContext shares this query key) pick up the new URL.
+  const refetchSettings = () =>
+    queryClient.invalidateQueries({ queryKey: SETTINGS_QUERY_KEY });
 
   // The open "no file types allowed" prompt: which group, and how to answer.
   const [noFileTypesPrompt, setNoFileTypesPrompt] = useState<{
@@ -181,6 +206,15 @@ export const SettingsManagementPage: React.FC = () => {
   };
 
   const saveChanges = async () => {
+    if (brandingUploadCount > 0) {
+      toast.error(
+        t(
+          "settings.branding.waitForUpload",
+          "Wait for logo uploads to finish before saving.",
+        ),
+      );
+      return false;
+    }
     if (attachmentDraft && !hasValidAttachmentLimits(attachmentDraft)) {
       toast.error(
         t(
@@ -210,7 +244,9 @@ export const SettingsManagementPage: React.FC = () => {
     setAttachmentDraft(attachmentConfig?.value);
   };
 
-  const leavePrompt = useUnsavedChangesPrompt(isDirty);
+  const leavePrompt = useUnsavedChangesPrompt(
+    isDirty || brandingUploadCount > 0,
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -325,64 +361,63 @@ export const SettingsManagementPage: React.FC = () => {
             </h2>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                {t("settings.mainLogoUrl")}
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  name="logo_url"
-                  value={formData.logo_url}
-                  onChange={handleChange}
-                  className="flex-1 px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder={t("settings.logoPngOrHttpsCdnExampleCom")}
-                />
-                <Button
-                  type="button"
-                  className="px-4 py-2  text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                >
-                  <Upload className="w-4 h-4" />
-                  {t("common.upload")}
-                </Button>
-              </div>
-              {formData.logo_url && (
-                <div className="mt-2">
-                  <img
-                    src={formData.logo_url}
-                    alt={t("settings.logoPreview")}
-                    className="h-16 object-contain"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                {t("settings.smallLogoUrlOptional")}
-              </label>
-              <input
-                type="text"
-                name="logo_small_url"
-                value={formData.logo_small_url}
-                onChange={handleChange}
-                className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder={t("settings.compactLogoForMobileSmallScreens")}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <BrandingImageUpload
+                field="logo_url"
+                label={t("settings.mainLogoUrl", "Main logo")}
+                value={formData.logo_url}
+                attachment={brandingAttachment(
+                  settingsResponse?.data,
+                  "logo_url",
+                )}
+                hint={t(
+                  "settings.branding.mainLogoHint",
+                  "SVG or PNG, ~512×128 · max 5 MB",
+                )}
+                onUploaded={refetchSettings}
+                onRemove={() =>
+                  setFormData((prev) => ({ ...prev, logo_url: "" }))
+                }
+                onUploadingChange={trackBrandingUpload}
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                {t("settings.faviconUrl")}
-              </label>
-              <input
-                type="text"
-                name="favicon_url"
+              <BrandingImageUpload
+                field="logo_small_url"
+                label={t("settings.smallLogoUrlOptional", "Small/mobile logo")}
+                value={formData.logo_small_url}
+                attachment={brandingAttachment(
+                  settingsResponse?.data,
+                  "logo_small_url",
+                )}
+                variant="square"
+                hint={t(
+                  "settings.branding.smallLogoHint",
+                  "Square SVG or PNG, ~128×128 · max 5 MB",
+                )}
+                onUploaded={refetchSettings}
+                onRemove={() =>
+                  setFormData((prev) => ({ ...prev, logo_small_url: "" }))
+                }
+                onUploadingChange={trackBrandingUpload}
+              />
+              <BrandingImageUpload
+                field="favicon_url"
+                label={t("settings.faviconUrl", "Favicon")}
                 value={formData.favicon_url}
-                onChange={handleChange}
-                className="w-full px-4 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder={t("settings.faviconIco")}
+                attachment={brandingAttachment(
+                  settingsResponse?.data,
+                  "favicon_url",
+                )}
+                variant="square"
+                hint={t(
+                  "settings.branding.faviconHint",
+                  "ICO or PNG, 32×32 or 64×64",
+                )}
+                onUploaded={refetchSettings}
+                onRemove={() =>
+                  setFormData((prev) => ({ ...prev, favicon_url: "" }))
+                }
+                onUploadingChange={trackBrandingUpload}
               />
             </div>
 
@@ -876,22 +911,22 @@ export const SettingsManagementPage: React.FC = () => {
             <button
               type="button"
               onClick={discardChanges}
-              disabled={!isDirty || saveMutation.isPending}
+              disabled={!isDirty || isBusy}
               className="px-5 py-2.5 rounded-lg border border-[hsl(var(--border))] text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t("common.discard", "Discard")}
             </button>
             <button
               type="submit"
-              disabled={!isDirty || saveMutation.isPending}
+              disabled={!isDirty || isBusy}
               className="px-6 py-2.5 bg-gradient-to-r from-primary to-accent text-white rounded-lg hover:from-accent hover:to-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium shadow-lg shadow-violet-500/30"
             >
-              {saveMutation.isPending ? (
+              {isBusy ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <Save className="w-5 h-5" />
               )}
-              {saveMutation.isPending
+              {isBusy
                 ? t("common.saving", "Saving...")
                 : t("settings.saveSettings", "Save Settings")}
             </button>
@@ -904,7 +939,7 @@ export const SettingsManagementPage: React.FC = () => {
         onLeave={leavePrompt.leave}
         onStay={leavePrompt.stay}
         onSave={saveChanges}
-        isSaving={saveMutation.isPending}
+        isSaving={isBusy}
       />
 
       <ConfirmDialog
