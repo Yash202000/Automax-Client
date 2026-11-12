@@ -88,6 +88,7 @@ import { DetailsTab } from "./workspace/DetailsTab";
 import { ActivityTab } from "./workspace/ActivityTab";
 import { CommentsTab } from "./workspace/CommentsTab";
 import { CommunicationTab } from "./workspace/CommunicationTab";
+import { EscalationLogTab } from "./workspace/EscalationLogTab";
 import { AttachmentsTab } from "./workspace/AttachmentsTab";
 import { QualityTab } from "./workspace/QualityTab";
 import { RevisionsTab } from "./workspace/RevisionsTab";
@@ -107,6 +108,7 @@ type TabKey =
   | "attachments"
   | "revisions"
   | "communication"
+  | "escalationLog"
   | "rejectionHistory"
   | "linkedSystems"
   | "nasaq"
@@ -119,6 +121,7 @@ const TAB_LABEL_KEYS: Record<TabKey, string> = {
   attachments: "incidents.attachments",
   revisions: "incidents.revisions",
   communication: "incidents.communications",
+  escalationLog: "escalation.tabs.breachLog",
   rejectionHistory: "incidents.rejectionHistory",
   linkedSystems: "incidents.linkedSystems",
   nasaq: "incidents.nasaqInformation",
@@ -131,6 +134,7 @@ const TABS: TabKey[] = [
   "attachments",
   "revisions",
   "communication",
+  "escalationLog",
   "rejectionHistory",
   "quality",
   "linkedSystems",
@@ -144,6 +148,7 @@ const TAB_ICONS: Record<TabKey, LucideIcon> = {
   attachments: Paperclip,
   revisions: RotateCcw,
   communication: Mail,
+  escalationLog: TriangleAlert,
   rejectionHistory: XCircle,
   linkedSystems: ArrowRightLeft,
   nasaq: ShieldCheck,
@@ -516,9 +521,16 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
   const showNasaqTab =
     !!incident?.classification?.is_nasaq &&
     (isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VERIFY_NASAQ));
+  const canViewEscalationLog =
+    isSuperAdmin || hasPermission(PERMISSIONS.ESCALATION_LOGS_VIEW);
   const visibleTabs = useMemo(
-    () => TABS.filter((tabKey) => tabKey !== "nasaq" || showNasaqTab),
-    [showNasaqTab],
+    () =>
+      TABS.filter((tabKey) => {
+        if (tabKey === "nasaq") return showNasaqTab;
+        if (tabKey === "escalationLog") return canViewEscalationLog;
+        return true;
+      }),
+    [showNasaqTab, canViewEscalationLog],
   );
   const sourceLabel = useSourceLabel(incident?.source);
 
@@ -1354,6 +1366,11 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
         ) : tab === "communication" ? (
           <CommunicationTab
             key={`communication-${incident.id}`}
+            incidentId={incident.id}
+          />
+        ) : tab === "escalationLog" ? (
+          <EscalationLogTab
+            key={`escalation-${incident.id}`}
             incidentId={incident.id}
           />
         ) : tab === "attachments" ? (
