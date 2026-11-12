@@ -169,6 +169,26 @@ const DispatcherListPage = lazy(() =>
     default: m.DispatcherListPage,
   })),
 );
+const UnitManagementPage = lazy(() =>
+  import("./pages/dispatcher/UnitManagementPage").then((m) => ({
+    default: m.UnitManagementPage,
+  })),
+);
+const UnitFormPage = lazy(() =>
+  import("./pages/dispatcher/UnitFormPage").then((m) => ({
+    default: m.UnitFormPage,
+  })),
+);
+const UnitTypeFormPage = lazy(() =>
+  import("./pages/dispatcher/UnitTypeFormPage").then((m) => ({
+    default: m.UnitTypeFormPage,
+  })),
+);
+const FireStationFormPage = lazy(() =>
+  import("./pages/dispatcher/FireStationFormPage").then((m) => ({
+    default: m.FireStationFormPage,
+  })),
+);
 const IncidentFeedbackPage = lazy(() =>
   import("./pages/IncidentFeedbackPage").then((m) => ({
     default: m.CitizenIncidentFeedbackPage,
@@ -805,6 +825,42 @@ function App() {
                         <Route
                           path="/dispatcher/:id?"
                           element={<DispatcherListPage />}
+                        />
+                        <Route
+                          path="/unit-management/units"
+                          element={<UnitManagementPage kind="units" />}
+                        />
+                        <Route
+                          path="/unit-management/units/new"
+                          element={<UnitFormPage />}
+                        />
+                        <Route
+                          path="/unit-management/units/:id/edit"
+                          element={<UnitFormPage />}
+                        />
+                        <Route
+                          path="/unit-management/unit-types"
+                          element={<UnitManagementPage kind="unitTypes" />}
+                        />
+                        <Route
+                          path="/unit-management/unit-types/new"
+                          element={<UnitTypeFormPage />}
+                        />
+                        <Route
+                          path="/unit-management/unit-types/:id/edit"
+                          element={<UnitTypeFormPage />}
+                        />
+                        <Route
+                          path="/unit-management/fire-stations"
+                          element={<UnitManagementPage kind="fireStations" />}
+                        />
+                        <Route
+                          path="/unit-management/fire-stations/new"
+                          element={<FireStationFormPage />}
+                        />
+                        <Route
+                          path="/unit-management/fire-stations/:id/edit"
+                          element={<FireStationFormPage />}
                         />
                       </Route>
                     </Route>

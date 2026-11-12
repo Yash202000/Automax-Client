@@ -21,6 +21,9 @@ import {
   Sparkles,
   Languages,
   Radio,
+  Truck,
+  Layers,
+  Building2,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import { authApi } from "../../api/auth";
@@ -183,6 +186,60 @@ export const DispatcherLayout: React.FC = () => {
             </NavLink>
           )}
         </div>
+
+        {/* Unit Management */}
+        {canViewDispatcher && (
+          <>
+            {!collapsed ? (
+              <>
+                <div className="my-6 border-t border-white/5" />
+                <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                  {t("sidebar.unitManagement", "Unit Management")}
+                </p>
+              </>
+            ) : (
+              <div className="my-4 border-t border-white/5" />
+            )}
+            <div className="space-y-1">
+              {[
+                {
+                  to: "/unit-management/units",
+                  icon: Truck,
+                  label: t("sidebar.units", "Units"),
+                },
+                {
+                  to: "/unit-management/unit-types",
+                  icon: Layers,
+                  label: t("sidebar.unitTypes", "Unit Types"),
+                },
+                {
+                  to: "/unit-management/fire-stations",
+                  icon: Building2,
+                  label: t("sidebar.fireStations", "Fire Stations"),
+                },
+              ].map(({ to, icon: Icon, label }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  onClick={() => setMobileMenuOpen(false)}
+                  title={collapsed ? label : undefined}
+                  className={({ isActive }) =>
+                    `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    }`
+                  }
+                >
+                  <Icon size={20} className="flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">{label}</span>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Status Filters */}
         {canViewDispatcher && workflowStats.length > 0 && (
@@ -565,7 +622,13 @@ export const DispatcherLayout: React.FC = () => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-hidden bg-background">
+        <main
+          className={`flex-1 bg-background ${
+            location.pathname.startsWith("/unit-management")
+              ? "overflow-y-auto"
+              : "overflow-hidden"
+          }`}
+        >
           {/* The split-view page sizes itself to the viewport (100vh - header
               - padding) and scrolls its own panes, so no outer scroll. */}
           <div className="p-2 lg:p-4">
