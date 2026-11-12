@@ -1,0 +1,643 @@
+import React, { useState, useRef, useEffect } from "react";
+import { publicUrl, resolveLogoUrl } from "../../utils/publicUrl";
+import { useSettings } from "../../contexts/SettingsContext";
+import {
+  Outlet,
+  NavLink,
+  useNavigate,
+  useLocation,
+  Link,
+} from "react-router-dom";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import {
+  ChevronLeft,
+  Circle,
+  LogOut,
+  Home,
+  Menu,
+  X,
+  ChevronDown,
+  Sparkles,
+  Languages,
+  Radio,
+  Truck,
+  Layers,
+  Building2,
+} from "lucide-react";
+import { useAuthStore } from "../../stores/authStore";
+import { authApi } from "../../api/auth";
+import { setLoggingOut } from "../../api/client";
+import {
+  setLanguage,
+  getCurrentLanguage,
+  supportedLanguages,
+} from "../../i18n";
+import { usePermissions } from "../../hooks/usePermissions";
+import { PERMISSIONS } from "../../constants/permissions";
+import { incidentApi } from "../../api/admin";
+import { NotificationBell } from "../common/NotificationBell";
+import { SoftphoneButton } from "../sip/SoftphoneButton";
+
+export const DispatcherLayout: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const { settings } = useSettings();
+  const navLogo =
+    resolveLogoUrl(settings?.logo_small_url) ?? publicUrl("epm-logo.png");
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const [currentLang, setCurrentLang] = useState(getCurrentLanguage());
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentStateId = new URLSearchParams(location.search).get(
+    "current_state_id",
+  );
+  const langRef = useRef<HTMLDivElement>(null);
+  const { hasPermission, isSuperAdmin, hasAnyPermission } = usePermissions();
+  const canViewDispatcher =
+    hasPermission(PERMISSIONS.DISPATCHER_VIEW) || isSuperAdmin;
+  const canViewAllIncidents =
+    isSuperAdmin ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL) ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY);
+
+  // "By Status" counts. Temporarily sourced from the incident stats endpoint
+  // (same scoping as IncidentLayout) until the dispatcher API exists.
+  const { data: statsData } = useQuery({
+    queryKey: [
+      "incidents",
+      "stats",
+      "incident",
+      canViewAllIncidents ? "all" : "assigned",
+      {},
+    ],
+    queryFn: () =>
+      incidentApi.getIncidentStatsV2(
+        canViewAllIncidents ? {} : { my_record: user?.id },
+      ),
+    enabled: canViewDispatcher,
+    placeholderData: keepPreviousData,
+  });
+  const workflowStats = statsData?.data?.workflow_stats || [];
+  const isSingleWorkflow = workflowStats.length === 1;
+
+  const handleLanguageChange = async (langCode: string) => {
+    if (langCode === currentLang) {
+      setIsLangOpen(false);
+      return;
+    }
+    await setLanguage(langCode);
+    setCurrentLang(langCode);
+    setIsLangOpen(false);
+  };
+
+  // Close language dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(event.target as Node)) {
+        setIsLangOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    // Set flag to prevent 401 interceptor from running during logout
+    setLoggingOut(true);
+
+    try {
+      // Call logout API FIRST while token is still in localStorage
+      await authApi.logout();
+    } catch {
+      // Continue with logout even if API call fails
+    } finally {
+      // Clear auth state after API call
+      logout();
+      setLoggingOut(false);
+    }
+
+    navigate("/login");
+  };
+
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      {/* Logo Section */}
+      <div
+        className={`h-[70px] flex items-center ${collapsed ? "justify-center px-2" : "px-5"} border-b border-white/5`}
+      >
+        <div className="flex items-center gap-3">
+          <img
+            src={navLogo}
+            alt={settings?.logo_alt_text || "Automax"}
+            className={collapsed ? "h-8 w-auto" : "h-10 w-auto"}
+          />
+        </div>
+      </div>
+
+      {/* Collapse Button - Desktop */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className={`hidden lg:flex absolute top-[75px] ${collapsed ? "start-[60px]" : "start-[248px]"} z-50 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-all shadow-lg`}
+      >
+        <ChevronLeft
+          className={`w-3.5 h-3.5 transition-transform ${collapsed ? "ltr:rotate-180 rtl:rotate-0" : "ltr:rotate-0 rtl:rotate-180"}`}
+        />
+      </button>
+
+      {/* Navigation */}
+      <nav className="flex-1 py-6 px-3 overflow-y-auto">
+        {/* Main Actions */}
+        {!collapsed && (
+          <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+            {t("sidebar.actions")}
+          </p>
+        )}
+        <div className="space-y-1">
+          {canViewDispatcher && (
+            <NavLink
+              to="/dispatcher"
+              end
+              onClick={() => setMobileMenuOpen(false)}
+              className={({ isActive }) =>
+                `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                  isActive
+                    ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
+                  )}
+                  <Radio size={20} className="flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">
+                      {t("dispatcher.title", "Dispatcher")}
+                    </span>
+                  )}
+                </>
+              )}
+            </NavLink>
+          )}
+        </div>
+
+        {/* Unit Management */}
+        {canViewDispatcher && (
+          <>
+            {!collapsed ? (
+              <>
+                <div className="my-6 border-t border-white/5" />
+                <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                  {t("sidebar.unitManagement", "Unit Management")}
+                </p>
+              </>
+            ) : (
+              <div className="my-4 border-t border-white/5" />
+            )}
+            <div className="space-y-1">
+              {[
+                {
+                  to: "/unit-management/units",
+                  icon: Truck,
+                  label: t("sidebar.units", "Units"),
+                },
+                {
+                  to: "/unit-management/unit-types",
+                  icon: Layers,
+                  label: t("sidebar.unitTypes", "Unit Types"),
+                },
+                {
+                  to: "/unit-management/fire-stations",
+                  icon: Building2,
+                  label: t("sidebar.fireStations", "Fire Stations"),
+                },
+              ].map(({ to, icon: Icon, label }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  onClick={() => setMobileMenuOpen(false)}
+                  title={collapsed ? label : undefined}
+                  className={({ isActive }) =>
+                    `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    }`
+                  }
+                >
+                  <Icon size={20} className="flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="ms-3 font-medium text-sm">{label}</span>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Status Filters */}
+        {canViewDispatcher && workflowStats.length > 0 && (
+          <>
+            {!collapsed && (
+              <>
+                <div className="my-6 border-t border-white/5" />
+                <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                  {t("sidebar.byStatus")}
+                </p>
+              </>
+            )}
+            <div className="space-y-1">
+              <NavLink
+                to="/dispatcher"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors ${
+                  location.pathname.startsWith("/dispatcher") && !currentStateId
+                    ? "bg-white/10 text-white shadow-sm"
+                    : ""
+                }`}
+              >
+                <Circle
+                  size={8}
+                  className="flex-shrink-0 fill-current text-slate-500"
+                />
+                {!collapsed && (
+                  <>
+                    <span className="ms-3 font-medium text-sm flex-1">
+                      {t("common.all", "All")}
+                    </span>
+                    <span className="text-xs px-2 py-0.5 rounded-md bg-slate-700 text-slate-300">
+                      {statsData?.data?.total ?? 0}
+                    </span>
+                  </>
+                )}
+              </NavLink>
+              {workflowStats.map((workflow) => (
+                <div key={workflow.workflow_id}>
+                  {!isSingleWorkflow && !collapsed && (
+                    <div className="px-3 mt-3 mb-1 text-xs text-slate-500 uppercase">
+                      {workflow.workflow_name}
+                    </div>
+                  )}
+                  {(workflow.by_state_details || []).map((state) => {
+                    const isItemActive =
+                      location.pathname.startsWith("/dispatcher") &&
+                      currentStateId === state.id;
+                    return (
+                      <NavLink
+                        key={state.id}
+                        to={`/dispatcher?current_state_id=${encodeURIComponent(state.id)}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`group flex items-center px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors ${
+                          isItemActive ? "bg-white/10 text-white shadow-sm" : ""
+                        }`}
+                      >
+                        <Circle
+                          size={8}
+                          className={`flex-shrink-0 fill-current ${
+                            isItemActive ? "text-primary" : "text-slate-500"
+                          }`}
+                        />
+                        {!collapsed && (
+                          <>
+                            <span
+                              className={`ms-3 font-medium text-sm flex-1 ${isItemActive ? "text-white" : ""}`}
+                            >
+                              {i18n.language === "ar" && state.name_ar
+                                ? state.name_ar
+                                : state.name}
+                            </span>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-md transition-colors ${
+                                isItemActive
+                                  ? "bg-primary text-white"
+                                  : "bg-slate-700 text-slate-300"
+                              }`}
+                            >
+                              {state.count}
+                            </span>
+                          </>
+                        )}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {!collapsed && (
+          <>
+            <div className="my-6 border-t border-white/5" />
+            <p className="px-3 mb-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+              {t("sidebar.quickLinks")}
+            </p>
+          </>
+        )}
+
+        <NavLink
+          to="/dashboard"
+          onClick={() => setMobileMenuOpen(false)}
+          className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors`}
+        >
+          <Home size={20} />
+          {!collapsed && (
+            <span className="ms-3 font-medium text-sm">
+              {t("sidebar.backToHome")}
+            </span>
+          )}
+        </NavLink>
+      </nav>
+
+      {/* User Section */}
+      <div className="p-3 border-t border-white/5">
+        {collapsed ? (
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center w-full p-2.5 text-slate-400 hover:text-rose-400 rounded-xl hover:bg-rose-500/10 transition-colors"
+          >
+            <LogOut size={20} />
+          </button>
+        ) : (
+          <div className="p-3 bg-gradient-to-br from-slate-800/80 to-slate-800/40 rounded-xl border border-white/5">
+            <div className="flex items-center gap-3">
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.username}
+                  className="w-10 h-10 rounded-xl object-cover ring-2 ring-violet-500/30"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center ring-2 ring-violet-500/30">
+                  <span className="text-white text-sm font-bold">
+                    {user?.first_name?.[0] || user?.username?.[0] || "U"}
+                  </span>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">
+                  {user?.first_name || user?.username}
+                </p>
+                <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 hover:text-rose-400 bg-slate-900/50 hover:bg-rose-500/10 rounded-lg transition-colors"
+            >
+              <LogOut size={16} />
+              {t("sidebar.signOut")}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex h-screen bg-slate-100">
+      {/* Desktop Sidebar */}
+      <aside
+        className={`${
+          collapsed ? "w-[72px]" : "w-[264px]"
+        } bg-sidebar transition-all duration-300 flex-col hidden lg:flex relative`}
+      >
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile Sidebar Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Sidebar */}
+      <aside
+        className={`fixed inset-y-0 start-0 w-[264px] bg-slate-900 z-50 transform transition-transform duration-300 lg:hidden ${
+          mobileMenuOpen
+            ? "translate-x-0"
+            : "ltr:-translate-x-full rtl:translate-x-full"
+        }`}
+      >
+        <button
+          onClick={() => setMobileMenuOpen(false)}
+          className="absolute top-4 end-4 p-2 text-slate-400 hover:text-white"
+        >
+          <X size={20} />
+        </button>
+        <SidebarContent />
+      </aside>
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="h-[70px] bg-white dark:bg-sidebar border-b border-slate-200/80 dark:border-white/5 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30 shadow-sm">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2.5 hover:bg-slate-100 rounded-xl lg:hidden transition-colors"
+            >
+              <Menu className="w-5 h-5 text-slate-600" />
+            </button>
+
+            {/* Breadcrumb / Title */}
+            <div className="hidden sm:flex items-center gap-2 text-sm">
+              <span className="text-slate-400">
+                {t("dispatcher.title", "Dispatcher")}
+              </span>
+              <span className="text-slate-300">/</span>
+              <span className="font-semibold text-muted-foreground">
+                {t("sidebar.management")}
+              </span>
+            </div>
+            <h1 className="text-lg font-bold text-slate-800 sm:hidden">
+              {t("dispatcher.title", "Dispatcher")}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Search - Commented out for now
+            <div className="hidden md:flex items-center">
+              <div className="relative">
+                <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={t('sidebar.searchQueries')}
+                  className="w-64 ps-10 pe-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all placeholder:text-slate-400"
+                />
+              </div>
+            </div>
+            */}
+
+            {/* Back to Home */}
+            <Link
+              to="/"
+              className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-primary hover:bg-violet-50 rounded-xl transition-colors"
+              title={t("sidebar.backToHome")}
+            >
+              <Home className="w-5 h-5" />
+              <span className="hidden md:inline text-sm font-medium">
+                {t("sidebar.backToHome")}
+              </span>
+            </Link>
+
+            {/* Language Switcher */}
+            <div className="relative" ref={langRef}>
+              <button
+                onClick={() => setIsLangOpen(!isLangOpen)}
+                className="flex items-center gap-1.5 p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
+                title={t("settings.language")}
+              >
+                <Languages className="w-5 h-5" />
+                <span className="text-xs font-medium uppercase">
+                  {currentLang}
+                </span>
+              </button>
+
+              {isLangOpen && (
+                <div className="absolute end-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in ltr:origin-top-right rtl:origin-top-left">
+                  <div className="px-3 py-2 border-b border-slate-100">
+                    <p className="text-xs font-medium text-slate-500 uppercase">
+                      {t("settings.selectLanguage")}
+                    </p>
+                  </div>
+                  {supportedLanguages.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => handleLanguageChange(lang.code)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
+                        currentLang === lang.code
+                          ? "bg-primary/50 text-primary"
+                          : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className="text-lg">
+                        {lang.code === "en" ? "🇺🇸" : "🇸🇦"}
+                      </span>
+                      <div className="text-start">
+                        <p className="font-medium">{lang.nativeName}</p>
+                        <p className="text-xs text-slate-500">{lang.name}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Phone/Softphone */}
+            {(isSuperAdmin || hasAnyPermission(["dashboard:ccm"])) && (
+              <SoftphoneButton />
+            )}
+
+            {/* Notifications */}
+            <NotificationBell />
+            {/* Divider */}
+            <div className="hidden sm:block w-px h-8 bg-slate-200" />
+
+            {/* User Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-3 p-1.5 pe-3 hover:bg-slate-50 rounded-xl transition-colors"
+              >
+                {user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.username}
+                    className="w-9 h-9 rounded-xl object-cover"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-xl bg-linear-to-br from-primary to-accent flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">
+                      {user?.first_name?.[0] || user?.username?.[0] || "U"}
+                    </span>
+                  </div>
+                )}
+                <div className="hidden sm:block text-start">
+                  <p className="text-sm font-semibold text-slate-700 leading-tight">
+                    {user?.first_name || user?.username}
+                  </p>
+                  <p className="text-xs text-slate-400 leading-tight flex items-center gap-1">
+                    {user?.is_super_admin && (
+                      <Sparkles className="w-3 h-3 text-primary" />
+                    )}
+                    {user?.is_super_admin
+                      ? t("profile.superAdmin")
+                      : user?.roles?.[0]?.name || t("sidebar.user")}
+                  </p>
+                </div>
+                <ChevronDown
+                  className={`w-4 h-4 text-slate-400 transition-transform ${userMenuOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {/* Dropdown */}
+              {userMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setUserMenuOpen(false)}
+                  />
+                  <div className="absolute end-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-scale-in ltr:origin-top-right rtl:origin-top-left">
+                    <div className="px-4 py-3 border-b border-slate-100">
+                      <p className="text-sm font-medium text-slate-700">
+                        {user?.email}
+                      </p>
+                    </div>
+                    <div className="py-2">
+                      <NavLink
+                        to="/dashboard"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                      >
+                        <Home className="w-4 h-4" />
+                        {t("sidebar.backToHome")}
+                      </NavLink>
+                    </div>
+                    <div className="border-t border-slate-100 pt-2">
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          handleLogout();
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        {t("sidebar.signOut")}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main
+          className={`flex-1 bg-background ${
+            location.pathname.startsWith("/unit-management")
+              ? "overflow-y-auto"
+              : "overflow-hidden"
+          }`}
+        >
+          {/* The split-view page sizes itself to the viewport (100vh - header
+              - padding) and scrolls its own panes, so no outer scroll. */}
+          <div className="p-2 lg:p-4">
+            <div className="max-w-7xl mx-auto">
+              <Outlet />
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};

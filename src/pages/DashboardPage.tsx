@@ -25,6 +25,7 @@ import {
   ExternalLink,
   Layers,
   Target,
+  Radio,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 
@@ -230,6 +231,19 @@ export const DashboardPage: React.FC = () => {
       shadowColor: "shadow-orange-500/20",
       permissions: [PERMISSIONS.DASHBOARD_CALL_CENTRE],
       licenseFeature: "call_centre",
+    },
+    {
+      title: t("dashboard.dispatcher", "Dispatcher"),
+      subtitle: t("dashboard.dispatchOperations", "Dispatch Operations"),
+      description: t(
+        "dashboard.manageDispatch",
+        "Assign and track dispatched work",
+      ),
+      href: "/dispatcher",
+      icon: Radio,
+      gradient: "from-[#38BDF8] to-[#0369A1]",
+      shadowColor: "shadow-sky-500/20",
+      permissions: [PERMISSIONS.DASHBOARD_DISPATCHER],
     },
     {
       title: t("dashboard.goalManagement"),

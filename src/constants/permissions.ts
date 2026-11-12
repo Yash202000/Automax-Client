@@ -158,6 +158,10 @@ export const PERMISSIONS = {
   GOALS_MANAGE: "goals:manage",
   DASHBOARD_GOALS: "dashboard:goals",
 
+  // Dispatcher permissions
+  DISPATCHER_VIEW: "dispatcher:view",
+  DASHBOARD_DISPATCHER: "dashboard:dispatcher",
+
   // KPI permissions
   KPI_VIEW: "kpi:view",
   KPI_CREATE: "kpi:create",

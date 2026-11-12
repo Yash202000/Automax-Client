@@ -15,6 +15,7 @@
     "test:e2e:headed": "playwright test --headed"
   },
   "dependencies": {
+    "@googlemaps/markerclusterer": "^2.5.3",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-slot": "^1.2.4",
@@ -40,6 +41,7 @@
     "i18next-browser-languagedetector": "^8.2.0",
     "jssip": "^3.11.1",
     "leaflet": "^1.9.4",
+    "leaflet.markercluster": "^1.5.3",
     "lucide-react": "^0.562.0",
     "postcss": "^8.5.6",
     "radix-ui": "^1.6.2",
@@ -70,6 +72,7 @@
     "@tailwindcss/postcss": "^4.1.18",
     "@types/file-saver": "^2.0.7",
     "@types/google.maps": "^3.66.5",
+    "@types/leaflet.markercluster": "^1.5.5",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
