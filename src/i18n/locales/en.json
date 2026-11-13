@@ -1867,6 +1867,9 @@
     "allClassificationsSelectedByDefault": "By default, all classifications are selected."
   },
   "reports": {
+    "reportLogos": "Report Logos",
+    "reportLogoLeft": "Left logo",
+    "reportLogoRight": "Right logo",
     "title": "Reports",
     "reportBuilder": "Report Builder",
     "reportBuilderSubtitle": "Create custom reports from your data",
