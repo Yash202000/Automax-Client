@@ -573,8 +573,7 @@ export function IncidentEditPage() {
     if (field === "caller_identity_text") {
       const raw = value ?? "";
       const overLimit = raw.length > 200;
-      const truncated = overLimit ? raw.slice(0, 200) : raw;
-      setFormData((prev) => ({ ...prev, caller_identity_text: truncated }));
+      setFormData((prev) => ({ ...prev, caller_identity_text: raw }));
       setCallerIdentityOverflow(overLimit);
       if (overLimit) {
         setErrors((prev) => ({
