@@ -4344,6 +4344,44 @@ export const IncidentDetailPage: React.FC = () => {
                         {t("incidents.locationUpdateRequired")}
                       </span>
                     )}
+                    {(incident.caller_identity_text ||
+                      incident.cooperation_status) && (
+                      <div className="mt-2 pt-2 border-t border-[hsl(var(--border))]">
+                        <div className="space-y-2 text-sm">
+                          {incident.caller_identity_text ? (
+                            <div className="min-w-0">
+                              <span className="block text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                                {t(
+                                  "incidents.callerIdentity",
+                                  "Caller Identity",
+                                )}
+                              </span>
+                              <p className="mt-0.5 text-[hsl(var(--foreground))] break-words whitespace-pre-wrap">
+                                {incident.caller_identity_text}
+                              </p>
+                            </div>
+                          ) : null}
+                          {incident.cooperation_status ? (
+                            <div className="min-w-0">
+                              <span className="block text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                                {t(
+                                  "incidents.cooperationStatus",
+                                  "Cooperation Status",
+                                )}
+                              </span>
+                              <p className="mt-0.5 text-[hsl(var(--foreground))]">
+                                {t(
+                                  `incidents.cooperationStatus.${incident.cooperation_status}`,
+                                  incident.cooperation_status === "cooperative"
+                                    ? "Cooperative"
+                                    : "Uncooperative",
+                                )}
+                              </p>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -1408,6 +1408,8 @@ export const incidentApi = {
     if (filter.transition_id) body.transition_id = filter.transition_id;
     if (filter.reporter_phone_search)
       body.reporter_phone_search = filter.reporter_phone_search;
+    if (filter.cooperation_status)
+      body.cooperation_status = filter.cooperation_status;
     if (filter.momra_ref) body.momra_ref = filter.momra_ref;
     if (filter.current_state_code)
       body.current_state_code = [filter.current_state_code];

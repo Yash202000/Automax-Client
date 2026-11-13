@@ -138,6 +138,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     filter.priority !== undefined ||
     !!filter.start_date ||
     !!filter.end_date ||
+    filter.cooperation_status !== undefined ||
     !!filter.reporter_phone ||
     !!filter.reporter_phone_search
   );

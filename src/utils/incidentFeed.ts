@@ -8,6 +8,7 @@ export const EMPTY_FEED_FILTERS: FeedFilters = {
   reporterId: undefined,
   workflowId: undefined,
   source: undefined,
+  cooperationStatus: undefined,
   momraRef: undefined,
   convertedToRequest: undefined,
   departmentIds: [],
@@ -36,6 +37,7 @@ export function isFeedFilterActive(f: FeedFilters): boolean {
     !!f.reporterPhone ||
     !!f.workflowId ||
     !!f.source ||
+    !!f.cooperationStatus ||
     !!f.momraRef ||
     f.convertedToRequest !== undefined
   );

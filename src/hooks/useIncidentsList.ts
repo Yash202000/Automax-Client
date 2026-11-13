@@ -60,6 +60,7 @@ export function useIncidentsList({
       reporter: filters?.reporterId ?? null,
       workflow: filters?.workflowId ?? null,
       source: filters?.source ?? null,
+      cooperationStatus: filters?.cooperationStatus ?? null,
       momraRef: filters?.momraRef ?? null,
       convertedToRequest: filters?.convertedToRequest ?? null,
       scope: canViewAll ? "all" : `mine:${user?.id ?? "anon"}`,
@@ -112,6 +113,9 @@ export function useIncidentsList({
         ...(filters?.reporterId ? { reporter_id: filters.reporterId } : {}),
         ...(filters?.workflowId ? { workflow_id: filters.workflowId } : {}),
         ...(filters?.source ? { source: filters.source } : {}),
+        ...(filters?.cooperationStatus
+          ? { cooperation_status: filters.cooperationStatus }
+          : {}),
         ...(filters?.momraRef ? { momra_ref: filters.momraRef } : {}),
         ...(filters?.convertedToRequest !== undefined
           ? { converted_to_request: filters.convertedToRequest }
