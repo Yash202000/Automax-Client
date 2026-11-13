@@ -9,7 +9,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { settingsApi, type BrandingImageField } from "@/api/settings";
+import {
+  settingsApi,
+  type BrandingImageConfig,
+  type BrandingImageField,
+} from "@/api/settings";
 import { resolveLogoUrl } from "@/utils/publicUrl";
 
 const MAX_SIZE = 5 * 1024 * 1024;
@@ -36,6 +40,8 @@ const CHECKERBOARD: CSSProperties = {
 interface BrandingImageUploadProps {
   /** Settings field this uploads to; the server saves it immediately. */
   field: BrandingImageField;
+  /** Config the attachment is stored under (default "settings"). */
+  config?: BrandingImageConfig;
   label: string;
   /** Plain settings field value (fallback when nothing is uploaded). */
   value: string;
@@ -55,6 +61,7 @@ interface BrandingImageUploadProps {
 
 export function BrandingImageUpload({
   field,
+  config,
   label,
   value,
   attachment,
@@ -106,6 +113,7 @@ export function BrandingImageUpload({
     try {
       await settingsApi.uploadBrandingImage(field, file, {
         replace: !!attachment,
+        config,
         onUploadProgress: setProgress,
       });
       await onUploaded();

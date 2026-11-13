@@ -1865,6 +1865,9 @@
     "allClassificationsSelectedByDefault": "بشكل افتراضي، يتم تحديد جميع التصنيفات."
   },
   "reports": {
+    "reportLogos": "شعارات التقارير",
+    "reportLogoLeft": "الشعار الأيسر",
+    "reportLogoRight": "الشعار الأيمن",
     "title": "التقارير",
     "reportBuilder": "منشئ التقارير",
     "reportBuilderSubtitle": "إنشاء تقارير مخصصة من بياناتك",
