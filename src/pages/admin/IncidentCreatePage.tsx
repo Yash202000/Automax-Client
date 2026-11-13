@@ -155,12 +155,15 @@ export function IncidentCreatePage() {
     reporter_name: "",
     reporter_email: "",
     reporter_phone: "",
+    caller_identity_text: "",
+    cooperation_status: "",
     alternate_mobile: "",
   });
 
   const [comment, setComment] = useState("");
   const [lookupValues, setLookupValues] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [callerIdentityOverflow, setCallerIdentityOverflow] = useState(false);
   const [autoMatchedWorkflow, setAutoMatchedWorkflow] =
     useState<Workflow | null>(null);
   const [isAutoMatched, setIsAutoMatched] = useState(false);
@@ -533,6 +536,12 @@ export function IncidentCreatePage() {
           reporter_name: d.data.reporter_name || "",
           reporter_email: d.data.reporter_email || "",
           reporter_phone: d.data.reporter_phone || "",
+          caller_identity_text: d.data.caller_identity_text || "",
+          cooperation_status:
+            (d.data.cooperation_status as
+              | ""
+              | "cooperative"
+              | "uncooperative") || "",
           alternate_mobile: d.data.reporter?.alternate_mobile || "",
         });
 
@@ -774,11 +783,14 @@ export function IncidentCreatePage() {
         reporter_name: "",
         reporter_email: "",
         reporter_phone: "",
+        caller_identity_text: "",
+        cooperation_status: "",
         alternate_mobile: "",
       });
       setLookupValues({});
       setAttachments([]);
       imageValidation.clearRejected();
+      setCallerIdentityOverflow(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -987,6 +999,36 @@ export function IncidentCreatePage() {
         setPendingNewLocation(null);
       }
     }
+
+    if (field === "caller_identity_text") {
+      const raw = value ?? "";
+      const overLimit = raw.length > 200;
+      const truncated = overLimit ? raw.slice(0, 200) : raw;
+      setFormData((prev) => ({ ...prev, caller_identity_text: truncated }));
+      setCallerIdentityOverflow(overLimit);
+      if (overLimit) {
+        setErrors((prev) => ({
+          ...prev,
+          caller_identity_text: t("incidents.callerIdentityTooLong", {
+            max: 200,
+            defaultValue:
+              "Caller Identity exceeds 200 characters. Please shorten it before saving.",
+          }),
+        }));
+      } else if (raw.length === 200) {
+        setErrors((prev) => ({
+          ...prev,
+          caller_identity_text: t("incidents.callerIdentityMaxReached", {
+            max: 200,
+            defaultValue: "Maximum 200 characters reached",
+          }),
+        }));
+      } else {
+        setErrors((prev) => ({ ...prev, caller_identity_text: "" }));
+      }
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -1288,6 +1330,8 @@ export function IncidentCreatePage() {
     "reporter_name",
     "reporter_email",
     "reporter_phone",
+    "caller_identity_text",
+    "cooperation_status",
   ];
 
   const updateCallerName = (
@@ -1334,6 +1378,27 @@ export function IncidentCreatePage() {
     if (workflowRequiredFields.includes("comment") && !comment.trim())
       newErrors.comment = t("incidents.fieldRequired", {
         field: t("incidents.comment", "Comment"),
+      });
+    if (callerIdentityOverflow) {
+      newErrors.caller_identity_text = t("incidents.callerIdentityTooLong", {
+        max: 200,
+        defaultValue:
+          "Caller Identity exceeds 200 characters. Please shorten it before saving.",
+      });
+    } else if (
+      workflowRequiredFields.includes("caller_identity_text") &&
+      !formData.caller_identity_text?.trim()
+    ) {
+      newErrors.caller_identity_text = t("incidents.fieldRequired", {
+        field: t("incidents.callerIdentity", "Caller Identity"),
+      });
+    }
+    if (
+      workflowRequiredFields.includes("cooperation_status") &&
+      !formData.cooperation_status
+    )
+      newErrors.cooperation_status = t("incidents.fieldRequired", {
+        field: t("incidents.cooperationStatus", "Cooperation Status"),
       });
 
     if (isEPM940) {
@@ -1851,6 +1916,70 @@ export function IncidentCreatePage() {
                       error={errors.reporter_phone}
                     />
                   )}
+                {(workflowRequiredFields.includes("caller_identity_text") ||
+                  workflowOptionalFields.includes("caller_identity_text")) && (
+                  <Input
+                    label={t("incidents.callerIdentity", "Caller Identity")}
+                    value={formData.caller_identity_text || ""}
+                    onChange={(e) =>
+                      handleChange("caller_identity_text", e.target.value)
+                    }
+                    placeholder={t(
+                      "incidents.callerIdentityPlaceholder",
+                      "Enter caller identity",
+                    )}
+                    required={workflowRequiredFields.includes(
+                      "caller_identity_text",
+                    )}
+                    error={errors.caller_identity_text}
+                  />
+                )}
+                {(workflowRequiredFields.includes("cooperation_status") ||
+                  workflowOptionalFields.includes("cooperation_status")) && (
+                  <Select
+                    label={t(
+                      "incidents.cooperationStatus",
+                      "Cooperation Status",
+                    )}
+                    value={formData.cooperation_status || ""}
+                    onChange={(e) =>
+                      handleChange(
+                        "cooperation_status",
+                        (e.target.value || "") as
+                          | ""
+                          | "cooperative"
+                          | "uncooperative",
+                      )
+                    }
+                    required={workflowRequiredFields.includes(
+                      "cooperation_status",
+                    )}
+                    error={errors.cooperation_status}
+                    options={[
+                      {
+                        value: "",
+                        label: t(
+                          "incidents.selectCooperationStatus",
+                          "Select cooperation status",
+                        ),
+                      },
+                      {
+                        value: "cooperative",
+                        label: t(
+                          "incidents.cooperationStatusCooperative",
+                          "Cooperative",
+                        ),
+                      },
+                      {
+                        value: "uncooperative",
+                        label: t(
+                          "incidents.cooperationStatusUncooperative",
+                          "Uncooperative",
+                        ),
+                      },
+                    ]}
+                  />
+                )}
               </div>
             </Card>
 
@@ -1979,6 +2108,74 @@ export function IncidentCreatePage() {
                           "reporter_email",
                         )}
                         error={errors.reporter_email}
+                      />
+                    )}
+                    {(workflowRequiredFields.includes("caller_identity_text") ||
+                      workflowOptionalFields.includes(
+                        "caller_identity_text",
+                      )) && (
+                      <Input
+                        label={t("incidents.callerIdentity", "Caller Identity")}
+                        value={formData.caller_identity_text || ""}
+                        onChange={(e) =>
+                          handleChange("caller_identity_text", e.target.value)
+                        }
+                        placeholder={t(
+                          "incidents.callerIdentityPlaceholder",
+                          "Enter caller identity",
+                        )}
+                        required={workflowRequiredFields.includes(
+                          "caller_identity_text",
+                        )}
+                        error={errors.caller_identity_text}
+                      />
+                    )}
+                    {(workflowRequiredFields.includes("cooperation_status") ||
+                      workflowOptionalFields.includes(
+                        "cooperation_status",
+                      )) && (
+                      <Select
+                        label={t(
+                          "incidents.cooperationStatus",
+                          "Cooperation Status",
+                        )}
+                        value={formData.cooperation_status || ""}
+                        onChange={(e) =>
+                          handleChange(
+                            "cooperation_status",
+                            (e.target.value || "") as
+                              | ""
+                              | "cooperative"
+                              | "uncooperative",
+                          )
+                        }
+                        required={workflowRequiredFields.includes(
+                          "cooperation_status",
+                        )}
+                        error={errors.cooperation_status}
+                        options={[
+                          {
+                            value: "",
+                            label: t(
+                              "incidents.selectCooperationStatus",
+                              "Select cooperation status",
+                            ),
+                          },
+                          {
+                            value: "cooperative",
+                            label: t(
+                              "incidents.cooperationStatusCooperative",
+                              "Cooperative",
+                            ),
+                          },
+                          {
+                            value: "uncooperative",
+                            label: t(
+                              "incidents.cooperationStatusUncooperative",
+                              "Uncooperative",
+                            ),
+                          },
+                        ]}
                       />
                     )}
                   </div>

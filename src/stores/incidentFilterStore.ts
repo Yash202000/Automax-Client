@@ -21,6 +21,7 @@ export type SharedIncidentFilter = Pick<
   | "assignee_id"
   | "sla_breached"
   | "source"
+  | "cooperation_status"
   | "converted_to_request"
   | "start_date"
   | "end_date"
@@ -42,6 +43,7 @@ export const sharedIncidentFilterKeys: (keyof SharedIncidentFilter)[] = [
   "assignee_id",
   "sla_breached",
   "source",
+  "cooperation_status",
   "converted_to_request",
   "start_date",
   "end_date",

@@ -804,6 +804,8 @@ export type IncidentFormField =
   | "reporter_name"
   | "reporter_email"
   | "reporter_phone"
+  | "caller_identity_text"
+  | "cooperation_status"
   | "attachments"
   | "attachment"
   | "comment"
@@ -1251,6 +1253,8 @@ export interface Incident {
   reporter_email: string;
   reporter_name: string;
   reporter_phone: string;
+  caller_identity_text?: string;
+  cooperation_status?: "cooperative" | "uncooperative" | "";
   // Complaint-specific fields
   channel?: string;
   created_by_name?: string;
@@ -1464,6 +1468,8 @@ export interface IncidentCreateRequest {
   reporter_email?: string;
   reporter_name?: string;
   reporter_phone?: string;
+  caller_identity_text?: string;
+  cooperation_status?: "cooperative" | "uncooperative" | "";
   alternate_mobile?: string;
   custom_fields?: string;
   lookup_value_ids?: string[];
@@ -1493,6 +1499,8 @@ export interface IncidentUpdateRequest {
   reporter_email?: string;
   reporter_name?: string;
   reporter_phone?: string;
+  caller_identity_text?: string;
+  cooperation_status?: "cooperative" | "uncooperative" | "";
 }
 
 export interface IncidentTransitionRequest {
@@ -1590,6 +1598,7 @@ export interface IncidentFilter {
   transition_id?: string;
   reporter_phone?: string;
   reporter_phone_search?: string;
+  cooperation_status?: "cooperative" | "uncooperative";
   momra_ref?: string;
   current_state_code?: string;
   radius?: number;
@@ -1606,6 +1615,7 @@ export interface FeedFilters {
   reporterId?: string;
   workflowId?: string;
   source?: string;
+  cooperationStatus?: "cooperative" | "uncooperative";
   momraRef?: string;
   convertedToRequest?: boolean;
   departmentIds: string[];

@@ -133,11 +133,14 @@ export function IncidentEditPage() {
     reporter_name: "",
     reporter_email: "",
     reporter_phone: "",
+    caller_identity_text: "",
+    cooperation_status: "",
   });
 
   const [lookupValues, setLookupValues] = useState<Record<string, any>>({});
   const [lookupValuesSeeded, setLookupValuesSeeded] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [callerIdentityOverflow, setCallerIdentityOverflow] = useState(false);
   const [coordinateInputError, setCoordinateInputError] = useState<
     string | undefined
   >();
@@ -361,9 +364,14 @@ export function IncidentEditPage() {
       reporter_name: incident.reporter_name || "",
       reporter_email: incident.reporter_email || "",
       reporter_phone: incident.reporter_phone || "",
+      caller_identity_text: incident.caller_identity_text || "",
+      cooperation_status:
+        (incident.cooperation_status as "" | "cooperative" | "uncooperative") ||
+        "",
     });
 
     setExistingAttachments(incident.attachments || []);
+    setCallerIdentityOverflow(false);
 
     setInitialized(true);
   }, [incident, initialized]);
@@ -561,6 +569,36 @@ export function IncidentEditPage() {
         fetchLocationCoords(node.name);
       });
     }
+
+    if (field === "caller_identity_text") {
+      const raw = value ?? "";
+      const overLimit = raw.length > 200;
+      const truncated = overLimit ? raw.slice(0, 200) : raw;
+      setFormData((prev) => ({ ...prev, caller_identity_text: truncated }));
+      setCallerIdentityOverflow(overLimit);
+      if (overLimit) {
+        setErrors((prev) => ({
+          ...prev,
+          caller_identity_text: t("incidents.callerIdentityTooLong", {
+            max: 200,
+            defaultValue:
+              "Caller Identity exceeds 200 characters. Please shorten it before saving.",
+          }),
+        }));
+      } else if (raw.length === 200) {
+        setErrors((prev) => ({
+          ...prev,
+          caller_identity_text: t("incidents.callerIdentityMaxReached", {
+            max: 200,
+            defaultValue: "Maximum 200 characters reached",
+          }),
+        }));
+      } else {
+        setErrors((prev) => ({ ...prev, caller_identity_text: "" }));
+      }
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field as string]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -675,6 +713,11 @@ export function IncidentEditPage() {
     "location_id",
     "geolocation",
     "due_date",
+    "reporter_name",
+    "reporter_email",
+    "reporter_phone",
+    "caller_identity_text",
+    "cooperation_status",
   ];
 
   const validate = (): boolean => {
@@ -713,11 +756,36 @@ export function IncidentEditPage() {
       }
     }
 
+    if (callerIdentityOverflow) {
+      newErrors.caller_identity_text = t("incidents.callerIdentityTooLong", {
+        max: 200,
+        defaultValue:
+          "Caller Identity exceeds 200 characters. Please shorten it before saving.",
+      });
+    } else if (
+      workflowRequiredFields.includes("caller_identity_text") &&
+      !formData.caller_identity_text?.trim()
+    ) {
+      newErrors.caller_identity_text = t("incidents.fieldRequired", {
+        field: t("incidents.callerIdentity", "Caller Identity"),
+      });
+    }
+    if (
+      workflowRequiredFields.includes("cooperation_status") &&
+      !formData.cooperation_status
+    ) {
+      newErrors.cooperation_status = t("incidents.fieldRequired", {
+        field: t("incidents.cooperationStatus", "Cooperation Status"),
+      });
+    }
+
     for (const field of workflowRequiredFields) {
       if (
         field === "classification_id" ||
         field === "location_id" ||
-        field === "lookup:PRIORITY"
+        field === "lookup:PRIORITY" ||
+        field === "caller_identity_text" ||
+        field === "cooperation_status"
       ) {
         continue;
       }
@@ -998,6 +1066,70 @@ export function IncidentEditPage() {
                       {MAX_DESCRIPTION_LENGTH}
                     </span>
                   </div>
+                )}
+                {(workflowRequiredFields.includes("caller_identity_text") ||
+                  workflowOptionalFields.includes("caller_identity_text")) && (
+                  <Input
+                    label={t("incidents.callerIdentity", "Caller Identity")}
+                    value={formData.caller_identity_text || ""}
+                    onChange={(e) =>
+                      handleChange("caller_identity_text", e.target.value)
+                    }
+                    placeholder={t(
+                      "incidents.callerIdentityPlaceholder",
+                      "Enter caller identity",
+                    )}
+                    required={workflowRequiredFields.includes(
+                      "caller_identity_text",
+                    )}
+                    error={errors.caller_identity_text}
+                  />
+                )}
+                {(workflowRequiredFields.includes("cooperation_status") ||
+                  workflowOptionalFields.includes("cooperation_status")) && (
+                  <Select
+                    label={t(
+                      "incidents.cooperationStatus",
+                      "Cooperation Status",
+                    )}
+                    value={formData.cooperation_status || ""}
+                    onChange={(e) =>
+                      handleChange(
+                        "cooperation_status",
+                        (e.target.value || "") as
+                          | ""
+                          | "cooperative"
+                          | "uncooperative",
+                      )
+                    }
+                    required={workflowRequiredFields.includes(
+                      "cooperation_status",
+                    )}
+                    error={errors.cooperation_status}
+                    options={[
+                      {
+                        value: "",
+                        label: t(
+                          "incidents.selectCooperationStatus",
+                          "Select cooperation status",
+                        ),
+                      },
+                      {
+                        value: "cooperative",
+                        label: t(
+                          "incidents.cooperationStatusCooperative",
+                          "Cooperative",
+                        ),
+                      },
+                      {
+                        value: "uncooperative",
+                        label: t(
+                          "incidents.cooperationStatusUncooperative",
+                          "Uncooperative",
+                        ),
+                      },
+                    ]}
+                  />
                 )}
               </div>
             </Card>

@@ -400,7 +400,13 @@ export const IncidentsPage: React.FC = () => {
       reporter_phone_search:
         searchParams.get("reporter_phone_search") ||
         stored.reporter_phone_search,
+      cooperation_status:
+        (searchParams.get("cooperation_status") as
+          | "cooperative"
+          | "uncooperative"
+          | null) || stored.cooperation_status,
       momra_ref: searchParams.get("momra_ref") || stored.momra_ref,
+      channel: searchParams.get("channel") || stored.channel,
     };
   }, [searchParams, uniqueStates, isVD2Client]);
 
@@ -564,6 +570,7 @@ export const IncidentsPage: React.FC = () => {
     !!filter.start_date ||
     !!filter.end_date ||
     filter.source !== undefined ||
+    filter.cooperation_status !== undefined ||
     !!filter.reporter_phone ||
     !!filter.reporter_phone_search ||
     !!filter.momra_ref

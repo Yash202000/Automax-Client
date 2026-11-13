@@ -1210,6 +1210,57 @@ export function FilterDrawer({
           }
         />
 
+        {/* Cooperation Status */}
+        <SelectBox
+          label={t("incidents.cooperationStatus", "Cooperation Status")}
+          isOpen={openBox === "cooperation"}
+          onToggle={() => toggleBox("cooperation")}
+          trigger={
+            draft.cooperationStatus ? (
+              <Chip
+                className="bg-primary/10 border border-primary/40 text-primary"
+                label={t(
+                  `incidents.cooperationStatus.${draft.cooperationStatus}`,
+                  draft.cooperationStatus === "cooperative"
+                    ? "Cooperative"
+                    : "Uncooperative",
+                )}
+                onRemove={() => patch({ cooperationStatus: undefined })}
+              />
+            ) : (
+              placeholder
+            )
+          }
+          dropdown={
+            <div className="space-y-1 max-h-32 overflow-y-auto pe-0.5">
+              {(["cooperative", "uncooperative"] as const).map((value) => (
+                <label
+                  key={value}
+                  className="flex items-center gap-2 p-1 rounded hover:bg-[hsl(var(--muted)/0.6)] cursor-pointer group"
+                >
+                  <input
+                    checked={draft.cooperationStatus === value}
+                    onChange={() =>
+                      patch({
+                        cooperationStatus:
+                          draft.cooperationStatus === value ? undefined : value,
+                      })
+                    }
+                    className="w-3.5 h-3.5 rounded bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-primary cursor-pointer accent-primary shrink-0"
+                    type="checkbox"
+                  />
+                  <span className="text-[11px] text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--foreground))] truncate">
+                    {t(
+                      `incidents.cooperationStatus.${value}`,
+                      value === "cooperative" ? "Cooperative" : "Uncooperative",
+                    )}
+                  </span>
+                </label>
+              ))}
+            </div>
+          }
+        />
+
         {/* MOMRA Reference Number */}
         {isEPM940 ? (
           <div className="space-y-1">

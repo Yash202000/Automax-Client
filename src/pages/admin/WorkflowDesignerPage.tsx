@@ -318,6 +318,16 @@ const baseFormFields: BaseFormFieldType[] = [
     descriptionKey: "workflows.formFields.callerPhoneNumberDesc",
   },
   {
+    field: "caller_identity_text",
+    labelKey: "workflows.formFields.callerIdentity",
+    descriptionKey: "workflows.formFields.callerIdentityDesc",
+  },
+  {
+    field: "cooperation_status",
+    labelKey: "workflows.formFields.cooperationStatus",
+    descriptionKey: "workflows.formFields.cooperationStatusDesc",
+  },
+  {
     field: "attachments",
     labelKey: "workflows.formFields.attachments",
     descriptionKey: "workflows.formFields.attachmentsDesc",
