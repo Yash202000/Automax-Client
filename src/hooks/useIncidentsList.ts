@@ -61,6 +61,9 @@ export function buildFeedParams({
     ...(filters?.reporterId ? { reporter_id: filters.reporterId } : {}),
     ...(filters?.workflowId ? { workflow_id: filters.workflowId } : {}),
     ...(filters?.source ? { source: filters.source } : {}),
+    ...(filters?.cooperationStatus
+      ? { cooperation_status: filters.cooperationStatus }
+      : {}),
     ...(filters?.momraRef ? { momra_ref: filters.momraRef } : {}),
     ...(filters?.convertedToRequest !== undefined
       ? { converted_to_request: filters.convertedToRequest }
