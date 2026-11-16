@@ -3,6 +3,7 @@ import { AdvancedMarker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
 import type { Location } from "../../types";
 import type { LocationMapProps } from "./LeafletLocationMap";
 import GoogleBaseMap from "./google/GoogleBaseMap";
+import { toCoordinate, toCoordinateOr } from "../../utils/coordinates";
 
 // Same colour-per-type mapping as the Leaflet version.
 const getMarkerColor = (type?: string): string => {
@@ -70,18 +71,17 @@ export default function GoogleLocationMap({
 
   // Group locations that share exact coordinates into one marker.
   const groups = useMemo<MarkerGroup[]>(() => {
-    const byCoord = new Map<string, Location[]>();
-    locations
-      .filter((l) => l.latitude !== undefined && l.longitude !== undefined)
-      .forEach((l) => {
-        const key = `${l.latitude},${l.longitude}`;
-        if (!byCoord.has(key)) byCoord.set(key, []);
-        byCoord.get(key)!.push(l);
-      });
-    return Array.from(byCoord.entries()).map(([key, items]) => {
-      const [lat, lng] = key.split(",").map(Number);
-      return { key, lat, lng, items };
+    const byCoord = new Map<string, MarkerGroup>();
+    locations.forEach((l) => {
+      // Skip anything that isn't a valid number (API may send strings/null).
+      const lat = toCoordinate(l.latitude);
+      const lng = toCoordinate(l.longitude);
+      if (lat === undefined || lng === undefined) return;
+      const key = `${lat},${lng}`;
+      if (!byCoord.has(key)) byCoord.set(key, { key, lat, lng, items: [] });
+      byCoord.get(key)!.items.push(l);
     });
+    return Array.from(byCoord.values());
   }, [locations]);
 
   // A selection from outside (e.g. the list) opens that marker's popup.
@@ -102,7 +102,10 @@ export default function GoogleLocationMap({
       style={{ height, width: "100%" }}
     >
       <GoogleBaseMap
-        defaultCenter={{ lat: center[0], lng: center[1] }}
+        defaultCenter={{
+          lat: toCoordinateOr(center[0]),
+          lng: toCoordinateOr(center[1]),
+        }}
         defaultZoom={zoom}
         controls
       >
