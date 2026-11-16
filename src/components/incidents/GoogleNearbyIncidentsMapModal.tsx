@@ -467,16 +467,15 @@ export default function GoogleNearbyIncidentsMapModal({
   const nearbyItems = useMemo(() => data?.data ?? [], [data]);
 
   // Keep only items with valid coordinates, converted to real numbers.
-  const itemsWithCoords = useMemo(
-    () =>
-      nearbyItems.flatMap((item) => {
-        const lat = toCoordinate(item.latitude);
-        const lng = toCoordinate(item.longitude);
-        if (lat === undefined || lng === undefined) return [];
-        return [{ ...item, latitude: lat, longitude: lng }];
-      }),
-    [nearbyItems],
-  );
+  const itemsWithCoords = useMemo(() => {
+    if (!hasCoords) return [];
+    return nearbyItems.flatMap((item) => {
+      const lat = toCoordinate(item.latitude);
+      const lng = toCoordinate(item.longitude);
+      if (lat === undefined || lng === undefined) return [];
+      return [{ ...item, latitude: lat, longitude: lng }];
+    });
+  }, [hasCoords, nearbyItems]);
 
   const filteredItems = useMemo(() => {
     if (!searchFilter.trim()) return itemsWithCoords;
@@ -605,7 +604,7 @@ export default function GoogleNearbyIncidentsMapModal({
                 onFlyDone={() => setFlyTarget(null)}
               />
 
-              {showRadiusCircle && (
+              {hasCoords && showRadiusCircle && (
                 <GoogleCircle
                   center={{ lat: latitude, lng: longitude }}
                   radius={radiusMeters}
@@ -617,11 +616,13 @@ export default function GoogleNearbyIncidentsMapModal({
                 />
               )}
 
-              <CurrentIncidentMarker
-                position={{ lat: latitude, lng: longitude }}
-                onClick={() => setCurrentPopupOpen((open) => !open)}
-              />
-              {currentPopupOpen && (
+              {hasCoords && (
+                <CurrentIncidentMarker
+                  position={{ lat: latitude, lng: longitude }}
+                  onClick={() => setCurrentPopupOpen((open) => !open)}
+                />
+              )}
+              {hasCoords && currentPopupOpen && (
                 <InfoWindow
                   position={{ lat: latitude, lng: longitude }}
                   onCloseClick={() => setCurrentPopupOpen(false)}

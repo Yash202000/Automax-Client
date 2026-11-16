@@ -5,7 +5,9 @@
 /** Convert a coordinate-like value to a finite number, or undefined. */
 export function toCoordinate(value: unknown): number | undefined {
   if (value === null || value === undefined || value === "") return undefined;
-  const n = typeof value === "number" ? value : Number(String(value).trim());
+  const normalized = typeof value === "number" ? value : String(value).trim();
+  if (normalized === "") return undefined;
+  const n = typeof normalized === "number" ? normalized : Number(normalized);
   return Number.isFinite(n) ? n : undefined;
 }
 
