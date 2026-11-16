@@ -1066,6 +1066,13 @@ export const UsersPage: React.FC = () => {
       errors.username = t("validation.fieldRequired", {
         field: t("users.username"),
       });
+    } else if (
+      !createFormData.is_ad_user &&
+      !/^[a-zA-Z0-9]+$/.test(createFormData.username.trim())
+    ) {
+      errors.username = t("auth.usernameAlphanumericOnly", {
+        defaultValue: "Username can only contain letters and numbers.",
+      });
     }
 
     // AD users sign in through Active Directory: no password is stored.
@@ -3400,7 +3407,11 @@ export const UsersPage: React.FC = () => {
                       onChange={(e) => {
                         setCreateFormData({
                           ...createFormData,
-                          username: e.target.value,
+                          // AD usernames must match the directory login,
+                          // which may contain dots, hyphens, etc.
+                          username: createFormData.is_ad_user
+                            ? e.target.value
+                            : e.target.value.replace(/[^a-zA-Z0-9]/g, ""),
                         });
                         if (
                           createFormErrors.username ||

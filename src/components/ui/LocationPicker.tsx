@@ -1,8 +1,14 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { publicUrl } from "../../utils/publicUrl";
+import { toCoordinate } from "../../utils/coordinates";
 import BaseMapLayer from "../maps/BaseMapLayer";
 import GoogleBaseMap from "../maps/google/GoogleBaseMap";
-import MapFallbackNotice from "../maps/MapFallbackNotice";
 import MapSwitch from "../maps/MapSwitch";
 import { useMapProvider } from "../../utils/mapProvider";
 import {
@@ -274,8 +280,23 @@ async function reverseGeocode(
   }
 }
 
+// Coerce latitude/longitude to numbers (the API can send them as strings);
+// drops the location if either isn't a valid number.
+function normalizeLocation(
+  location: LocationData | undefined,
+): LocationData | undefined {
+  if (!location) return undefined;
+  const latitude = toCoordinate(location.latitude);
+  const longitude = toCoordinate(location.longitude);
+  if (latitude === undefined || longitude === undefined) return undefined;
+  if (latitude === location.latitude && longitude === location.longitude) {
+    return location;
+  }
+  return { ...location, latitude, longitude };
+}
+
 export function LocationPicker({
-  value,
+  value: rawValue,
   onChange,
   required,
   error,
@@ -286,6 +307,7 @@ export function LocationPicker({
   onCoordinateErrorChange,
 }: LocationPickerProps) {
   const { t } = useTranslation();
+  const value = useMemo(() => normalizeLocation(rawValue), [rawValue]);
   const { provider } = useMapProvider();
   const isGoogle = provider === "google";
   const [isLoading, setIsLoading] = useState(false);
@@ -781,7 +803,6 @@ export function LocationPicker({
                   />
                 )}
               </MapContainer>
-              <MapFallbackNotice className="bottom-3 start-14" />
             </>
           }
         />

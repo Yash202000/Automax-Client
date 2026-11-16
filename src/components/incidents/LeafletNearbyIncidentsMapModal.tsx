@@ -20,7 +20,6 @@ import {
   matchesNearbySearch,
 } from "../../utils/nearbyIncidentLocale";
 import NearbyIncidentsSidebar from "./NearbyIncidentsSidebar";
-import MapFallbackNotice from "../maps/MapFallbackNotice";
 
 // Fix default marker icon issue with bundlers
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -537,7 +536,6 @@ export default function LeafletNearbyIncidentsMapModal({
         {/* Main Map View */}
         <div className="relative flex-1 h-[55vh] md:h-[calc(92vh-130px)] min-h-[380px] bg-[hsl(var(--muted)/0.2)]">
           <div ref={mapContainerRef} className="w-full h-full z-0" />
-          <MapFallbackNotice className="bottom-7 start-4" />
 
           {/* Quick Floating Map Actions */}
           <div className="absolute top-4 start-4 z-[400] flex flex-wrap gap-2 pointer-events-auto">

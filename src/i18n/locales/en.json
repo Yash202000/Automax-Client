@@ -376,6 +376,7 @@
     "usernameTooShort": "Username must be at least 3 characters.",
     "usernameTooLong": "Username must be less than 50 characters.",
     "usernameInvalidChars": "Username can only contain letters, numbers, and underscores.",
+    "usernameAlphanumericOnly": "Username can only contain letters and numbers.",
     "pwLowercase": "Password must contain at least one lowercase letter.",
     "acceptTerms": "You must accept the terms and conditions.",
     "registrationFailed": "Registration failed. Please try again.",

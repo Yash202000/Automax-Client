@@ -93,9 +93,12 @@ export function reportGoogleFailure(fallbackReason = "Google Maps failed") {
   // tick so the captured message is in place.
   setTimeout(() => {
     if (state.failed) return;
+    const reason = describeFailure(fallbackReason);
     // eslint-disable-next-line no-console
-    console.warn("Google Maps unavailable, using OpenStreetMap instead.");
-    setState({ failed: true, reason: describeFailure(fallbackReason) });
+    console.warn(
+      `Google Maps unavailable, using OpenStreetMap instead. Reason: ${reason}`,
+    );
+    setState({ failed: true, reason });
   }, 0);
 }
 

@@ -3,9 +3,9 @@ import { Icon } from "leaflet";
 import { MapContainer, Marker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { publicUrl } from "../../utils/publicUrl";
+import { toCoordinate } from "../../utils/coordinates";
 import MapSwitch from "./MapSwitch";
 import BaseMapLayer from "./BaseMapLayer";
-import MapFallbackNotice from "./MapFallbackNotice";
 import GoogleBaseMap from "./google/GoogleBaseMap";
 
 interface SingleLocationMapProps {
@@ -31,12 +31,17 @@ const leafletMarkerIcon = new Icon({
 // A read-only map with one marker. Native Google Maps when a key is configured
 // (and working), Leaflet + OSM otherwise. Fills its (positioned) parent.
 export default function SingleLocationMap({
-  latitude,
-  longitude,
+  latitude: rawLatitude,
+  longitude: rawLongitude,
   zoom = 15,
   scrollWheelZoom = false,
   showMapControls = false,
 }: SingleLocationMapProps) {
+  // The API can send coordinates as strings; Google Maps needs real numbers.
+  const latitude = toCoordinate(rawLatitude);
+  const longitude = toCoordinate(rawLongitude);
+  if (latitude === undefined || longitude === undefined) return null;
+
   return (
     <MapSwitch
       google={
@@ -62,7 +67,6 @@ export default function SingleLocationMap({
             <BaseMapLayer />
             <Marker position={[latitude, longitude]} icon={leafletMarkerIcon} />
           </MapContainer>
-          <MapFallbackNotice />
         </div>
       }
     />

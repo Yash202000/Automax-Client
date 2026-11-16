@@ -18,6 +18,7 @@ import {
 import { Modal, ModalBody, ModalHeader, ModalTitle } from "../ui/Modal";
 import { incidentApi, type NearbyIncident } from "../../api/admin";
 import { getIncidentDistance } from "../../utils/geoDistance";
+import { toCoordinate, toCoordinateOr } from "../../utils/coordinates";
 import {
   localizeNearbyIncident,
   matchesNearbySearch,
@@ -67,8 +68,6 @@ function groupByCoord(items: NearbyIncident[]): MarkerGroup[] {
     };
   });
 }
-
-const coordKey = (item: NearbyIncident) => `${item.latitude},${item.longitude}`;
 
 // Runs the map commands (fit to markers, fly to a point) triggered from the
 // buttons and the list. Must live inside the map to use useMap.
@@ -419,11 +418,17 @@ export default function GoogleNearbyIncidentsMapModal({
   onClose,
   incidentId,
   incidentNumber,
-  latitude,
-  longitude,
+  latitude: rawLatitude,
+  longitude: rawLongitude,
   classificationId,
   radiusMeters = 5000,
 }: NearbyIncidentsMapModalProps) {
+  // The API can send coordinates as strings; Google Maps needs real numbers.
+  const hasCoords =
+    toCoordinate(rawLatitude) !== undefined &&
+    toCoordinate(rawLongitude) !== undefined;
+  const latitude = toCoordinateOr(rawLatitude);
+  const longitude = toCoordinateOr(rawLongitude);
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -456,23 +461,21 @@ export default function GoogleNearbyIncidentsMapModal({
         limit: 100,
         radius: radiusMeters,
       }),
-    enabled:
-      isOpen && !!classificationId && latitude != null && longitude != null,
+    enabled: isOpen && !!classificationId && hasCoords,
   });
 
   const nearbyItems = useMemo(() => data?.data ?? [], [data]);
 
-  const itemsWithCoords = useMemo(
-    () =>
-      nearbyItems.filter(
-        (item) =>
-          item.latitude != null &&
-          item.longitude != null &&
-          !isNaN(item.latitude) &&
-          !isNaN(item.longitude),
-      ),
-    [nearbyItems],
-  );
+  // Keep only items with valid coordinates, converted to real numbers.
+  const itemsWithCoords = useMemo(() => {
+    if (!hasCoords) return [];
+    return nearbyItems.flatMap((item) => {
+      const lat = toCoordinate(item.latitude);
+      const lng = toCoordinate(item.longitude);
+      if (lat === undefined || lng === undefined) return [];
+      return [{ ...item, latitude: lat, longitude: lng }];
+    });
+  }, [hasCoords, nearbyItems]);
 
   const filteredItems = useMemo(() => {
     if (!searchFilter.trim()) return itemsWithCoords;
@@ -525,12 +528,11 @@ export default function GoogleNearbyIncidentsMapModal({
 
   const handleSelectIncident = useCallback((item: NearbyIncident) => {
     setSelectedIncidentId(item.id);
-    if (item.latitude == null || item.longitude == null) return;
-    setFlyTarget({
-      point: { lat: item.latitude, lng: item.longitude },
-      zoom: 16,
-    });
-    setOpenGroupKey(coordKey(item));
+    const lat = toCoordinate(item.latitude);
+    const lng = toCoordinate(item.longitude);
+    if (lat === undefined || lng === undefined) return;
+    setFlyTarget({ point: { lat, lng }, zoom: 16 });
+    setOpenGroupKey(`${lat},${lng}`);
   }, []);
 
   const handleNavigate = useCallback(
@@ -602,7 +604,7 @@ export default function GoogleNearbyIncidentsMapModal({
                 onFlyDone={() => setFlyTarget(null)}
               />
 
-              {showRadiusCircle && (
+              {hasCoords && showRadiusCircle && (
                 <GoogleCircle
                   center={{ lat: latitude, lng: longitude }}
                   radius={radiusMeters}
@@ -614,11 +616,13 @@ export default function GoogleNearbyIncidentsMapModal({
                 />
               )}
 
-              <CurrentIncidentMarker
-                position={{ lat: latitude, lng: longitude }}
-                onClick={() => setCurrentPopupOpen((open) => !open)}
-              />
-              {currentPopupOpen && (
+              {hasCoords && (
+                <CurrentIncidentMarker
+                  position={{ lat: latitude, lng: longitude }}
+                  onClick={() => setCurrentPopupOpen((open) => !open)}
+                />
+              )}
+              {hasCoords && currentPopupOpen && (
                 <InfoWindow
                   position={{ lat: latitude, lng: longitude }}
                   onCloseClick={() => setCurrentPopupOpen(false)}
