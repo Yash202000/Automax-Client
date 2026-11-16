@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -39,6 +39,23 @@ import { FilterDrawer } from "./components/FilterDrawer";
 
 const PAGE_LIMIT = 10;
 
+/** What a custom right-hand panel gets from the feed. */
+export interface IncidentFeedContext {
+  search: string;
+  filters: FeedFilters;
+  selectedId: string | null;
+  // eslint-disable-next-line no-unused-vars
+  onSelect: (id: string) => void;
+}
+
+/** A feed tab that narrows the list to the workflow states it matches. */
+export interface IncidentStatusTab {
+  key: string;
+  label: string;
+  /** Picks the workflow states (by name) that belong to this tab. */
+  matchState: (state: { name: string; name_ar?: string }) => boolean;
+}
+
 /**
  * Split-view incidents page (feed + details workspace).
  *
@@ -55,7 +72,31 @@ const PAGE_LIMIT = 10;
  */
 export function IncidentsListPage({
   type = "all",
-}: { type?: "all" | "assigned" | "created" } = {}) {
+  initialSelectedId,
+  onSelectionChange,
+  hideCopyUrl,
+  hideNearbyIncidents,
+  onCreateClick,
+  statusTabs,
+  renderRightPanel,
+}: {
+  type?: "all" | "assigned" | "created";
+  /** Preselect an incident (same effect as ?id=) without touching the URL. */
+  initialSelectedId?: string | null;
+  /** Called whenever the selected incident changes (e.g. to sync the URL). */
+  onSelectionChange?: (id: string | null) => void;
+  /** Hide the "Copy incident URL" action in the details workspace. */
+  hideCopyUrl?: boolean;
+  /** Hide the "Nearby incidents" button in the details workspace. */
+  hideNearbyIncidents?: boolean;
+  /** Override the "New Incident" action (default: go to /incidents/new). */
+  onCreateClick?: () => void;
+  /** Optional tabs above the feed, each filtering by workflow state. */
+  statusTabs?: IncidentStatusTab[];
+  /** Replace the details workspace on the right (e.g. with a map). */
+  // eslint-disable-next-line no-unused-vars
+  renderRightPanel?: (ctx: IncidentFeedContext) => ReactNode;
+} = {}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { hasPermission, isSuperAdmin } = usePermissions();
@@ -256,7 +297,7 @@ export function IncidentsListPage({
   // Deep-link preselection (?id=) — used by the /incidents/:id redirect,
   // since there is no standalone details page.
   const [searchParams, setSearchParams] = useSearchParams();
-  const preselectedId = searchParams.get("id");
+  const preselectedId = initialSelectedId ?? searchParams.get("id");
 
   // Resolve the deep link: fetch the incident by id, then narrow the feed
   // to its number so its card is visible and selectable. Until that
@@ -342,6 +383,11 @@ export function IncidentsListPage({
   }, [incidents, selectedId, preselectedId, resolvingPreselect]);
   const effectiveSelectedId = selectedIncident?.id ?? null;
 
+  useEffect(() => {
+    if (resolvingPreselect) return;
+    onSelectionChange?.(effectiveSelectedId);
+  }, [effectiveSelectedId, resolvingPreselect, onSelectionChange]);
+
   const filterActive = isFeedFilterActive(applied);
 
   // Sidebar-driven filters: the layout menu links to /incidents with
@@ -353,7 +399,28 @@ export function IncidentsListPage({
   const urlStateId = searchParams.get("current_state_id");
   const urlSlaBreached = searchParams.get("sla_breached") === "true";
 
+  const [activeTabKey, setActiveTabKey] = useState<string | null>(
+    statusTabs?.[0]?.key ?? null,
+  );
+  const activeTab = statusTabs?.find((tab) => tab.key === activeTabKey);
+
+  // Tabs own the state filter: apply the active tab's states once the
+  // workflow states have loaded (and again whenever the tab changes).
   useEffect(() => {
+    if (!activeTab || stateOptions.length === 0) return;
+    const ids = stateOptions
+      .filter((st) => activeTab.matchState(st))
+      .map((st) => st.id);
+    setApplied((prev) =>
+      JSON.stringify(prev.stateIds) === JSON.stringify(ids)
+        ? prev
+        : { ...prev, stateIds: ids },
+    );
+    setPage(1);
+  }, [activeTab, stateOptions]);
+
+  useEffect(() => {
+    if (statusTabs) return; // tabs, not the sidebar URL, drive the state filter
     const patch: Partial<FeedFilters> = {};
     if (urlStateId) {
       patch.stateIds = [urlStateId];
@@ -384,7 +451,14 @@ export function IncidentsListPage({
       return { ...prev, ...patch };
     });
     setPage(1);
-  }, [urlStatus, urlStateId, urlSlaBreached, stateOptions, preselectedId]);
+  }, [
+    urlStatus,
+    urlStateId,
+    urlSlaBreached,
+    stateOptions,
+    preselectedId,
+    statusTabs,
+  ]);
 
   const openDrawer = () => {
     setDraft(applied);
@@ -404,13 +478,41 @@ export function IncidentsListPage({
           aria-label={t("incidents.incidentFeed", "Incident feed")}
           className="flex w-full shrink-0 flex-col overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-sm md:min-h-0 md:w-80"
         >
+          {statusTabs && statusTabs.length > 0 ? (
+            <div
+              role="tablist"
+              className="flex shrink-0 gap-1 border-b border-[hsl(var(--border))] p-1.5"
+            >
+              {statusTabs.map((tab) => {
+                const active = tab.key === activeTabKey;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setActiveTabKey(tab.key)}
+                    className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                      active
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted)/0.7)] hover:text-[hsl(var(--foreground))]"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
           {/* New + Filter */}
           <div className="p-2.5 border-b border-[hsl(var(--border))] space-y-2 shrink-0">
             <div className="flex items-center gap-2">
               {canCreate ? (
                 <Button
                   leftIcon={<Plus className="h-3.5 w-3.5" />}
-                  onClick={() => navigate("/incidents/new")}
+                  onClick={() =>
+                    onCreateClick ? onCreateClick() : navigate("/incidents/new")
+                  }
                   className="flex-1"
                 >
                   {t("incidents.newIncident")}
@@ -588,7 +690,14 @@ export function IncidentsListPage({
           aria-label={t("incidents.incidentDetails")}
           className="flex w-full min-w-0 shrink-0 flex-col overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-background md:min-h-0 md:flex-1 md:shrink"
         >
-          {resolvingPreselect ? (
+          {renderRightPanel ? (
+            renderRightPanel({
+              search,
+              filters: applied,
+              selectedId: effectiveSelectedId,
+              onSelect: setSelectedId,
+            })
+          ) : resolvingPreselect ? (
             <div
               className="flex h-full flex-col items-center justify-center gap-2 p-8"
               role="status"
@@ -603,6 +712,8 @@ export function IncidentsListPage({
             <IncidentDetailsWorkspace
               key={selectedIncident?.id ?? "none"}
               incident={selectedIncident}
+              hideCopyUrl={hideCopyUrl}
+              hideNearbyIncidents={hideNearbyIncidents}
             />
           )}
         </section>
