@@ -1,11 +1,13 @@
 /**
  * Dispatcher API.
  *
- * Unit types (resource types) use the real `/dispatch/resource-types`
- * endpoints. Units and fire stations are still DUMMY in-memory
- * implementations: no backend endpoints exist yet for them. Replace those
- * bodies with real `apiClient` calls once available; the exported
- * signatures are what the UI depends on.
+ * Unit types, fire stations (service points) and units (resources) use the
+ * real `/dispatch/*` endpoints of Automax-Backend. Successful responses wrap
+ * the payload in `data`; list responses add `page`, `limit`, `total_items`
+ * and `total_pages` next to it.
+ *
+ * `FireStation` is the dispatcher map's view of a service point, and
+ * `dispatcherApi.alertFireStations` is still a mock (no alert endpoint yet).
  */
 import { apiClient } from "./client";
 
@@ -18,140 +20,21 @@ export interface FireStation {
   phone: string;
   latitude: number;
   longitude: number;
-  /** Station status; treated as active when omitted. */
-  is_active?: boolean;
-  /** Units assigned to this station (unit ids). */
-  unit_ids?: string[];
-  location_id?: string;
-  /** Unique radio id of the station. */
-  radio_id?: string;
-  /** ISO date until which the station is active. */
-  active_till?: string;
-  /** Station icon as a data URL. */
-  icon?: string;
 }
-
-export const DUMMY_FIRE_STATIONS: FireStation[] = [
-  {
-    id: "fs-001",
-    name: "Central Fire Station",
-    name_ar: "محطة الإطفاء المركزية",
-    location_name: "Downtown",
-    address: "King Fahd Rd, Downtown",
-    phone: "+966 11 000 0001",
-    latitude: 24.7136,
-    longitude: 46.6753,
-  },
-  {
-    id: "fs-002",
-    name: "North District Fire Station",
-    name_ar: "محطة إطفاء الحي الشمالي",
-    location_name: "North District",
-    address: "Prince Turki Rd, North District",
-    phone: "+966 11 000 0002",
-    latitude: 24.8247,
-    longitude: 46.6381,
-  },
-  {
-    id: "fs-003",
-    name: "East Fire Station",
-    name_ar: "محطة الإطفاء الشرقية",
-    location_name: "East District",
-    address: "Imam Saud Rd, East District",
-    phone: "+966 11 000 0003",
-    latitude: 24.7421,
-    longitude: 46.8035,
-  },
-  {
-    id: "fs-004",
-    name: "South Fire Station",
-    name_ar: "محطة الإطفاء الجنوبية",
-    location_name: "South District",
-    address: "Makkah Rd, South District",
-    phone: "+966 11 000 0004",
-    latitude: 24.5864,
-    longitude: 46.7219,
-  },
-  {
-    id: "fs-005",
-    name: "West Fire Station",
-    name_ar: "محطة الإطفاء الغربية",
-    location_name: "West District",
-    address: "Thumamah Rd, West District",
-    phone: "+966 11 000 0005",
-    latitude: 24.6902,
-    longitude: 46.5498,
-  },
-  {
-    id: "fs-006",
-    name: "Industrial Area Fire Station",
-    name_ar: "محطة إطفاء المنطقة الصناعية",
-    location_name: "Industrial Area",
-    address: "2nd Industrial City",
-    phone: "+966 11 000 0006",
-    latitude: 24.5987,
-    longitude: 46.8412,
-  },
-];
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const SMS_VIP_COUNT = 10;
+export const dispatcherApi = {
+  /** Alert the given fire stations (map mock). */
+  alertFireStations: async (
+    fireStationIds: string[],
+  ): Promise<{ success: boolean; alerted: string[] }> => {
+    await delay(600);
+    return { success: true, alerted: fireStationIds };
+  },
+};
 
-export interface UnitGprs {
-  enabled: boolean;
-  dial_up_number: string;
-  apn: string;
-  username: string;
-  password: string;
-  ip_type: string;
-  host_ip: string;
-  host_port: string;
-  sync_interval: string;
-  dns_ip: string;
-}
-
-export interface UnitSms {
-  connect_type: string;
-  service_center: string;
-  base_number: string;
-  csd_base_number: string;
-  incoming_command_check: boolean;
-}
-
-export interface UnitSim {
-  pin_code: string;
-  voice_no: string;
-  data_no: string;
-}
-
-export interface Unit {
-  id: string;
-  name: string;
-  unit_id: string;
-  alternate_name?: string;
-  plate_number: string;
-  unit_type: string;
-  radio_id: string;
-  /** Assigned driver (user id), location id and classification id. */
-  driver_id?: string;
-  location_id?: string;
-  classification_id?: string;
-  description?: string;
-  is_active?: boolean;
-  /** ISO date until which the unit is active. */
-  active_till?: string;
-  // Unit driver details
-  shift?: string;
-  partner_id?: string;
-  call_code?: string;
-  gprs?: UnitGprs;
-  sms?: UnitSms;
-  /** Up to SMS_VIP_COUNT VIP numbers. */
-  sms_vip?: string[];
-  sim?: UnitSim;
-  modified_at: string;
-}
+// ───────────────────────────── shared ─────────────────────────────
 
 export const UNIT_STATUS_KEYS = [
   "available",
@@ -176,28 +59,96 @@ export const DEFAULT_UNIT_STATUS_COLORS: Record<UnitStatusKey, string> = {
   stop_over_20_min: "#3b0f7a",
 };
 
-/** Dispatch resource type, as returned by `/dispatch/resource-types`. */
+interface Envelope<T> {
+  data: T;
+  message?: string;
+}
+
+/** List response: `data` plus pagination fields (present when `page` is sent). */
+export interface PagedList<T> {
+  data: T[];
+  page?: number;
+  limit?: number;
+  total_items?: number;
+  total_pages?: number;
+}
+
+export interface ListParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  is_active?: boolean;
+}
+
+/** Largest page size the API accepts (it rejects `limit` above 100). */
+export const LOOKUP_LIMIT = 100;
+
+/** Pages through a list endpoint until every row is loaded (for dropdowns). */
+async function fetchAllPages<T>(
+  path: string,
+  params: Record<string, unknown> = {},
+): Promise<T[]> {
+  const rows: T[] = [];
+  for (let page = 1; ; page++) {
+    const { data } = await apiClient.get<PagedList<T>>(path, {
+      params: { ...params, page, limit: LOOKUP_LIMIT },
+    });
+    rows.push(...data.data);
+    if (page >= (data.total_pages ?? 1) || data.data.length === 0) break;
+  }
+  return rows;
+}
+
+// ───────────────────────────── icons ─────────────────────────────
+
+export interface DispatchIcon {
+  id: string;
+  /** Save this as `icon` on a unit type or fire station. */
+  path: string;
+}
+
+export const iconApi = {
+  /** PNG, JPG or SVG, max 2 MB. */
+  upload: async (file: File): Promise<DispatchIcon> => {
+    const body = new FormData();
+    body.append("file", file);
+    const response = await apiClient.post<Envelope<DispatchIcon>>(
+      "/dispatch/icons",
+      body,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return response.data.data;
+  },
+
+  /** Raw file bytes (needs the bearer token, so it can't be a plain <img src>). */
+  download: async (id: string): Promise<Blob> => {
+    const response = await apiClient.get<Blob>(`/dispatch/icons/${id}`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
+};
+
+// ─────────────────────── unit types (resource types) ───────────────────────
+
 export interface UnitType {
   id: string;
   name: string;
-  /** Short code, unique within the department. */
-  code: string;
+  /** Unique inside the department. */
+  code?: string | null;
   alt_name?: string | null;
   department_id: string;
   /** Seconds a resource has to accept a dispatched job. */
   acceptance_timeout_seconds?: number;
-  /** km/h */
   min_speed?: number;
   max_speed?: number;
-  /** kg */
   min_weight?: number;
   max_weight?: number;
   /** YYYY-MM-DD */
   active_till_date?: string | null;
   is_active?: boolean;
-  /** Icon path or URL. */
+  /** Icon path returned by icon upload. */
   icon?: string | null;
-  /** Map marker colour (hex) per unit status. */
   colors?: Partial<Record<UnitStatusKey, string>>;
   created_at?: string;
   updated_at?: string;
@@ -205,206 +156,213 @@ export interface UnitType {
 
 export type UnitTypeInput = Omit<UnitType, "id" | "created_at" | "updated_at">;
 
-export interface UnitTypeList {
-  data: UnitType[];
-  meta: { page: number; limit: number; total: number; total_pages: number };
-}
-
-export interface UnitTypeListParams {
-  page?: number;
-  limit?: number;
-  search?: string;
+export interface UnitTypeListParams extends ListParams {
   department_id?: string;
-  is_active?: boolean;
 }
 
-const DUMMY_UNITS: Unit[] = [
-  {
-    id: "u-001",
-    name: "Engine 1",
-    unit_id: "E-001",
-    alternate_name: "Alpha One",
-    plate_number: "ABC 1234",
-    unit_type: "Fire Engine",
-    radio_id: "R-1001",
-    modified_at: "2026-11-02T09:15:00Z",
-  },
-  {
-    id: "u-002",
-    name: "Ladder 1",
-    unit_id: "L-001",
-    alternate_name: "Ladder Alpha",
-    plate_number: "DEF 5678",
-    unit_type: "Ladder Truck",
-    radio_id: "R-1002",
-    modified_at: "2026-11-03T11:40:00Z",
-  },
-  {
-    id: "u-003",
-    name: "Rescue 1",
-    unit_id: "R-001",
-    plate_number: "GHI 9012",
-    unit_type: "Rescue Vehicle",
-    radio_id: "R-1003",
-    modified_at: "2026-11-05T14:05:00Z",
-  },
-  {
-    id: "u-004",
-    name: "Medic 1",
-    unit_id: "M-001",
-    alternate_name: "Medic Alpha",
-    plate_number: "JKL 3456",
-    unit_type: "Ambulance",
-    radio_id: "R-1004",
-    modified_at: "2026-11-07T08:30:00Z",
-  },
-  {
-    id: "u-005",
-    name: "Tanker 1",
-    unit_id: "T-001",
-    plate_number: "MNO 7890",
-    unit_type: "Water Tanker",
-    radio_id: "R-1005",
-    modified_at: "2026-11-09T16:20:00Z",
-  },
-];
+export const unitTypeApi = {
+  list: async (params: UnitTypeListParams = {}): Promise<PagedList<UnitType>> =>
+    (
+      await apiClient.get<PagedList<UnitType>>("/dispatch/resource-types", {
+        params,
+      })
+    ).data,
 
-let units: Unit[] = [...DUMMY_UNITS];
-let fireStations: FireStation[] = DUMMY_FIRE_STATIONS.map((fs) => ({
-  ...fs,
-  is_active: fs.is_active ?? true,
-}));
+  /** All unit types, for dropdowns. */
+  all: async (): Promise<UnitType[]> =>
+    fetchAllPages<UnitType>("/dispatch/resource-types"),
 
-let nextId = 1000;
+  get: async (id: string): Promise<UnitType> =>
+    (await apiClient.get<Envelope<UnitType>>(`/dispatch/resource-types/${id}`))
+      .data.data,
 
-export const dispatcherApi = {
-  /** List fire stations across all locations. */
-  getFireStations: async (): Promise<FireStation[]> => {
-    await delay(300);
-    return [...fireStations];
-  },
+  create: async (body: UnitTypeInput): Promise<UnitType> =>
+    (await apiClient.post<Envelope<UnitType>>("/dispatch/resource-types", body))
+      .data.data,
 
-  saveFireStation: async (
-    data: Omit<FireStation, "id"> & { id?: string },
-  ): Promise<FireStation> => {
-    await delay(300);
-    if (data.id) {
-      const updated = {
-        ...fireStations.find((f) => f.id === data.id)!,
-        ...data,
-      } as FireStation;
-      fireStations = fireStations.map((f) => (f.id === data.id ? updated : f));
-      return updated;
-    }
-    const created = { ...data, id: `fs-${nextId++}` } as FireStation;
-    fireStations = [...fireStations, created];
-    return created;
-  },
+  update: async (id: string, body: UnitTypeInput): Promise<UnitType> =>
+    (
+      await apiClient.put<Envelope<UnitType>>(
+        `/dispatch/resource-types/${id}`,
+        body,
+      )
+    ).data.data,
 
-  deleteFireStation: async (id: string): Promise<void> => {
-    await delay(300);
-    fireStations = fireStations.filter((f) => f.id !== id);
-  },
-
-  getUnits: async (): Promise<Unit[]> => {
-    await delay(300);
-    return [...units];
-  },
-
-  // ── Unit types (resource types): real API ──
-  listUnitTypes: async (
-    params: UnitTypeListParams = {},
-  ): Promise<UnitTypeList> => {
-    const response = await apiClient.get<UnitTypeList>(
-      "/dispatch/resource-types",
-      { params },
-    );
-    return response.data;
-  },
-
-  /** All unit types (up to 100), for dropdowns. */
-  getAllUnitTypes: async (): Promise<UnitType[]> => {
-    const response = await apiClient.get<UnitTypeList>(
-      "/dispatch/resource-types",
-      { params: { limit: 100 } },
-    );
-    return response.data.data;
-  },
-
-  getUnitType: async (id: string): Promise<UnitType> => {
-    const response = await apiClient.get<UnitType>(
-      `/dispatch/resource-types/${id}`,
-    );
-    return response.data;
-  },
-
-  createUnitType: async (data: UnitTypeInput): Promise<UnitType> => {
-    const response = await apiClient.post<UnitType>(
-      "/dispatch/resource-types",
-      data,
-    );
-    return response.data;
-  },
-
-  updateUnitType: async (
-    id: string,
-    data: UnitTypeInput,
-  ): Promise<UnitType> => {
-    const response = await apiClient.put<UnitType>(
-      `/dispatch/resource-types/${id}`,
-      data,
-    );
-    return response.data;
-  },
-
-  deleteUnitType: async (id: string): Promise<void> => {
+  remove: async (id: string): Promise<void> => {
     await apiClient.delete(`/dispatch/resource-types/${id}`);
   },
+};
 
-  getUnit: async (id: string): Promise<Unit | undefined> => {
-    await delay(200);
-    return units.find((u) => u.id === id);
+// ───────────────────── fire stations (service points) ─────────────────────
+
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+}
+
+export interface ServicePoint {
+  id: string;
+  name: string;
+  alt_name?: string | null;
+  department_id: string;
+  /** Unique inside the department. */
+  radio_id?: string | null;
+  /** Locations-tree id. */
+  location_id?: string | null;
+  location_name?: string | null;
+  location: GeoPoint;
+  active_till_date?: string | null;
+  is_active?: boolean;
+  icon?: string | null;
+  /** Units whose home station is this one. */
+  resource_ids?: string[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type ServicePointInput = Omit<
+  ServicePoint,
+  "id" | "created_at" | "updated_at"
+>;
+
+export interface ServicePointListParams extends ListParams {
+  department_id?: string;
+}
+
+export const servicePointApi = {
+  list: async (
+    params: ServicePointListParams = {},
+  ): Promise<PagedList<ServicePoint>> =>
+    (
+      await apiClient.get<PagedList<ServicePoint>>("/dispatch/service-points", {
+        params,
+      })
+    ).data,
+
+  all: async (): Promise<ServicePoint[]> =>
+    fetchAllPages<ServicePoint>("/dispatch/service-points"),
+
+  get: async (id: string): Promise<ServicePoint> =>
+    (
+      await apiClient.get<Envelope<ServicePoint>>(
+        `/dispatch/service-points/${id}`,
+      )
+    ).data.data,
+
+  create: async (body: ServicePointInput): Promise<ServicePoint> =>
+    (
+      await apiClient.post<Envelope<ServicePoint>>(
+        "/dispatch/service-points",
+        body,
+      )
+    ).data.data,
+
+  /** `resource_ids`, when sent, replaces the station's units (`[]` detaches all). */
+  update: async (id: string, body: ServicePointInput): Promise<ServicePoint> =>
+    (
+      await apiClient.put<Envelope<ServicePoint>>(
+        `/dispatch/service-points/${id}`,
+        body,
+      )
+    ).data.data,
+
+  /** `force` detaches every unit first; without it a station in use returns 409. */
+  remove: async (id: string, force = false): Promise<void> => {
+    await apiClient.delete(`/dispatch/service-points/${id}`, {
+      params: force ? { force: true } : undefined,
+    });
   },
+};
 
-  saveUnit: async (
-    data: Omit<Unit, "id" | "modified_at" | "unit_id"> & {
-      id?: string;
-      unit_id?: string;
-    },
-  ): Promise<Unit> => {
-    await delay(300);
-    const modified_at = new Date().toISOString();
-    if (data.id) {
-      const updated = {
-        ...units.find((u) => u.id === data.id)!,
-        ...data,
-        modified_at,
-      } as Unit;
-      units = units.map((u) => (u.id === data.id ? updated : u));
-      return updated;
-    }
-    const unit_id =
-      data.unit_id || `U-${String(units.length + 1).padStart(3, "0")}`;
-    const created = {
-      ...data,
-      unit_id,
-      id: `u-${nextId++}`,
-      modified_at,
-    } as Unit;
-    units = [...units, created];
-    return created;
-  },
+// ───────────────────────── units (resources) ─────────────────────────
 
-  deleteUnit: async (id: string): Promise<void> => {
-    await delay(300);
-    units = units.filter((u) => u.id !== id);
-  },
+export type ResourceStatus =
+  | "available"
+  | "offered"
+  | "dispatched"
+  | "maintenance";
+export const RESOURCE_STATUSES: ResourceStatus[] = [
+  "available",
+  "offered",
+  "dispatched",
+  "maintenance",
+];
 
-  /** Alert the given fire stations. */
-  alertFireStations: async (
-    fireStationIds: string[],
-  ): Promise<{ success: boolean; alerted: string[] }> => {
-    await delay(600);
-    return { success: true, alerted: fireStationIds };
+export interface Resource {
+  id: string;
+  /** Required when `thing_id` is omitted (the registry creates the vehicle). */
+  name: string;
+  thing_id?: string | null;
+  resource_type_id: string;
+  /** Home fire station. */
+  service_point_id?: string | null;
+  /** The "Unit ID" on the form; unique when set. */
+  unit_code?: string | null;
+  plate_number?: string | null;
+  alternate_name?: string | null;
+  radio_id?: string | null;
+  call_code?: string | null;
+  location_id?: string | null;
+  location_name?: string | null;
+  classification_ids?: string[];
+  classification?: string[];
+  gprs?: string | null;
+  sms?: string | null;
+  sms_vip?: string | null;
+  sim?: string | null;
+  /** Required when `partner_user_id` is sent. */
+  driver_user_id?: string | null;
+  partner_user_id?: string | null;
+  active_till_date?: string | null;
+  status?: ResourceStatus;
+  description?: string | null;
+  is_active?: boolean;
+  /** Last known position (read-only; comes from the linked registry thing). */
+  latitude?: number | null;
+  longitude?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type ResourceInput = Omit<
+  Resource,
+  "id" | "created_at" | "updated_at" | "latitude" | "longitude"
+>;
+
+export interface ResourceListParams extends ListParams {
+  resource_type_id?: string;
+  service_point_id?: string;
+  status?: ResourceStatus;
+  driver_user_id?: string;
+  location_id?: string;
+  classification_id?: string;
+  active_till_date?: string;
+}
+
+export const resourceApi = {
+  list: async (params: ResourceListParams = {}): Promise<PagedList<Resource>> =>
+    (
+      await apiClient.get<PagedList<Resource>>("/dispatch/resources", {
+        params,
+      })
+    ).data,
+
+  all: async (): Promise<Resource[]> =>
+    fetchAllPages<Resource>("/dispatch/resources"),
+
+  get: async (id: string): Promise<Resource> =>
+    (await apiClient.get<Envelope<Resource>>(`/dispatch/resources/${id}`)).data
+      .data,
+
+  create: async (body: ResourceInput): Promise<Resource> =>
+    (await apiClient.post<Envelope<Resource>>("/dispatch/resources", body)).data
+      .data,
+
+  update: async (id: string, body: ResourceInput): Promise<Resource> =>
+    (await apiClient.put<Envelope<Resource>>(`/dispatch/resources/${id}`, body))
+      .data.data,
+
+  remove: async (id: string): Promise<void> => {
+    await apiClient.delete(`/dispatch/resources/${id}`);
   },
 };

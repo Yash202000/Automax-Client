@@ -8,6 +8,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { format } from "date-fns";
 import {
   Edit2,
   Plus,
@@ -18,8 +19,6 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  MapPin,
-  FolderTree,
   MoreHorizontal,
   RefreshCw,
   X,
@@ -29,19 +28,18 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  dispatcherApi,
+  unitTypeApi,
+  servicePointApi,
+  resourceApi,
   UNIT_STATUS_KEYS,
-  type FireStation,
-  type Unit,
+  RESOURCE_STATUSES,
+  type ServicePoint,
+  type Resource,
+  type ResourceStatus,
   type UnitType,
 } from "../../api/dispatcher";
-import {
-  Button,
-  Select,
-  HierarchicalTreeSelect,
-  TreeSelect,
-  type TreeNode,
-} from "../../components/ui";
+import { DispatchIcon } from "./DispatchIcon";
+import { Button, Select, TreeSelect, type TreeNode } from "../../components/ui";
 import { DatePicker } from "../../components/ui/Datepicker";
 import {
   userApi,
@@ -408,15 +406,6 @@ const TableShell: React.FC<{
   );
 };
 
-const FilterLabel: React.FC<{
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}> = ({ icon, children }) => (
-  <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider flex items-center gap-1.5">
-    {icon} {children}
-  </p>
-);
-
 const cell = "px-6 py-4 text-sm text-[hsl(var(--foreground))]";
 const mutedCell = "px-6 py-4 text-sm text-[hsl(var(--muted-foreground))]";
 const rowCls = "hover:bg-[hsl(var(--muted)/0.5)] transition-colors group";
@@ -448,42 +437,42 @@ const toTreeNodes = (data: unknown[] = []): TreeNode[] =>
     };
   });
 
-/** Selected ids plus all of their descendants. */
-const withDescendants = (nodes: TreeNode[], ids: string[]): Set<string> => {
-  const out = new Set<string>();
-  const walk = (list: TreeNode[], inherited: boolean) =>
-    list.forEach((n) => {
-      const on = inherited || ids.includes(n.id);
-      if (on) out.add(n.id);
-      if (n.children) walk(n.children, on);
-    });
-  walk(nodes, false);
-  return out;
+const asTreeSelect = (nodes: TreeNode[]) =>
+  nodes as unknown as TreeSelectNode[];
+
+/** Shared "Department" tree used by the Unit Types and Fire Stations filters. */
+const useDepartmentsTree = () => {
+  const { data } = useQuery({
+    queryKey: ["admin", "departments", "tree"],
+    queryFn: () => departmentApi.getTree(),
+  });
+  return useMemo(() => asTreeSelect(toTreeNodes(data?.data)), [data?.data]);
 };
 
-const sameDay = (iso: string, d: Date) => {
-  const a = new Date(iso);
-  return (
-    a.getFullYear() === d.getFullYear() &&
-    a.getMonth() === d.getMonth() &&
-    a.getDate() === d.getDate()
-  );
-};
+const statusOptions = (
+  // eslint-disable-next-line no-unused-vars
+  t: (_key: string, _default: string) => string,
+) => [
+  { value: "true", label: t("unitManagement.active", "Active") },
+  { value: "false", label: t("unitManagement.inactive", "Inactive") },
+];
 
 // ───────────────────────────── Units ─────────────────────────────
 
 const UnitsTable: React.FC = () => {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
-  const [page, setPage] = useState(1);
   const navigate = useNavigate();
-  const [deleting, setDeleting] = useState<Unit | null>(null);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [fType, setFType] = useState("");
   const [fDate, setFDate] = useState<Date | undefined>();
   const [fDriver, setFDriver] = useState("");
-  const [fLocationIds, setFLocationIds] = useState<string[]>([]);
-  const [fClassificationIds, setFClassificationIds] = useState<string[]>([]);
+  const [fLocation, setFLocation] = useState("");
+  const [fClassification, setFClassification] = useState("");
+  const [fStatus, setFStatus] = useState("");
+  const [deleting, setDeleting] = useState<Resource | null>(null);
+  const debouncedSearch = useDebouncedValue(search.trim(), 300);
 
   const { data: driversData } = useQuery({
     queryKey: ["admin", "users", "dispatcher-drivers"],
@@ -497,106 +486,97 @@ const UnitsTable: React.FC = () => {
     queryKey: ["admin", "classifications", "tree"],
     queryFn: () => classificationApi.getTree(),
   });
+  const { data: unitTypes = [] } = useQuery({
+    queryKey: ["dispatcher", "unit-types", "all"],
+    queryFn: unitTypeApi.all,
+  });
   const drivers: User[] = driversData?.data ?? [];
   const locationsTree = useMemo(
-    () => toTreeNodes(locationsData?.data),
+    () => asTreeSelect(toTreeNodes(locationsData?.data)),
     [locationsData?.data],
   );
   const classificationsTree = useMemo(
-    () => toTreeNodes(classificationsData?.data),
+    () => asTreeSelect(toTreeNodes(classificationsData?.data)),
     [classificationsData?.data],
   );
+  const typeName = useMemo(
+    () => new Map(unitTypes.map((x) => [x.id, x.name])),
+    [unitTypes],
+  );
 
-  const {
-    data: units = [],
-    isLoading,
-    isFetching,
-    refetch,
-  } = useQuery({
-    queryKey: ["dispatcher", "units"],
-    queryFn: dispatcherApi.getUnits,
+  const dateParam = fDate ? format(fDate, "yyyy-MM-dd") : undefined;
+  const { data, isLoading, isFetching, refetch } = useQuery({
+    queryKey: [
+      "dispatcher",
+      "units",
+      "list",
+      page,
+      debouncedSearch,
+      fType,
+      dateParam,
+      fDriver,
+      fLocation,
+      fClassification,
+      fStatus,
+    ],
+    queryFn: () =>
+      resourceApi.list({
+        page,
+        limit: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+        resource_type_id: fType || undefined,
+        active_till_date: dateParam,
+        driver_user_id: fDriver || undefined,
+        location_id: fLocation || undefined,
+        classification_id: fClassification || undefined,
+        status: (fStatus || undefined) as ResourceStatus | undefined,
+      }),
+    placeholderData: keepPreviousData,
   });
-  const { data: unitTypes = [] } = useQuery({
-    queryKey: ["dispatcher", "unit-types", "all"],
-    queryFn: dispatcherApi.getAllUnitTypes,
-  });
-
-  const refresh = () =>
-    queryClient.invalidateQueries({ queryKey: ["dispatcher", "units"] });
+  const rows = data?.data ?? [];
+  const total = data?.total_items ?? rows.length;
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => dispatcherApi.deleteUnit(id),
+    mutationFn: (id: string) => resourceApi.remove(id),
     onSuccess: () => {
       setDeleting(null);
-      refresh();
+      toast.success(t("unitManagement.deleted", "Deleted successfully"));
+      queryClient.invalidateQueries({ queryKey: ["dispatcher", "units"] });
+    },
+    onError: (e) => {
+      setDeleting(null);
+      toast.error(
+        apiErrorMessage(
+          e,
+          t("unitManagement.deleteFailed", "Could not delete"),
+        ),
+      );
     },
   });
 
   const activeFilterCount =
-    (fType ? 1 : 0) +
-    (fDate ? 1 : 0) +
-    (fDriver ? 1 : 0) +
-    fLocationIds.length +
-    fClassificationIds.length;
-
-  const filtered = useMemo(() => {
-    const locSet = fLocationIds.length
-      ? withDescendants(locationsTree, fLocationIds)
-      : null;
-    const clsSet = fClassificationIds.length
-      ? withDescendants(classificationsTree, fClassificationIds)
-      : null;
-    const q = search.trim().toLowerCase();
-    return units.filter(
-      (u) =>
-        (!q ||
-          [
-            u.name,
-            u.unit_id,
-            u.alternate_name,
-            u.plate_number,
-            u.unit_type,
-            u.radio_id,
-          ]
-            .filter(Boolean)
-            .some((v) => v!.toLowerCase().includes(q))) &&
-        (!fType || u.unit_type === fType) &&
-        (!fDate || sameDay(u.modified_at, fDate)) &&
-        (!fDriver || u.driver_id === fDriver) &&
-        (!locSet || (!!u.location_id && locSet.has(u.location_id))) &&
-        (!clsSet || (!!u.classification_id && clsSet.has(u.classification_id))),
-    );
-  }, [
-    units,
-    search,
-    fType,
-    fDate,
-    fDriver,
-    fLocationIds,
-    fClassificationIds,
-    locationsTree,
-    classificationsTree,
-  ]);
-
-  const rows = useMemo(
-    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [filtered, page],
-  );
-
+    [fType, fDriver, fLocation, fClassification, fStatus].filter(Boolean)
+      .length + (fDate ? 1 : 0);
   const clearFilters = () => {
     setFType("");
     setFDate(undefined);
     setFDriver("");
-    setFLocationIds([]);
-    setFClassificationIds([]);
+    setFLocation("");
+    setFClassification("");
+    setFStatus("");
     setPage(1);
   };
+  const reset =
+    // eslint-disable-next-line no-unused-vars
+    <T,>(setter: (_value: T) => void) =>
+      (v: T) => {
+        setter(v);
+        setPage(1);
+      };
 
   const driverName = (u: User) =>
     `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim() || u.username;
-
-  const typeOptions = unitTypes.map((x) => ({ value: x.name, label: x.name }));
-  const openForm = (unit?: Unit) =>
+  const openForm = (unit?: Resource) =>
     navigate(
       unit
         ? `/unit-management/units/${unit.id}/edit`
@@ -614,7 +594,7 @@ const UnitsTable: React.FC = () => {
         isLoading={isLoading}
         isFetching={isFetching}
         onRefresh={() => refetch()}
-        total={filtered.length}
+        total={total}
         page={page}
         onPageChange={setPage}
         search={search}
@@ -630,33 +610,27 @@ const UnitsTable: React.FC = () => {
               <Select
                 label={t("unitManagement.unitType", "Unit Type")}
                 value={fType}
-                onChange={(e) => {
-                  setFType(e.target.value);
-                  setPage(1);
-                }}
+                onChange={(e) => reset(setFType)(e.target.value)}
                 placeholder={t("common.all", "All")}
-                options={typeOptions}
+                options={unitTypes.map((x) => ({ value: x.id, label: x.name }))}
               />
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                  {t("unitManagement.date", "Date")}
+                  {t("unitManagement.activeTillDate", "Active Till Date")}
                 </label>
                 <DatePicker
                   value={fDate}
-                  onChange={(d) => {
-                    setFDate(d);
-                    setPage(1);
-                  }}
-                  placeholder={t("unitManagement.date", "Date")}
+                  onChange={reset(setFDate)}
+                  placeholder={t(
+                    "unitManagement.activeTillDate",
+                    "Active Till Date",
+                  )}
                 />
               </div>
               <Select
                 label={t("unitManagement.driver", "Driver")}
                 value={fDriver}
-                onChange={(e) => {
-                  setFDriver(e.target.value);
-                  setPage(1);
-                }}
+                onChange={(e) => reset(setFDriver)(e.target.value)}
                 placeholder={t("common.all", "All")}
                 options={drivers.map((d) => ({
                   value: d.id,
@@ -664,39 +638,31 @@ const UnitsTable: React.FC = () => {
                 }))}
               />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <FilterLabel icon={<MapPin className="w-3.5 h-3.5" />}>
-                  {t("unitManagement.location", "Location")}
-                </FilterLabel>
-                <HierarchicalTreeSelect
-                  data={locationsTree}
-                  selectedIds={fLocationIds}
-                  onSelectionChange={(ids) => {
-                    setFLocationIds(ids);
-                    setPage(1);
-                  }}
-                  emptyMessage="No locations found"
-                  colorScheme="success"
-                  maxHeight="220px"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <FilterLabel icon={<FolderTree className="w-3.5 h-3.5" />}>
-                  {t("unitManagement.classification", "Classification")}
-                </FilterLabel>
-                <HierarchicalTreeSelect
-                  data={classificationsTree}
-                  selectedIds={fClassificationIds}
-                  onSelectionChange={(ids) => {
-                    setFClassificationIds(ids);
-                    setPage(1);
-                  }}
-                  emptyMessage="No classifications found"
-                  colorScheme="warning"
-                  maxHeight="220px"
-                />
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <TreeSelect
+                label={t("unitManagement.location", "Location")}
+                data={locationsTree}
+                value={fLocation}
+                onChange={reset(setFLocation)}
+                placeholder={t("common.all", "All")}
+              />
+              <TreeSelect
+                label={t("unitManagement.classification", "Classification")}
+                data={classificationsTree}
+                value={fClassification}
+                onChange={reset(setFClassification)}
+                placeholder={t("common.all", "All")}
+              />
+              <Select
+                label={t("unitManagement.status", "Status")}
+                value={fStatus}
+                onChange={(e) => reset(setFStatus)(e.target.value)}
+                placeholder={t("common.all", "All")}
+                options={RESOURCE_STATUSES.map((s) => ({
+                  value: s,
+                  label: t(`unitManagement.resStatus.${s}`, s),
+                }))}
+              />
             </div>
           </>
         }
@@ -716,13 +682,15 @@ const UnitsTable: React.FC = () => {
         {rows.map((u) => (
           <tr key={u.id} className={rowCls}>
             <td className={`${cell} font-semibold`}>{u.name}</td>
-            <td className={cell}>{u.unit_id}</td>
+            <td className={cell}>{u.unit_code || "—"}</td>
             <td className={mutedCell}>{u.alternate_name || "—"}</td>
-            <td className={cell}>{u.plate_number}</td>
-            <td className={cell}>{u.unit_type}</td>
-            <td className={cell}>{u.radio_id}</td>
+            <td className={cell}>{u.plate_number || "—"}</td>
+            <td className={cell}>{typeName.get(u.resource_type_id) ?? "—"}</td>
+            <td className={cell}>{u.radio_id || "—"}</td>
             <td className={mutedCell}>
-              {new Date(u.modified_at).toLocaleDateString(i18n.language)}
+              {u.updated_at
+                ? new Date(u.updated_at).toLocaleDateString(i18n.language)
+                : "—"}
             </td>
             <RowActions
               id={u.id}
@@ -762,15 +730,7 @@ const UnitTypesTable: React.FC = () => {
   const [fStatus, setFStatus] = useState("");
   const [deleting, setDeleting] = useState<UnitType | null>(null);
   const debouncedSearch = useDebouncedValue(search.trim(), 300);
-
-  const { data: departmentsData } = useQuery({
-    queryKey: ["admin", "departments", "tree"],
-    queryFn: () => departmentApi.getTree(),
-  });
-  const departmentsTree = useMemo(
-    () => toTreeNodes(departmentsData?.data) as unknown as TreeSelectNode[],
-    [departmentsData?.data],
-  );
+  const departmentsTree = useDepartmentsTree();
 
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: [
@@ -783,7 +743,7 @@ const UnitTypesTable: React.FC = () => {
       fStatus,
     ],
     queryFn: () =>
-      dispatcherApi.listUnitTypes({
+      unitTypeApi.list({
         page,
         limit: PAGE_SIZE,
         search: debouncedSearch || undefined,
@@ -793,13 +753,13 @@ const UnitTypesTable: React.FC = () => {
     placeholderData: keepPreviousData,
   });
   const rows = data?.data ?? [];
-  const total = data?.meta?.total ?? rows.length;
+  const total = data?.total_items ?? rows.length;
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => dispatcherApi.deleteUnitType(id),
+    mutationFn: (id: string) => unitTypeApi.remove(id),
     onSuccess: () => {
       setDeleting(null);
-      toast.success(t("common.success", "Deleted successfully"));
+      toast.success(t("unitManagement.deleted", "Deleted successfully"));
       queryClient.invalidateQueries({ queryKey: ["dispatcher", "unit-types"] });
     },
     onError: (e) => {
@@ -809,7 +769,7 @@ const UnitTypesTable: React.FC = () => {
           e,
           t(
             "unitManagement.deleteFailed",
-            "Could not delete this unit type. It may be in use.",
+            "Could not delete this unit type. A unit may still use it.",
           ),
         ),
       );
@@ -822,7 +782,6 @@ const UnitTypesTable: React.FC = () => {
     setFStatus("");
     setPage(1);
   };
-
   const openForm = (x?: UnitType) =>
     navigate(
       x
@@ -871,13 +830,7 @@ const UnitTypesTable: React.FC = () => {
                 setPage(1);
               }}
               placeholder={t("common.all", "All")}
-              options={[
-                { value: "true", label: t("unitManagement.active", "Active") },
-                {
-                  value: "false",
-                  label: t("unitManagement.inactive", "Inactive"),
-                },
-              ]}
+              options={statusOptions(t)}
             />
           </div>
         }
@@ -894,13 +847,7 @@ const UnitTypesTable: React.FC = () => {
           <tr key={x.id} className={rowCls}>
             <td className={`${cell} font-semibold`}>
               <div className="flex items-center gap-3">
-                {x.icon ? (
-                  <img src={x.icon} alt="" className="w-8 h-8 object-contain" />
-                ) : (
-                  <div className="w-8 h-8 rounded-lg bg-[hsl(var(--muted))] flex items-center justify-center">
-                    <Truck className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                  </div>
-                )}
+                <DispatchIcon path={x.icon} fallback={Truck} />
                 {x.name}
               </div>
             </td>
@@ -957,45 +904,71 @@ const FireStationsTable: React.FC = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [deleting, setDeleting] = useState<FireStation | null>(null);
+  const [fDepartment, setFDepartment] = useState("");
+  const [fStatus, setFStatus] = useState("");
+  const [deleting, setDeleting] = useState<ServicePoint | null>(null);
+  // Set when the first delete returned 409 (units still assigned).
+  const [forceTarget, setForceTarget] = useState<ServicePoint | null>(null);
+  const debouncedSearch = useDebouncedValue(search.trim(), 300);
+  const departmentsTree = useDepartmentsTree();
 
-  const {
-    data: stations = [],
-    isLoading,
-    isFetching,
-    refetch,
-  } = useQuery({
-    queryKey: ["dispatcher", "fire-stations"],
-    queryFn: dispatcherApi.getFireStations,
+  const { data, isLoading, isFetching, refetch } = useQuery({
+    queryKey: [
+      "dispatcher",
+      "fire-stations",
+      "list",
+      page,
+      debouncedSearch,
+      fDepartment,
+      fStatus,
+    ],
+    queryFn: () =>
+      servicePointApi.list({
+        page,
+        limit: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+        department_id: fDepartment || undefined,
+        is_active: fStatus === "" ? undefined : fStatus === "true",
+      }),
+    placeholderData: keepPreviousData,
   });
+  const rows = data?.data ?? [];
+  const total = data?.total_items ?? rows.length;
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => dispatcherApi.deleteFireStation(id),
+    mutationFn: ({ id, force }: { id: string; force: boolean }) =>
+      servicePointApi.remove(id, force),
     onSuccess: () => {
       setDeleting(null);
-      queryClient.invalidateQueries({
-        queryKey: ["dispatcher", "fire-stations"],
-      });
+      setForceTarget(null);
+      toast.success(t("unitManagement.deleted", "Deleted successfully"));
+      queryClient.invalidateQueries({ queryKey: ["dispatcher"] });
+    },
+    onError: (e, vars) => {
+      const status = (e as { response?: { status?: number } }).response?.status;
+      if (status === 409 && !vars.force) {
+        setForceTarget(deleting);
+        setDeleting(null);
+        return;
+      }
+      setDeleting(null);
+      setForceTarget(null);
+      toast.error(
+        apiErrorMessage(
+          e,
+          t("unitManagement.deleteFailed", "Could not delete"),
+        ),
+      );
     },
   });
 
-  const filteredStations = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return q
-      ? stations.filter((fs) =>
-          [fs.name, fs.name_ar, fs.radio_id].some((v) =>
-            v?.toLowerCase().includes(q),
-          ),
-        )
-      : stations;
-  }, [stations, search]);
-
-  const rows = useMemo(
-    () => filteredStations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [filteredStations, page],
-  );
-
-  const openForm = (fs?: FireStation) =>
+  const activeFilterCount = (fDepartment ? 1 : 0) + (fStatus ? 1 : 0);
+  const clearFilters = () => {
+    setFDepartment("");
+    setFStatus("");
+    setPage(1);
+  };
+  const openForm = (fs?: ServicePoint) =>
     navigate(
       fs
         ? `/unit-management/fire-stations/${fs.id}/edit`
@@ -1016,7 +989,7 @@ const FireStationsTable: React.FC = () => {
         isLoading={isLoading}
         isFetching={isFetching}
         onRefresh={() => refetch()}
-        total={filteredStations.length}
+        total={total}
         page={page}
         onPageChange={setPage}
         search={search}
@@ -1024,6 +997,32 @@ const FireStationsTable: React.FC = () => {
           setSearch(v);
           setPage(1);
         }}
+        activeFilterCount={activeFilterCount}
+        onClearFilters={clearFilters}
+        filterPanel={
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <TreeSelect
+              label={t("unitManagement.department", "Department")}
+              data={departmentsTree}
+              value={fDepartment}
+              onChange={(v) => {
+                setFDepartment(v);
+                setPage(1);
+              }}
+              placeholder={t("common.all", "All")}
+            />
+            <Select
+              label={t("unitManagement.status", "Status")}
+              value={fStatus}
+              onChange={(e) => {
+                setFStatus(e.target.value);
+                setPage(1);
+              }}
+              placeholder={t("common.all", "All")}
+              options={statusOptions(t)}
+            />
+          </div>
+        }
         head={
           <>
             <Th>{t("unitManagement.fireStationName", "Fire Station Name")}</Th>
@@ -1038,22 +1037,12 @@ const FireStationsTable: React.FC = () => {
           <tr key={fs.id} className={rowCls}>
             <td className={`${cell} font-semibold`}>
               <div className="flex items-center gap-3">
-                {fs.icon ? (
-                  <img
-                    src={fs.icon}
-                    alt=""
-                    className="w-8 h-8 rounded-lg object-cover"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-lg bg-[hsl(var(--muted))] flex items-center justify-center">
-                    <Building2 className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-                  </div>
-                )}
-                {i18n.language === "ar" && fs.name_ar ? fs.name_ar : fs.name}
+                <DispatchIcon path={fs.icon} fallback={Building2} />
+                {i18n.language === "ar" && fs.alt_name ? fs.alt_name : fs.name}
               </div>
             </td>
-            <td className={cell}>{fs.latitude}</td>
-            <td className={cell}>{fs.longitude}</td>
+            <td className={cell}>{fs.location?.lat}</td>
+            <td className={cell}>{fs.location?.lng}</td>
             <td className="px-6 py-4">
               <StatusBadge active={fs.is_active ?? true} />
             </td>
@@ -1069,13 +1058,31 @@ const FireStationsTable: React.FC = () => {
       <ConfirmationModal
         isOpen={!!deleting}
         onClose={() => setDeleting(null)}
-        onConfirm={() => deleting && deleteMutation.mutate(deleting.id)}
+        onConfirm={() =>
+          deleting && deleteMutation.mutate({ id: deleting.id, force: false })
+        }
         title={t("unitManagement.deleteFireStation", "Delete Fire Station")}
         message={t(
           "unitManagement.deleteFireStationMessage",
           "Are you sure you want to delete this fire station?",
         )}
         confirmText={t("common.delete", "Delete")}
+        cancelText={t("common.cancel", "Cancel")}
+        isLoading={deleteMutation.isPending}
+      />
+      <ConfirmationModal
+        isOpen={!!forceTarget}
+        onClose={() => setForceTarget(null)}
+        onConfirm={() =>
+          forceTarget &&
+          deleteMutation.mutate({ id: forceTarget.id, force: true })
+        }
+        title={t("unitManagement.deleteFireStation", "Delete Fire Station")}
+        message={t(
+          "unitManagement.forceDeleteMessage",
+          "Units are still assigned to this fire station. Detach all of them and delete the station?",
+        )}
+        confirmText={t("unitManagement.detachAndDelete", "Detach and delete")}
         cancelText={t("common.cancel", "Cancel")}
         isLoading={deleteMutation.isPending}
       />

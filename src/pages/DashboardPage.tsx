@@ -233,7 +233,7 @@ export const DashboardPage: React.FC = () => {
       licenseFeature: "call_centre",
     },
     {
-      title: t("dashboard.dispatcher", "Dispatcher"),
+      title: t("dashboard.dispatcher", "Dispatch and Registry"),
       subtitle: t("dashboard.dispatchOperations", "Dispatch Operations"),
       description: t(
         "dashboard.manageDispatch",

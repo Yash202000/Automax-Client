@@ -1,36 +1,98 @@
 import { useMemo, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Eye, Plus, Search } from "lucide-react";
+import { Eye, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { INCIDENT_DRAG_TYPE } from "../../components/dispatcher/incidentMap.types";
 import { DispatcherMapPanel } from "./DispatcherMapPanel";
 import { IncidentDetailModal } from "./IncidentDetailModal";
 import { FireStationAlertModal } from "../../components/dispatcher/FireStationAlertModal";
-import { DUMMY_INCIDENTS, STATUS_COLORS } from "./dummyIncidents";
+import { STATUS_COLORS, type DummyIncident } from "./dummyIncidents";
+import {
+  DISPATCHED_STATE_CODE,
+  WAITING_STATE_CODE,
+  hasCoordinates,
+  toDispatchIncident,
+} from "./incidentAdapter";
+import { incidentApi } from "../../api/admin";
+import { useAuthStore } from "../../stores/authStore";
+import { usePermissions } from "../../hooks/usePermissions";
+import { PERMISSIONS } from "../../constants/permissions";
 
-const PAGE_SIZE = 15;
+/** Incidents loaded per request (the API's page size). */
+const FETCH_LIMIT = 100;
+
+type Tab = "waiting" | "dispatched";
 
 /**
- * Dispatcher view backed entirely by DUMMY data (no API calls): status tabs,
- * a searchable incident list and a clustered map. The selected incident is
- * reflected in the URL as /dispatcher/:id.
+ * Dispatcher view: status tabs, a searchable incident list and a clustered
+ * map. Incidents come from the same incident API as the incident management
+ * list (scoped the same way). Assigning by drag-and-drop is still local to
+ * this page, as there is no dispatch endpoint for it yet. The selected
+ * incident is reflected in the URL as /dispatcher/:id.
  */
 export function DispatcherListPage() {
   const { t, i18n } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  // Local copy so dropping an incident on a unit/station can assign it.
-  const [allIncidents, setAllIncidents] = useState(DUMMY_INCIDENTS);
-  const [tab, setTab] = useState<"all" | "waiting" | "dispatched">("all");
-  const [page, setPage] = useState(1);
+  const { user } = useAuthStore();
+  const { hasPermission, isSuperAdmin } = usePermissions();
+  const canViewAllIncidents =
+    isSuperAdmin ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL) ||
+    hasPermission(PERMISSIONS.INCIDENTS_VIEW_DEPARTMENT_ONLY);
+  // Local overrides so dropping an incident on a unit/station can assign it.
+  const [overrides, setOverrides] = useState<
+    Record<string, Partial<DummyIncident>>
+  >({});
+  const [tab, setTab] = useState<Tab>("waiting");
   const [query, setQuery] = useState("");
   const [detailId, setDetailId] = useState<string | null>(null);
   const [fireStationModalOpen, setFireStationModalOpen] = useState(false);
 
-  const tabs: { key: "all" | "waiting" | "dispatched"; label: string }[] = [
-    { key: "all", label: t("dispatcher.all", "All") },
+  // Same request the incident management list makes. Searches shorter than
+  // 3 characters are applied locally, like there.
+  const search = query.trim();
+  const serverSearch = search.length >= 3 ? search : undefined;
+  const scope = canViewAllIncidents ? {} : { my_record: user?.id };
+  // One query per tab, filtered by workflow state code on the server.
+  const stateQuery = (code: string) => ({
+    queryKey: [
+      "incidents",
+      "dispatcher",
+      code,
+      { search: serverSearch, ...scope },
+    ],
+    queryFn: () =>
+      incidentApi.list({
+        record_type: "incident",
+        current_state_code: code,
+        page: 1,
+        limit: FETCH_LIMIT,
+        search: serverSearch,
+        ...scope,
+      }),
+    placeholderData: keepPreviousData,
+  });
+  const waitingQuery = useQuery(stateQuery(WAITING_STATE_CODE));
+  const dispatchedQuery = useQuery(stateQuery(DISPATCHED_STATE_CODE));
+  const isLoading = waitingQuery.isLoading || dispatchedQuery.isLoading;
+
+  const allIncidents = useMemo<DummyIncident[]>(
+    () =>
+      [
+        ...(waitingQuery.data?.data ?? []),
+        ...(dispatchedQuery.data?.data ?? []),
+      ].map((inc) => {
+        const base = toDispatchIncident(inc);
+        return { ...base, ...overrides[base.id] };
+      }),
+    [waitingQuery.data, dispatchedQuery.data, overrides],
+  );
+
+  const tabs: { key: Tab; label: string }[] = [
     {
       key: "waiting",
       label: t("dispatcher.waitingForDispatch", "Waiting for dispatch"),
@@ -38,20 +100,25 @@ export function DispatcherListPage() {
     { key: "dispatched", label: t("dispatcher.dispatched", "Dispatched") },
   ];
 
-  const counts = useMemo(
-    () => ({
-      all: allIncidents.length,
-      waiting: allIncidents.filter((i) => i.status === "waiting").length,
-      dispatched: allIncidents.filter((i) => i.status === "dispatched").length,
-    }),
-    [allIncidents],
-  );
+  // Server totals, adjusted for incidents dropped onto a unit/station here.
+  const counts = useMemo(() => {
+    const movedToDispatched = (waitingQuery.data?.data ?? []).filter(
+      (inc) => overrides[inc.id]?.status === "dispatched",
+    ).length;
+    return {
+      waiting: Math.max(
+        0,
+        (waitingQuery.data?.total_items ?? 0) - movedToDispatched,
+      ),
+      dispatched: (dispatchedQuery.data?.total_items ?? 0) + movedToDispatched,
+    };
+  }, [waitingQuery.data, dispatchedQuery.data, overrides]);
 
   const incidents = useMemo(() => {
     const q = query.trim().toLowerCase();
     return allIncidents.filter(
       (i) =>
-        (tab === "all" || i.status === tab) &&
+        i.status === tab &&
         (!q ||
           [i.number, i.title, i.title_ar, i.location].some((v) =>
             v.toLowerCase().includes(q),
@@ -59,14 +126,9 @@ export function DispatcherListPage() {
     );
   }, [allIncidents, tab, query]);
 
-  // "All" is paginated; the status tabs show their whole list.
-  const totalPages =
-    tab === "all" ? Math.max(1, Math.ceil(incidents.length / PAGE_SIZE)) : 1;
-  const currentPage = Math.min(page, totalPages);
-  const visible =
-    tab === "all"
-      ? incidents.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
-      : incidents;
+  const visible = incidents;
+  // Only incidents with coordinates can be plotted on the map.
+  const mappable = useMemo(() => incidents.filter(hasCoordinates), [incidents]);
 
   const assign = (incidentId: string, target: { label: string }) => {
     const inc = allIncidents.find((x) => x.id === incidentId);
@@ -81,13 +143,10 @@ export function DispatcherListPage() {
       );
       return;
     }
-    setAllIncidents((prev) =>
-      prev.map((x) =>
-        x.id === incidentId
-          ? { ...x, status: "dispatched", assignee: target.label }
-          : x,
-      ),
-    );
+    setOverrides((prev) => ({
+      ...prev,
+      [incidentId]: { status: "dispatched", assignee: target.label },
+    }));
     toast.success(
       t("dispatcher.incidentAssigned", "{{incident}} assigned to {{target}}", {
         incident: inc.number,
@@ -95,6 +154,10 @@ export function DispatcherListPage() {
       }),
     );
   };
+
+  const detailIncident = detailId
+    ? allIncidents.find((x) => x.id === detailId)
+    : undefined;
 
   const select = (next: string) =>
     navigate(`/dispatcher/${next}`, { replace: true });
@@ -108,10 +171,7 @@ export function DispatcherListPage() {
               <Search className="pointer-events-none absolute start-2.5 top-2.5 h-4 w-4 text-[hsl(var(--muted-foreground))]" />
               <input
                 value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setPage(1);
-                }}
+                onChange={(e) => setQuery(e.target.value)}
                 placeholder={t("common.search", "Search")}
                 className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-transparent ps-8 pe-2 text-sm outline-none"
               />
@@ -131,10 +191,7 @@ export function DispatcherListPage() {
               <button
                 key={tb.key}
                 type="button"
-                onClick={() => {
-                  setTab(tb.key);
-                  setPage(1);
-                }}
+                onClick={() => setTab(tb.key)}
                 className={cn(
                   "flex-1 px-3 py-2 text-sm font-medium",
                   tab === tb.key
@@ -211,44 +268,17 @@ export function DispatcherListPage() {
             ))}
             {incidents.length === 0 ? (
               <li className="p-6 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                {t("common.noResults", "No results")}
+                {isLoading
+                  ? t("common.loading", "Loading...")
+                  : t("common.noResults", "No results")}
               </li>
             ) : null}
           </ul>
-
-          {tab === "all" && totalPages > 1 ? (
-            <div className="flex items-center justify-between border-t border-[hsl(var(--border))] px-3 py-2 text-xs">
-              <button
-                type="button"
-                disabled={currentPage <= 1}
-                onClick={() => setPage(currentPage - 1)}
-                className="rounded-md border border-[hsl(var(--border))] p-1 disabled:opacity-40"
-                aria-label={t("common.previous", "Previous")}
-              >
-                <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
-              </button>
-              <span className="text-[hsl(var(--muted-foreground))]">
-                {t("common.pageOf", "Page {{page}} of {{total}}", {
-                  page: currentPage,
-                  total: totalPages,
-                })}
-              </span>
-              <button
-                type="button"
-                disabled={currentPage >= totalPages}
-                onClick={() => setPage(currentPage + 1)}
-                className="rounded-md border border-[hsl(var(--border))] p-1 disabled:opacity-40"
-                aria-label={t("common.next", "Next")}
-              >
-                <ChevronRight className="h-4 w-4 rtl:rotate-180" />
-              </button>
-            </div>
-          ) : null}
         </div>
 
         <main className="min-h-0 min-w-0 flex-1">
           <DispatcherMapPanel
-            incidents={incidents}
+            incidents={mappable}
             selectedId={id ?? null}
             onSelect={select}
             onDropIncident={assign}
@@ -256,25 +286,21 @@ export function DispatcherListPage() {
         </main>
       </div>
 
-      {detailId ? (
+      {detailIncident ? (
         <IncidentDetailModal
-          incident={allIncidents.find((x) => x.id === detailId)!}
+          incident={detailIncident}
           onClose={() => setDetailId(null)}
           onAssociate={(ids) => {
-            const inc = allIncidents.find((x) => x.id === detailId);
-            if (!inc) return;
-            setAllIncidents((prev) =>
-              prev.map((x) =>
-                x.id === detailId
-                  ? {
-                      ...x,
-                      fireStationIds: Array.from(
-                        new Set([...x.fireStationIds, ...ids]),
-                      ),
-                    }
-                  : x,
-              ),
-            );
+            const inc = detailIncident;
+            setOverrides((prev) => ({
+              ...prev,
+              [inc.id]: {
+                ...prev[inc.id],
+                fireStationIds: Array.from(
+                  new Set([...inc.fireStationIds, ...ids]),
+                ),
+              },
+            }));
             toast.success(
               t(
                 "dispatcher.fireStationsAssociated",

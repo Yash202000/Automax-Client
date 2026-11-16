@@ -178,7 +178,7 @@ export const DispatcherLayout: React.FC = () => {
                   <Radio size={20} className="flex-shrink-0" />
                   {!collapsed && (
                     <span className="ms-3 font-medium text-sm">
-                      {t("dispatcher.title", "Dispatcher")}
+                      {t("dispatcher.title", "Dispatch and Registry")}
                     </span>
                   )}
                 </>
@@ -451,7 +451,7 @@ export const DispatcherLayout: React.FC = () => {
             {/* Breadcrumb / Title */}
             <div className="hidden sm:flex items-center gap-2 text-sm">
               <span className="text-slate-400">
-                {t("dispatcher.title", "Dispatcher")}
+                {t("dispatcher.title", "Dispatch and Registry")}
               </span>
               <span className="text-slate-300">/</span>
               <span className="font-semibold text-muted-foreground">
@@ -459,7 +459,7 @@ export const DispatcherLayout: React.FC = () => {
               </span>
             </div>
             <h1 className="text-lg font-bold text-slate-800 sm:hidden">
-              {t("dispatcher.title", "Dispatcher")}
+              {t("dispatcher.title", "Dispatch and Registry")}
             </h1>
           </div>
 

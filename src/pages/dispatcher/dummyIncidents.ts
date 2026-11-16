@@ -134,18 +134,3 @@ export const DUMMY_INCIDENTS: DummyIncident[] = Array.from(
     };
   },
 );
-
-export interface DummyUnit {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-}
-
-/** DUMMY response units scattered around the city. */
-export const DUMMY_UNITS: DummyUnit[] = Array.from({ length: 14 }, (_, i) => ({
-  id: `unit-${i + 1}`,
-  name: `Unit ${i + 1}`,
-  latitude: 24.7136 + (rnd() - 0.5) * 0.3,
-  longitude: 46.6753 + (rnd() - 0.5) * 0.4,
-}));

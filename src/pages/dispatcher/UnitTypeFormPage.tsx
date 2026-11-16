@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  dispatcherApi,
+  unitTypeApi,
+  iconApi,
   UNIT_STATUS_KEYS,
   type UnitType,
   DEFAULT_UNIT_STATUS_COLORS,
@@ -34,8 +35,10 @@ import type { TreeSelectNode } from "../../utils/treeUtils";
 import { Section } from "./UnitFormPage";
 import { STATUS_LABELS } from "./unitStatus";
 import { parseApiError } from "./apiError";
+import { DispatchIcon } from "./DispatchIcon";
 
-const MAX_SVG_BYTES = 200 * 1024;
+const MAX_ICON_BYTES = 2 * 1024 * 1024;
+const ICON_TYPES = ["image/png", "image/jpeg", "image/svg+xml"];
 
 type Form = {
   name: string;
@@ -89,7 +92,7 @@ const toTreeNodes = (data: unknown[] = []): TreeNode[] =>
 
 const toForm = (existing: UnitType): Form => ({
   name: existing.name,
-  code: existing.code,
+  code: existing.code ?? "",
   alt_name: existing.alt_name ?? "",
   department_id: existing.department_id,
   acceptance_timeout_seconds: String(existing.acceptance_timeout_seconds ?? 0),
@@ -120,6 +123,9 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
   const [serverErrors, setServerErrors] = useState<Record<string, string[]>>(
     {},
   );
+  const [uploading, setUploading] = useState(false);
+  // Local preview of a just-uploaded icon (stored icons are fetched with auth).
+  const [localPreview, setLocalPreview] = useState<string>();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: departmentsData } = useQuery({
@@ -142,7 +148,6 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
   const weightBad = num(form.min_weight) > num(form.max_weight);
   const missing = {
     name: !form.name.trim(),
-    code: !form.code.trim(),
     department_id: !form.department_id,
   };
   const numbersOk = [
@@ -156,7 +161,8 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
     !Object.values(missing).some(Boolean) &&
     !speedBad &&
     !weightBad &&
-    numbersOk;
+    numbersOk &&
+    !uploading;
 
   const required = t("common.required", "Required");
   const rangeErr = t(
@@ -170,27 +176,41 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
 
   const goBack = () => navigate("/unit-management/unit-types");
 
-  const onFile = (file?: File) => {
+  const onFile = async (file?: File) => {
     if (!file) return;
-    if (file.type !== "image/svg+xml") {
-      toast.error(t("unitManagement.svgOnly", "Only SVG images are allowed"));
-      return;
-    }
-    if (file.size > MAX_SVG_BYTES) {
+    if (!ICON_TYPES.includes(file.type)) {
       toast.error(
-        t("unitManagement.svgTooLarge", "Image must be 200 KB or smaller"),
+        t(
+          "unitManagement.imageOnly",
+          "Only PNG, JPG or SVG images are allowed",
+        ),
       );
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () =>
-      setForm((f) => ({ ...f, icon: reader.result as string }));
-    reader.readAsDataURL(file);
+    if (file.size > MAX_ICON_BYTES) {
+      toast.error(
+        t("unitManagement.imageTooLarge", "Image must be 2 MB or smaller"),
+      );
+      return;
+    }
+    setUploading(true);
+    try {
+      const uploaded = await iconApi.upload(file);
+      setForm((f) => ({ ...f, icon: uploaded.path }));
+      setLocalPreview(URL.createObjectURL(file));
+    } catch (e) {
+      toast.error(
+        parseApiError(e).message ||
+          t("unitManagement.uploadFailed", "Could not upload the icon"),
+      );
+    } finally {
+      setUploading(false);
+    }
   };
 
   const buildPayload = (): UnitTypeInput => ({
     name: form.name.trim(),
-    code: form.code.trim(),
+    code: form.code.trim() || null,
     alt_name: form.alt_name.trim() || null,
     department_id: form.department_id,
     acceptance_timeout_seconds: num(form.acceptance_timeout_seconds),
@@ -210,8 +230,8 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
   const saveMutation = useMutation({
     mutationFn: () =>
       isEdit
-        ? dispatcherApi.updateUnitType(id!, buildPayload())
-        : dispatcherApi.createUnitType(buildPayload()),
+        ? unitTypeApi.update(id!, buildPayload())
+        : unitTypeApi.create(buildPayload()),
     onSuccess: () => {
       toast.success(t("common.success", "Saved successfully"));
       queryClient.invalidateQueries({ queryKey: ["dispatcher", "unit-types"] });
@@ -278,11 +298,10 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
         />
         <Input
           label={t("unitManagement.unitTypeCode", "Unit Type Code")}
-          required
           maxLength={20}
           value={form.code}
           onChange={text("code", "code")}
-          error={fieldErr("code")}
+          error={serverErrors.code?.[0]}
         />
         <Input
           label={t("unitManagement.altUnitTypeName", "Alt Unit Type Name")}
@@ -348,14 +367,18 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
         {/* Icon upload */}
         <div className="md:col-span-2 xl:col-span-3 flex items-center gap-5">
           <div className="w-24 h-24 shrink-0 rounded-xl border-2 border-dashed border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)] flex items-center justify-center overflow-hidden">
-            {form.icon ? (
+            {localPreview ? (
               <img
-                src={form.icon}
+                src={localPreview}
                 alt=""
                 className="w-16 h-16 object-contain"
               />
             ) : (
-              <Truck className="w-8 h-8 text-[hsl(var(--muted-foreground))]" />
+              <DispatchIcon
+                path={form.icon}
+                fallback={Truck}
+                className="w-16 h-16"
+              />
             )}
           </div>
           <div className="space-y-2">
@@ -363,6 +386,7 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
               <Button
                 variant="outline"
                 size="sm"
+                isLoading={uploading}
                 leftIcon={<ImagePlus className="w-4 h-4" />}
                 onClick={() => fileRef.current?.click()}
               >
@@ -373,22 +397,25 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
                   variant="ghost"
                   size="sm"
                   leftIcon={<Trash2 className="w-4 h-4" />}
-                  onClick={() => setForm((f) => ({ ...f, icon: undefined }))}
+                  onClick={() => {
+                    setForm((f) => ({ ...f, icon: undefined }));
+                    setLocalPreview(undefined);
+                  }}
                 >
                   {t("unitManagement.removeImage", "Remove image")}
                 </Button>
               )}
             </div>
             <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              {t("unitManagement.svgFormat", "SVG format, max 200 KB")}
+              {t("unitManagement.iconHint", "PNG, JPG or SVG, max 2 MB")}
             </p>
             <input
               ref={fileRef}
               type="file"
-              accept=".svg,image/svg+xml"
+              accept=".png,.jpg,.jpeg,.svg,image/png,image/jpeg,image/svg+xml"
               className="hidden"
               onChange={(e) => {
-                onFile(e.target.files?.[0]);
+                void onFile(e.target.files?.[0]);
                 e.target.value = "";
               }}
             />
@@ -477,7 +504,11 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
         <Button variant="outline" onClick={goBack}>
           {t("common.cancel", "Cancel")}
         </Button>
-        <Button onClick={onSave} isLoading={saveMutation.isPending}>
+        <Button
+          onClick={onSave}
+          isLoading={saveMutation.isPending}
+          disabled={uploading}
+        >
           {t("common.save", "Save")}
         </Button>
       </div>
@@ -490,7 +521,7 @@ export const UnitTypeFormPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { data: existing, isLoading } = useQuery({
     queryKey: ["dispatcher", "unit-types", "detail", id],
-    queryFn: () => dispatcherApi.getUnitType(id!),
+    queryFn: () => unitTypeApi.get(id!),
     enabled: !!id,
   });
 

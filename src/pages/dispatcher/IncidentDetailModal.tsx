@@ -1,20 +1,28 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
+  ArrowRight,
   Boxes,
   Clock,
   FileText,
   Flame,
   MapPin,
+  Paperclip,
+  Plus,
   Smartphone,
   Star,
+  Tag,
   TriangleAlert,
   User,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
 import { Modal, ModalBody, ModalFooter } from "../../components/ui/Modal";
-import { DUMMY_FIRE_STATIONS } from "../../api/dispatcher";
+import { incidentApi } from "../../api/admin";
+import type { User as UserType } from "../../types";
+import { useFireStations } from "./useDispatchData";
 import { AssociateFireStationsModal } from "./AssociateFireStationsModal";
 import { STATUS_COLORS, type DummyIncident } from "./dummyIncidents";
 
@@ -36,11 +44,24 @@ const PRIORITY_TEXT: Record<number, string> = {
 
 type TabKey = "details" | "attachments" | "comments" | "activity";
 
-const fmt = (iso: string) => new Date(iso).toLocaleString();
+const fmt = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleString() : "—";
+
+const userName = (u?: Pick<UserType, "first_name" | "last_name" | "email">) =>
+  u
+    ? [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email || "—"
+    : "—";
+
+const fmtSize = (bytes: number) =>
+  bytes >= 1048576
+    ? `${(bytes / 1048576).toFixed(1)} MB`
+    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
 /**
  * Incident details modal laid out like the incident management workspace
- * (status/SLA/number header, meta tiles, tabs). DUMMY data, no API.
+ * (status/SLA/number header, meta tiles, tabs). The list row gives an
+ * instant first paint; the full incident, its comments and its transition
+ * history are then loaded from the incident API.
  */
 export function IncidentDetailModal({
   incident,
@@ -55,7 +76,33 @@ export function IncidentDetailModal({
   const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<TabKey>("details");
   const [associateOpen, setAssociateOpen] = useState(false);
-  const associated = DUMMY_FIRE_STATIONS.filter((s) =>
+  const { stations } = useFireStations();
+
+  const { data: detailRes, isLoading: detailLoading } = useQuery({
+    queryKey: ["incidents", "dispatcher", "detail", incident.id],
+    queryFn: () => incidentApi.getById(incident.id),
+  });
+  const { data: comments = [], isLoading: commentsLoading } = useQuery({
+    queryKey: ["incidents", "dispatcher", "comments", incident.id],
+    queryFn: () => incidentApi.listCombinedComments(incident.id),
+  });
+  const { data: historyRes, isLoading: historyLoading } = useQuery({
+    queryKey: ["incidents", "dispatcher", "history", incident.id],
+    queryFn: () => incidentApi.getHistory(incident.id),
+  });
+  const full = detailRes?.data;
+  const history = [...(historyRes?.data ?? [])].sort(
+    (a, b) =>
+      new Date(b.transitioned_at).getTime() -
+      new Date(a.transitioned_at).getTime(),
+  );
+  const attachments = full?.attachments ?? [];
+  const assignees = full?.assignees?.length
+    ? full.assignees
+    : full?.assignee
+      ? [full.assignee]
+      : [];
+  const associated = stations.filter((s) =>
     incident.fireStationIds.includes(s.id),
   );
   const color = STATUS_COLORS[incident.status];
@@ -68,19 +115,47 @@ export function IncidentDetailModal({
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "details", label: t("incidents.details", "Details") },
-    { key: "attachments", label: t("incidents.attachments", "Attachments") },
-    { key: "comments", label: t("incidents.comments", "Comments") },
-    { key: "activity", label: t("incidents.activity", "Activity") },
+    {
+      key: "attachments",
+      label: `${t("incidents.attachments", "Attachments")} (${attachments.length})`,
+    },
+    {
+      key: "comments",
+      label: `${t("incidents.comments", "Comments")} (${comments.length})`,
+    },
+    {
+      key: "activity",
+      label: `${t("incidents.activity", "Activity")} (${history.length})`,
+    },
   ];
 
-  const field = (label: string, value: string) => (
+  const field = (label: string, value?: string | null) => (
     <div className="min-w-0">
       <div className="text-[10px] text-[hsl(var(--muted-foreground))]">
         {label}
       </div>
-      <div className="text-xs font-semibold truncate">{value}</div>
+      <div className="text-xs font-semibold break-words">{value || "—"}</div>
     </div>
   );
+
+  const loadingText = (
+    <div className={cn(card, "text-xs text-[hsl(var(--muted-foreground))]")}>
+      {t("common.loading", "Loading...")}
+    </div>
+  );
+
+  const stateLabel = full?.current_state?.name ?? stateName;
+  const stateColor = full?.current_state?.color ?? color;
+  const locationText =
+    [
+      full?.location?.name,
+      full?.address,
+      full?.city,
+      full?.state,
+      full?.country,
+    ]
+      .filter(Boolean)
+      .join(", ") || incident.location;
 
   return (
     <Modal
@@ -94,10 +169,10 @@ export function IncidentDetailModal({
         <div className="flex flex-wrap items-center gap-2">
           <span
             className="px-2.5 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5 text-white"
-            style={{ background: color }}
+            style={{ background: stateColor }}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-            {stateName}
+            {stateLabel}
           </span>
           {incident.slaBreached ? (
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-500/10 text-rose-700 text-[11px] font-bold border border-rose-600/40">
@@ -113,6 +188,17 @@ export function IncidentDetailModal({
               {incident.number}
             </span>
           </div>
+          {full?.workflow?.name ? (
+            <span className="rounded-md border border-[hsl(var(--border))] px-2 py-1 text-[11px] text-[hsl(var(--muted-foreground))]">
+              {full.workflow.name}
+            </span>
+          ) : null}
+          {full?.classification?.name ? (
+            <span className="flex items-center gap-1 rounded-md border border-[hsl(var(--border))] px-2 py-1 text-[11px] font-medium">
+              <Tag className="h-2.5 w-2.5 text-primary" />
+              {full.classification.name}
+            </span>
+          ) : null}
         </div>
 
         {/* meta tiles */}
@@ -125,6 +211,11 @@ export function IncidentDetailModal({
             <div className="text-xs font-semibold">
               {fmt(incident.reportedAt)}
             </div>
+            {full?.updated_at ? (
+              <div className="text-[10px] text-[hsl(var(--muted-foreground))] mt-0.5">
+                {t("incidents.updated", "Updated")}: {fmt(full.updated_at)}
+              </div>
+            ) : null}
           </div>
           <div
             className={cn(
@@ -140,7 +231,11 @@ export function IncidentDetailModal({
               {fmt(incident.slaDeadline)}
             </div>
             <div className="text-[10px] text-[hsl(var(--muted-foreground))] mt-0.5">
-              {incident.slaBreached ? "Breached" : "Within SLA"}
+              {!incident.slaDeadline
+                ? "—"
+                : incident.slaBreached
+                  ? "Breached"
+                  : "Within SLA"}
             </div>
           </div>
           <div className={tile}>
@@ -163,11 +258,13 @@ export function IncidentDetailModal({
               {t("incidents.source", "Source")}
             </div>
             <div className="text-xs font-semibold truncate">
-              {incident.source}
+              {incident.source || "—"}
             </div>
-            <div className="text-[10px] text-[hsl(var(--muted-foreground))] mt-0.5">
-              {incident.channel}
-            </div>
+            {incident.channel ? (
+              <div className="text-[10px] text-[hsl(var(--muted-foreground))] mt-0.5">
+                {incident.channel}
+              </div>
+            ) : null}
           </div>
           <div className={tile}>
             <div className={tileLabel}>
@@ -175,7 +272,7 @@ export function IncidentDetailModal({
               {t("incidents.department", "Department")}
             </div>
             <div className="text-xs font-semibold truncate">
-              {incident.department}
+              {full?.department?.name || incident.department || "—"}
             </div>
           </div>
           <div className={tile}>
@@ -184,7 +281,7 @@ export function IncidentDetailModal({
               {t("incidents.location", "Location")}
             </div>
             <div className="text-xs font-semibold truncate">
-              {incident.location}
+              {full?.location?.name || incident.location || "—"}
             </div>
           </div>
         </div>
@@ -229,6 +326,14 @@ export function IncidentDetailModal({
                   "dispatcher.associatedFireStations",
                   "Associated fire stations",
                 )}
+                <button
+                  type="button"
+                  onClick={() => setAssociateOpen(true)}
+                  className="ms-auto flex items-center gap-1 rounded-md border border-[hsl(var(--border))] px-2 py-0.5 text-[11px] font-medium hover:bg-[hsl(var(--muted))]"
+                >
+                  <Plus className="h-3 w-3" />
+                  {t("dispatcher.associate", "Associate")}
+                </button>
               </h3>
               {associated.length === 0 ? (
                 <p className="text-xs text-[hsl(var(--muted-foreground))]">
@@ -256,54 +361,197 @@ export function IncidentDetailModal({
                 {t("incidents.callerReporter", "Caller & Reporter")}
               </h3>
               <div className="grid grid-cols-2 gap-2">
-                {field(t("incidents.name", "Name"), incident.reporter.name)}
-                {field(t("incidents.phone", "Phone"), incident.reporter.phone)}
-                {field(t("incidents.assignee", "Assignee"), incident.assignee)}
+                {field(
+                  t("incidents.name", "Name"),
+                  full?.reporter_name || incident.reporter.name,
+                )}
+                {field(
+                  t("incidents.phone", "Phone"),
+                  full?.reporter_phone || incident.reporter.phone,
+                )}
+                {field(t("incidents.email", "Email"), full?.reporter_email)}
+                {field(
+                  t("incidents.createdBy", "Created by"),
+                  full?.created_by_name,
+                )}
+              </div>
+            </div>
+            <div className={card}>
+              <h3 className={cardTitle}>
+                <MapPin className="h-2.5 w-2.5 text-primary" />
+                {t("incidents.location", "Location")}
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="col-span-2">
+                  {field(t("incidents.address", "Address"), locationText)}
+                </div>
+                {field(t("incidents.city", "City"), full?.city)}
+                {field(
+                  t("incidents.postalCode", "Postal code"),
+                  full?.postal_code,
+                )}
                 {field(
                   t("incidents.coordinates", "Coordinates"),
-                  `${incident.latitude.toFixed(5)}, ${incident.longitude.toFixed(5)}`,
+                  Number.isFinite(incident.latitude) &&
+                    Number.isFinite(incident.longitude)
+                    ? `${incident.latitude.toFixed(5)}, ${incident.longitude.toFixed(5)}`
+                    : undefined,
                 )}
+              </div>
+            </div>
+            <div className={card}>
+              <h3 className={cardTitle}>
+                <Users className="h-2.5 w-2.5 text-primary" />
+                {t("incidents.assignment", "Assignment")}
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {field(
+                  t("incidents.assignee", "Assignee"),
+                  assignees.length
+                    ? assignees.map((u) => userName(u)).join(", ")
+                    : incident.assignee === "Unassigned"
+                      ? t("incidents.unassigned", "Unassigned")
+                      : incident.assignee,
+                )}
+                {field(
+                  t("incidents.department", "Department"),
+                  full?.department?.name,
+                )}
+                {full?.due_date
+                  ? field(
+                      t("incidents.dueDate", "Due date"),
+                      fmt(full.due_date),
+                    )
+                  : null}
+                {full?.resolved_at
+                  ? field(
+                      t("incidents.resolvedAt", "Resolved at"),
+                      fmt(full.resolved_at),
+                    )
+                  : null}
+                {full?.closed_at
+                  ? field(
+                      t("incidents.closedAt", "Closed at"),
+                      fmt(full.closed_at),
+                    )
+                  : null}
               </div>
             </div>
           </div>
         ) : null}
 
         {tab === "attachments" ? (
-          <div
-            className={cn(card, "text-xs text-[hsl(var(--muted-foreground))]")}
-          >
-            {t("incidents.noAttachments", "No attachments")}
-          </div>
+          detailLoading ? (
+            loadingText
+          ) : attachments.length === 0 ? (
+            <div
+              className={cn(
+                card,
+                "text-xs text-[hsl(var(--muted-foreground))]",
+              )}
+            >
+              {t("incidents.noAttachments", "No attachments")}
+            </div>
+          ) : (
+            <ul className={cn(card, "space-y-2")}>
+              {attachments.map((a) => (
+                <li key={a.id} className="flex items-center gap-2 text-xs">
+                  <Paperclip className="h-3 w-3 shrink-0 text-primary" />
+                  <span className="min-w-0 truncate font-medium">
+                    {a.file_name}
+                  </span>
+                  <span className="shrink-0 text-[hsl(var(--muted-foreground))]">
+                    {fmtSize(a.file_size)}
+                  </span>
+                  <span className="ms-auto shrink-0 text-[hsl(var(--muted-foreground))]">
+                    {userName(a.uploaded_by)} · {fmt(a.created_at)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )
         ) : null}
 
         {tab === "comments" ? (
-          <div className="space-y-2">
-            {incident.comments.map((c, idx) => (
-              <div key={idx} className={card}>
-                <div className="flex justify-between text-[11px]">
-                  <span className="font-semibold">{c.author}</span>
-                  <span className="text-[hsl(var(--muted-foreground))]">
-                    {fmt(c.at)}
-                  </span>
+          commentsLoading ? (
+            loadingText
+          ) : comments.length === 0 ? (
+            <div
+              className={cn(
+                card,
+                "text-xs text-[hsl(var(--muted-foreground))]",
+              )}
+            >
+              {t("incidents.noComments", "No comments")}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {comments.map((c) => (
+                <div key={c.id} className={card}>
+                  <div className="flex items-center justify-between gap-2 text-[11px]">
+                    <span className="font-semibold">
+                      {userName(c.author)}
+                      {c.is_internal ? (
+                        <span className="ms-2 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                          {t("incidents.internal", "Internal")}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="text-[hsl(var(--muted-foreground))]">
+                      {fmt(c.created_at)}
+                    </span>
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap text-xs">
+                    {c.content}
+                  </p>
                 </div>
-                <p className="mt-1 text-xs">{c.text}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )
         ) : null}
 
         {tab === "activity" ? (
-          <ul className={cn(card, "space-y-2")}>
-            {incident.activity.map((a, idx) => (
-              <li key={idx} className="flex items-center gap-2 text-xs">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                <span className="font-medium">{a.text}</span>
-                <span className="ms-auto text-[hsl(var(--muted-foreground))]">
-                  {fmt(a.at)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          historyLoading ? (
+            loadingText
+          ) : history.length === 0 ? (
+            <div
+              className={cn(
+                card,
+                "text-xs text-[hsl(var(--muted-foreground))]",
+              )}
+            >
+              {t("incidents.noActivity", "No activity yet")}
+            </div>
+          ) : (
+            <ul className={cn(card, "space-y-3")}>
+              {history.map((h) => (
+                <li key={h.id} className="text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                    <span className="font-medium">
+                      {h.from_state?.name ?? "—"}
+                    </span>
+                    <ArrowRight className="h-3 w-3 text-[hsl(var(--muted-foreground))] rtl:rotate-180" />
+                    <span className="font-medium">
+                      {h.to_state?.name ?? "—"}
+                    </span>
+                    <span className="ms-auto text-[hsl(var(--muted-foreground))]">
+                      {fmt(h.transitioned_at)}
+                    </span>
+                  </div>
+                  <div className="ms-3.5 mt-0.5 text-[hsl(var(--muted-foreground))]">
+                    {h.transition?.name ? `${h.transition.name} · ` : ""}
+                    {userName(h.performed_by)}
+                  </div>
+                  {h.comment ? (
+                    <p className="ms-3.5 mt-0.5 whitespace-pre-wrap">
+                      {h.comment}
+                    </p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )
         ) : null}
       </ModalBody>
       <ModalFooter className="flex justify-end">

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Flame, MapPin, Phone, Search } from "lucide-react";
@@ -13,6 +13,7 @@ import {
 } from "../ui/Modal";
 import { cn } from "@/lib/utils";
 import { dispatcherApi, type FireStation } from "../../api/dispatcher";
+import { useFireStations } from "../../pages/dispatcher/useDispatchData";
 import FireStationMap from "./FireStationMap";
 
 /**
@@ -39,11 +40,7 @@ export function FireStationAlertModal({
     null,
   );
 
-  const { data: stations = [], isLoading } = useQuery({
-    queryKey: ["dispatcher", "fire-stations"],
-    queryFn: () => dispatcherApi.getFireStations(),
-    enabled: isOpen,
-  });
+  const { stations, isLoading } = useFireStations(isOpen);
 
   const stationName = useCallback(
     (s: FireStation) =>
@@ -174,13 +171,17 @@ export function FireStationAlertModal({
                       <p className="mt-0.5 flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))]">
                         <MapPin className="h-3 w-3 shrink-0" />
                         <span className="truncate">
-                          {s.location_name} · {s.address}
+                          {[s.location_name, s.address]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </span>
                       </p>
-                      <p className="mt-0.5 flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))]">
-                        <Phone className="h-3 w-3 shrink-0" />
-                        <span dir="ltr">{s.phone}</span>
-                      </p>
+                      {s.phone ? (
+                        <p className="mt-0.5 flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))]">
+                          <Phone className="h-3 w-3 shrink-0" />
+                          <span dir="ltr">{s.phone}</span>
+                        </p>
+                      ) : null}
                     </div>
                   </li>
                 );

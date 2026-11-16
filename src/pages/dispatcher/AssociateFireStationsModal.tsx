@@ -10,10 +10,10 @@ import {
   ModalHeader,
   ModalTitle,
 } from "../../components/ui/Modal";
-import { DUMMY_FIRE_STATIONS } from "../../api/dispatcher";
+import { useFireStations } from "./useDispatchData";
 
 /**
- * Pick additional fire stations to associate with an incident (DUMMY data).
+ * Pick additional fire stations to associate with an incident.
  * Stations already associated are not offered.
  */
 export function AssociateFireStationsModal({
@@ -30,9 +30,11 @@ export function AssociateFireStationsModal({
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
 
+  const { stations, isLoading } = useFireStations();
+
   const available = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return DUMMY_FIRE_STATIONS.filter(
+    return stations.filter(
       (s) =>
         !associatedIds.includes(s.id) &&
         (!q ||
@@ -40,7 +42,7 @@ export function AssociateFireStationsModal({
             v?.toLowerCase().includes(q),
           )),
     );
-  }, [associatedIds, query]);
+  }, [stations, associatedIds, query]);
 
   const toggle = (id: string) =>
     setSelected((prev) =>
@@ -73,10 +75,12 @@ export function AssociateFireStationsModal({
         <ul className="max-h-[50vh] divide-y divide-[hsl(var(--border))] overflow-y-auto">
           {available.length === 0 ? (
             <li className="p-6 text-center text-sm text-[hsl(var(--muted-foreground))]">
-              {t(
-                "dispatcher.noMoreFireStations",
-                "No more fire stations to associate",
-              )}
+              {isLoading
+                ? t("common.loading", "Loading...")
+                : t(
+                    "dispatcher.noMoreFireStations",
+                    "No more fire stations to associate",
+                  )}
             </li>
           ) : (
             available.map((s) => {
@@ -103,12 +107,14 @@ export function AssociateFireStationsModal({
                     </p>
                     <p className="mt-0.5 flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))]">
                       <MapPin className="h-3 w-3 shrink-0" />
-                      {s.location_name} · {s.address}
+                      {[s.location_name, s.address].filter(Boolean).join(" · ")}
                     </p>
-                    <p className="mt-0.5 flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))]">
-                      <Phone className="h-3 w-3 shrink-0" />
-                      <span dir="ltr">{s.phone}</span>
-                    </p>
+                    {s.phone ? (
+                      <p className="mt-0.5 flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))]">
+                        <Phone className="h-3 w-3 shrink-0" />
+                        <span dir="ltr">{s.phone}</span>
+                      </p>
+                    ) : null}
                   </div>
                 </li>
               );

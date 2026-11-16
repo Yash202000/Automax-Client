@@ -12,12 +12,9 @@ import {
   searchGooglePlaces,
   type PlaceSuggestion,
 } from "../../utils/googleGeo";
-import { DUMMY_FIRE_STATIONS } from "../../api/dispatcher";
-import {
-  DUMMY_UNITS,
-  STATUS_COLORS,
-  type DummyIncident,
-} from "./dummyIncidents";
+import { STATUS_COLORS, type DummyIncident } from "./dummyIncidents";
+import { useFireStations, useMapUnits } from "./useDispatchData";
+import { MapEntityCard, type MapEntity } from "./MapEntityCard";
 
 type Layer = "all" | "stations" | "units";
 
@@ -135,6 +132,15 @@ export function DispatcherMapPanel({
     setFocus(null);
   };
 
+  // Stations/units are only fetched once their layer is shown.
+  const { stations, servicePoints } = useFireStations(
+    layer === "all" || layer === "stations",
+  );
+  const { units, resources } = useMapUnits(
+    layer === "all" || layer === "units",
+  );
+  const [entity, setEntity] = useState<MapEntity | null>(null);
+
   const markers = useMemo<IncidentMapMarker[]>(() => {
     const out: IncidentMapMarker[] = [];
     // Incidents are always plotted; the switch only adds stations/units.
@@ -148,7 +154,7 @@ export function DispatcherMapPanel({
         kind: "incident",
       });
     if (layer === "all" || layer === "stations") {
-      for (const s of DUMMY_FIRE_STATIONS)
+      for (const s of stations)
         out.push({
           id: s.id,
           latitude: s.latitude,
@@ -159,7 +165,7 @@ export function DispatcherMapPanel({
         });
     }
     if (layer === "all" || layer === "units") {
-      for (const u of DUMMY_UNITS)
+      for (const u of units)
         out.push({
           id: u.id,
           latitude: u.latitude,
@@ -170,13 +176,20 @@ export function DispatcherMapPanel({
         });
     }
     return out;
-  }, [layer, incidents, i18n.language]);
+  }, [layer, incidents, stations, units, i18n.language]);
 
   const handleSelect = useCallback(
     (id: string) => {
-      if (incidents.some((i) => i.id === id)) onSelect(id);
+      if (incidents.some((i) => i.id === id)) {
+        setEntity(null);
+        onSelect(id);
+      } else if (stations.some((s) => s.id === id)) {
+        setEntity({ kind: "station", id });
+      } else if (units.some((u) => u.id === id)) {
+        setEntity({ kind: "unit", id });
+      }
     },
-    [incidents, onSelect],
+    [incidents, stations, units, onSelect],
   );
 
   const options: { key: Layer; label: string }[] = [
@@ -189,7 +202,11 @@ export function DispatcherMapPanel({
     <div
       className={cn(
         "flex w-full flex-col bg-[hsl(var(--background))]",
-        maximized ? "fixed inset-0 z-[1300] h-screen" : "h-full min-h-[320px]",
+        maximized
+          ? "fixed inset-0 z-[1300] h-screen"
+          : // isolate: keeps the header's/map's high z-indexes inside this
+            // panel so modals opened over the page stay on top.
+            "isolate h-full min-h-[320px]",
       )}
     >
       <div className="relative z-[1200] flex items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--card))] p-2">
@@ -198,7 +215,10 @@ export function DispatcherMapPanel({
             <button
               key={o.key}
               type="button"
-              onClick={() => setLayer(o.key)}
+              onClick={() => {
+                setLayer(o.key);
+                setEntity(null);
+              }}
               className={cn(
                 "rounded-md px-3 py-1 text-xs font-semibold transition-colors",
                 layer === o.key
@@ -296,6 +316,14 @@ export function DispatcherMapPanel({
           onDropIncident={onDropIncident}
           focusPoint={focus}
         />
+        {entity ? (
+          <MapEntityCard
+            entity={entity}
+            servicePoints={servicePoints}
+            resources={resources}
+            onClose={() => setEntity(null)}
+          />
+        ) : null}
       </div>
     </div>
   );
