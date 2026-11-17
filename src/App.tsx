@@ -406,21 +406,22 @@ const ProcessDetailPage = lazy(() =>
     default: m.ProcessDetailPage,
   })),
 );
-const KpiDictionaryImportPage = lazy(() =>
-  import("./pages/admin/kpi/KpiDictionaryImportPage").then((m) => ({
-    default: m.KpiDictionaryImportPage,
-  })),
-);
-const KpiMetricsImportPage = lazy(() =>
-  import("./pages/admin/kpi/KpiMetricsImportPage").then((m) => ({
-    default: m.KpiMetricsImportPage,
-  })),
-);
-const KpiTargetsImportPage = lazy(() =>
-  import("./pages/admin/kpi/KpiTargetsImportPage").then((m) => ({
-    default: m.KpiTargetsImportPage,
-  })),
-);
+// KPI Dictionary, Metrics and Targets import pages hidden for now — bulk import is not working as expected.
+// const KpiDictionaryImportPage = lazy(() =>
+//   import("./pages/admin/kpi/KpiDictionaryImportPage").then((m) => ({
+//     default: m.KpiDictionaryImportPage,
+//   })),
+// );
+// const KpiMetricsImportPage = lazy(() =>
+//   import("./pages/admin/kpi/KpiMetricsImportPage").then((m) => ({
+//     default: m.KpiMetricsImportPage,
+//   })),
+// );
+// const KpiTargetsImportPage = lazy(() =>
+//   import("./pages/admin/kpi/KpiTargetsImportPage").then((m) => ({
+//     default: m.KpiTargetsImportPage,
+//   })),
+// );
 const KpiDictionaryPage = lazy(() =>
   import("./pages/admin/kpi/KpiDictionaryPage").then((m) => ({
     default: m.KpiDictionaryPage,
@@ -1337,6 +1338,7 @@ function App() {
                           path="/goals/kpi/dictionary/new/award"
                           element={<KpiDictionaryFormAwardPage />}
                         />
+                        {/* KPI Dictionary and Metrics import routes hidden for now — bulk import is not working as expected.
                         <Route
                           path="/goals/kpi/dictionary/import"
                           element={<KpiDictionaryImportPage />}
@@ -1345,6 +1347,7 @@ function App() {
                           path="/goals/kpi/metrics/import"
                           element={<KpiMetricsImportPage />}
                         />
+                        */}
                       </Route>
 
                       <Route
@@ -1435,6 +1438,7 @@ function App() {
                         />
                       </Route>
 
+                      {/* Targets import route hidden for now — bulk import is not working as expected.
                       <Route
                         element={
                           <PermissionRoute
@@ -1447,6 +1451,7 @@ function App() {
                           element={<KpiTargetsImportPage />}
                         />
                       </Route>
+                      */}
 
                       <Route
                         element={
