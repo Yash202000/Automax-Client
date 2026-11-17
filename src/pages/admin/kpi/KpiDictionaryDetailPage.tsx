@@ -36,7 +36,6 @@ import {
   Scale,
   Database,
   CheckCircle2,
-  FileSpreadsheet,
 } from "lucide-react";
 import {
   useStrategicKPIDetail,
@@ -401,7 +400,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { type, id } = useParams<{ type: string; id: string }>();
   const navigate = useNavigate();
-  const { canCreateKpi } = usePermissions();
+  // const { canCreateKpi } = usePermissions(); // hidden with the import button
   const permissions = usePermissions();
   const kpiAccess = useKpiAccess();
   // An action needs both the role permission and the user's collaborator
@@ -1613,6 +1612,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
 
           {canUpdateKpi() && (
             <div className="flex justify-end gap-2">
+              {/* Metrics import hidden for now — bulk import is not working as expected.
               {canCreateKpi() && (
                 <Link
                   to="/goals/kpi/metrics/import"
@@ -1622,6 +1622,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   {t("kpi.metricsImport.button")}
                 </Link>
               )}
+              */}
               <Button
                 size="sm"
                 variant="outline"
