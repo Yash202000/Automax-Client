@@ -2479,7 +2479,9 @@
     "newComplaint": "New Complaint",
     "newQuery": "New Query",
     "newRequest": "New Request",
-    "sms": "SMS"
+    "sms": "SMS",
+    "callRecordingHistory": "Call Recording History",
+    "newBadge": "New"
   },
   "workflows": {
     "title": "Workflows",
@@ -5308,7 +5310,48 @@
       "cancelled": "Cancelled",
       "busy": "Busy"
     },
-    "allUsers": "All Users"
+    "allUsers": "All Users",
+    "recording": {
+      "accessFailed": "Unable to play the recording. Please try again.",
+      "downloadFailed": "Unable to download the recording. Please try again."
+    },
+    "recordingHistory": {
+      "title": "Call Recording History",
+      "subtitle": "Who listened to or downloaded call recordings",
+      "viewHistory": "Recording history",
+      "tabs": {
+        "all": "All Activity",
+        "listened": "Listening History",
+        "downloaded": "Download History"
+      },
+      "filters": {
+        "search": "Search by call ID, incident number or user...",
+        "activity": "Activity",
+        "user": "User",
+        "dateRange": "Date range",
+        "allActivity": "All",
+        "allUsers": "All users"
+      },
+      "columns": {
+        "dateTime": "Date and time",
+        "callId": "Call ID",
+        "incident": "Incident",
+        "activity": "Activity",
+        "user": "User"
+      },
+      "activity": {
+        "listened": "Listened",
+        "downloaded": "Downloaded"
+      },
+      "showing": "Showing {{from}} to {{to}} of {{total}} entries",
+      "newestFirst": "Newest first",
+      "lockNote": "Entries cannot be edited or deleted. Only authorized users can open this screen.",
+      "filteredByCall": "Filtered by call",
+      "clearFilter": "Clear filter",
+      "empty": "No recording activity found",
+      "loadError": "Failed to load call recording history.",
+      "retry": "Retry"
+    }
   },
   "citizenReport": {
     "title": "Incident Report",

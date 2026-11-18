@@ -208,6 +208,7 @@ export const PERMISSIONS = {
   COMMUNICATION_TRACK_UPDATE: "communication-tracking:update",
 
   VIEW_ALL_CALL_LOGS: "call-logs:view_all",
+  CALL_RECORDING_HISTORY: "call-recordings:history",
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

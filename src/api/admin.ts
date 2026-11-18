@@ -2907,7 +2907,6 @@ export const callLogApi = {
     end_time?: string;
     duration?: number;
     status: "answered" | "missed" | "rejected" | "busy" | "failed";
-    recording_url?: string;
   }): Promise<any> => {
     const response = await apiClient.post("/admin/call-logs", data);
     return response.data;
@@ -2919,7 +2918,6 @@ export const callLogApi = {
       end_time: string;
       duration: number;
       status: string;
-      recording_url: string;
     }>,
   ): Promise<any> => {
     const response = await apiClient.put(`/admin/call-logs/${id}`, data);
@@ -2931,6 +2929,84 @@ export const callLogApi = {
     return response.data;
   },
 };
+
+// Call Recording access + audit history (AMAX-4664)
+//
+// Call-log responses no longer carry a recording URL. Every play and every
+// download goes through requestAccess, which saves an audit entry server-side
+// and returns a short-lived grant URL (no auth header needed, Range-capable).
+export type RecordingActivity = "listened" | "downloaded";
+
+export interface RecordingAccessGrant {
+  url: string;
+  expires_at: string;
+}
+
+export interface CallRecordingHistoryEntry {
+  id: string;
+  call_log_id: string;
+  call_uuid: string;
+  incident_id?: string;
+  incident_number?: string;
+  activity: RecordingActivity;
+  user_id: string;
+  user_name: string;
+  username: string;
+  user_role: string;
+  created_at: string;
+}
+
+export interface CallRecordingHistoryParams {
+  page?: number;
+  limit?: number;
+  activity?: RecordingActivity;
+  user_id?: string;
+  call_log_id?: string;
+  search?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface CallRecordingHistoryResponse {
+  success: boolean;
+  data: CallRecordingHistoryEntry[];
+  counts: { all: number; listened: number; downloaded: number };
+  total_items: number;
+  total_pages: number;
+  page: number;
+  limit: number;
+}
+
+export const callRecordingApi = {
+  requestAccess: async (
+    callLogId: string,
+    activity: RecordingActivity,
+  ): Promise<RecordingAccessGrant> => {
+    const response = await apiClient.post<{
+      success: boolean;
+      data: RecordingAccessGrant;
+    }>(`/call-recordings/${callLogId}/access`, { activity });
+    return response.data.data;
+  },
+
+  getHistory: async (
+    params: CallRecordingHistoryParams = {},
+  ): Promise<CallRecordingHistoryResponse> => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        query.append(key, String(value));
+      }
+    });
+    const response = await apiClient.get<CallRecordingHistoryResponse>(
+      `/admin/call-recordings/history?${query.toString()}`,
+    );
+    return response.data;
+  },
+};
+
+export const requestRecordingAccess = callRecordingApi.requestAccess;
+export const getCallRecordingHistory = callRecordingApi.getHistory;
 
 // Email API
 export const emailApi = {

@@ -1475,6 +1475,8 @@ export interface IncidentCreateRequest {
   lookup_value_ids?: string[];
   custom_lookup_fields?: Record<string, any>;
   comment?: string;
+  /** CTI call this incident was created from (links the call to the incident). */
+  call_uuid?: string;
 }
 
 export interface IncidentUpdateRequest {

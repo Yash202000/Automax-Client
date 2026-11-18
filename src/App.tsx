@@ -302,6 +302,11 @@ const CallHistory = lazy(() =>
     default: m.CallHistory,
   })),
 );
+const CallRecordingHistoryPage = lazy(() =>
+  import("./pages/admin/CallRecordingHistoryPage").then((m) => ({
+    default: m.CallRecordingHistoryPage,
+  })),
+);
 const EmailPage = lazy(() =>
   import("./pages/admin/EmailPage").then((m) => ({ default: m.EmailPage })),
 );
@@ -1162,6 +1167,20 @@ function App() {
                         element={
                           <PermissionRoute
                             requiredPermissions={[
+                              PERMISSIONS.CALL_RECORDING_HISTORY,
+                            ]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/call-centre/recording-history"
+                          element={<CallRecordingHistoryPage />}
+                        />
+                      </Route>
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[
                               PERMISSIONS.COMMUNICATION_TRACK_VIEW,
                             ]}
                           />
@@ -1198,6 +1217,20 @@ function App() {
                         path="/call-centre/history"
                         element={<CallHistory />}
                       />
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[
+                              PERMISSIONS.CALL_RECORDING_HISTORY,
+                            ]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/call-centre/recording-history"
+                          element={<CallRecordingHistoryPage />}
+                        />
+                      </Route>
                       <Route
                         path="/call-centre/communications"
                         element={<CommunicationsPage />}
