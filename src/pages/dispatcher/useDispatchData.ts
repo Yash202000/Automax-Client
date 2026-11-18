@@ -64,12 +64,13 @@ export function useFireStations(enabled = true) {
 }
 
 /** Active units (resources) that have a known position. */
-export function useMapUnits(enabled = true) {
+export function useMapUnits(enabled = true, refetchMs?: number) {
   const query = useQuery({
     queryKey: ["dispatcher", "resources", "all"],
     queryFn: resourceApi.all,
     enabled,
-    staleTime: STALE_MS,
+    staleTime: refetchMs ? 0 : STALE_MS,
+    refetchInterval: refetchMs ?? false,
   });
   const units = useMemo<MapUnit[]>(
     () =>
@@ -82,7 +83,7 @@ export function useMapUnits(enabled = true) {
         )
         .map((r) => ({
           id: r.id,
-          name: r.unit_code || r.name,
+          name: r.unique_id || r.name,
           status: r.status,
           latitude: r.latitude as number,
           longitude: r.longitude as number,

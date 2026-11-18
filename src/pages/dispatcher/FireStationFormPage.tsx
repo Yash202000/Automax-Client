@@ -369,7 +369,7 @@ const FireStationFormInner: React.FC<{
             label={t("unitManagement.assignUnits", "Assign Units")}
             options={units.map((u) => ({
               value: u.id,
-              label: u.unit_code ? `${u.name} (${u.unit_code})` : u.name,
+              label: u.unique_id ? `${u.name} (${u.unique_id})` : u.name,
             }))}
             value={form.unit_ids}
             onChange={(v) => setForm((f) => ({ ...f, unit_ids: v }))}

@@ -59,6 +59,13 @@ export const DispatcherLayout: React.FC = () => {
   const { hasPermission, isSuperAdmin, hasAnyPermission } = usePermissions();
   const canViewDispatcher =
     hasPermission(PERMISSIONS.DISPATCHER_VIEW) || isSuperAdmin;
+  const canViewUnits = hasPermission(PERMISSIONS.UNITS_VIEW) || isSuperAdmin;
+  const canViewUnitTypes =
+    hasPermission(PERMISSIONS.UNIT_TYPES_VIEW) || isSuperAdmin;
+  const canViewFireStations =
+    hasPermission(PERMISSIONS.FIRE_STATIONS_VIEW) || isSuperAdmin;
+  const canViewUnitManagement =
+    canViewUnits || canViewUnitTypes || canViewFireStations;
   const canViewAllIncidents =
     isSuperAdmin ||
     hasPermission(PERMISSIONS.INCIDENTS_VIEW_ALL) ||
@@ -188,7 +195,7 @@ export const DispatcherLayout: React.FC = () => {
         </div>
 
         {/* Unit Management */}
-        {canViewDispatcher && (
+        {canViewDispatcher && canViewUnitManagement && (
           <>
             {!collapsed ? (
               <>
@@ -206,37 +213,42 @@ export const DispatcherLayout: React.FC = () => {
                   to: "/unit-management/units",
                   icon: Truck,
                   label: t("sidebar.units", "Units"),
+                  show: canViewUnits,
                 },
                 {
                   to: "/unit-management/unit-types",
                   icon: Layers,
                   label: t("sidebar.unitTypes", "Unit Types"),
+                  show: canViewUnitTypes,
                 },
                 {
                   to: "/unit-management/fire-stations",
                   icon: Building2,
                   label: t("sidebar.fireStations", "Fire Stations"),
+                  show: canViewFireStations,
                 },
-              ].map(({ to, icon: Icon, label }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  onClick={() => setMobileMenuOpen(false)}
-                  title={collapsed ? label : undefined}
-                  className={({ isActive }) =>
-                    `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                      isActive
-                        ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`
-                  }
-                >
-                  <Icon size={20} className="flex-shrink-0" />
-                  {!collapsed && (
-                    <span className="ms-3 font-medium text-sm">{label}</span>
-                  )}
-                </NavLink>
-              ))}
+              ]
+                .filter((item) => item.show)
+                .map(({ to, icon: Icon, label }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    onClick={() => setMobileMenuOpen(false)}
+                    title={collapsed ? label : undefined}
+                    className={({ isActive }) =>
+                      `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                        isActive
+                          ? "bg-linear-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-primary/20"
+                          : "text-slate-400 hover:text-white hover:bg-white/5"
+                      }`
+                    }
+                  >
+                    <Icon size={20} className="flex-shrink-0" />
+                    {!collapsed && (
+                      <span className="ms-3 font-medium text-sm">{label}</span>
+                    )}
+                  </NavLink>
+                ))}
             </div>
           </>
         )}

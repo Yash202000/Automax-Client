@@ -17,6 +17,33 @@ import { useFireStations, useMapUnits } from "./useDispatchData";
 import { MapEntityCard, type MapEntity } from "./MapEntityCard";
 
 type Layer = "all" | "stations" | "units";
+/**
+ * default: incidents plus the chosen layer.
+ * live: units only, refreshed every few seconds.
+ * incident: incidents only (just the selected one when there is one).
+ */
+type Mode = "default" | "live" | "incident";
+
+const LIVE_REFRESH_MS = 3_000;
+
+/** "Show closest N" choices; 0 shows everything. */
+const CLOSEST_OPTIONS = [2, 5, 10, 20];
+
+/** Great-circle distance in km. */
+function distanceKm(
+  a: { latitude: number; longitude: number },
+  b: { latitude: number; longitude: number },
+): number {
+  const rad = Math.PI / 180;
+  const dLat = (b.latitude - a.latitude) * rad;
+  const dLng = (b.longitude - a.longitude) * rad;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.latitude * rad) *
+      Math.cos(b.latitude * rad) *
+      Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
 
 const STATION_COLOR = "#dc2626";
 const UNIT_COLOR = "#2563eb";
@@ -41,6 +68,9 @@ export function DispatcherMapPanel({
 }) {
   const { t, i18n } = useTranslation();
   const [layer, setLayer] = useState<Layer>("all");
+  const [mode, setMode] = useState<Mode>("default");
+  // 0 = all; otherwise only the N stations/units closest to the selected incident.
+  const [closest, setClosest] = useState(0);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [maximized, setMaximized] = useState(false);
@@ -133,28 +163,52 @@ export function DispatcherMapPanel({
   };
 
   // Stations/units are only fetched once their layer is shown.
-  const { stations, servicePoints } = useFireStations(
-    layer === "all" || layer === "stations",
-  );
+  const showStations =
+    mode === "default" && (layer === "all" || layer === "stations");
+  const showUnits =
+    mode === "live" ||
+    (mode === "default" && (layer === "all" || layer === "units"));
+  const showIncidents = mode !== "live";
+  const { stations, servicePoints } = useFireStations(showStations);
   const { units, resources } = useMapUnits(
-    layer === "all" || layer === "units",
+    showUnits,
+    mode === "live" ? LIVE_REFRESH_MS : undefined,
   );
   const [entity, setEntity] = useState<MapEntity | null>(null);
 
   const markers = useMemo<IncidentMapMarker[]>(() => {
     const out: IncidentMapMarker[] = [];
-    // Incidents are always plotted; the switch only adds stations/units.
-    for (const i of incidents)
+    // Incidents are plotted except in live tracking; the layer switch adds
+    // stations/units. "Show incident" narrows to the selected incident.
+    const shownIncidents = showIncidents
+      ? mode === "incident" && selectedId
+        ? incidents.filter((i) => i.id === selectedId)
+        : incidents
+      : [];
+    for (const i of shownIncidents)
       out.push({
         id: i.id,
         latitude: i.latitude,
         longitude: i.longitude,
         label: i.number,
         color: STATUS_COLORS[i.status],
-        kind: "incident",
+        kind: i.status === "dispatched" ? "incident_dispatched" : "incident",
       });
-    if (layer === "all" || layer === "stations") {
-      for (const s of stations)
+    // With an incident selected, "show closest N" keeps only the N nearest
+    // stations and units to it.
+    const origin = selectedId
+      ? incidents.find((i) => i.id === selectedId)
+      : undefined;
+    const nearest = <T extends { latitude: number; longitude: number }>(
+      list: T[],
+    ): T[] =>
+      closest > 0 && origin
+        ? [...list]
+            .sort((a, b) => distanceKm(origin, a) - distanceKm(origin, b))
+            .slice(0, closest)
+        : list;
+    if (showStations) {
+      for (const s of nearest(stations))
         out.push({
           id: s.id,
           latitude: s.latitude,
@@ -164,8 +218,8 @@ export function DispatcherMapPanel({
           kind: "station",
         });
     }
-    if (layer === "all" || layer === "units") {
-      for (const u of units)
+    if (showUnits) {
+      for (const u of nearest(units))
         out.push({
           id: u.id,
           latitude: u.latitude,
@@ -176,7 +230,18 @@ export function DispatcherMapPanel({
         });
     }
     return out;
-  }, [layer, incidents, stations, units, i18n.language]);
+  }, [
+    mode,
+    closest,
+    selectedId,
+    showIncidents,
+    showStations,
+    showUnits,
+    incidents,
+    stations,
+    units,
+    i18n.language,
+  ]);
 
   const handleSelect = useCallback(
     (id: string) => {
@@ -198,6 +263,12 @@ export function DispatcherMapPanel({
     { key: "units", label: t("dispatcher.units", "Units") },
   ];
 
+  const modes: { key: Mode; label: string }[] = [
+    { key: "default", label: t("dispatcher.modeDefault", "Default mode") },
+    { key: "live", label: t("dispatcher.modeLive", "Live tracking") },
+    { key: "incident", label: t("dispatcher.modeIncident", "Show incident") },
+  ];
+
   return (
     <div
       className={cn(
@@ -209,27 +280,77 @@ export function DispatcherMapPanel({
             "isolate h-full min-h-[320px]",
       )}
     >
-      <div className="relative z-[1200] flex items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--card))] p-2">
+      <div className="relative z-[1200] flex flex-wrap items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--card))] px-2 py-1.5">
         <div className="inline-flex rounded-lg border border-[hsl(var(--border))] p-0.5">
-          {options.map((o) => (
+          {modes.map((m) => (
             <button
-              key={o.key}
+              key={m.key}
               type="button"
               onClick={() => {
-                setLayer(o.key);
+                setMode(m.key);
                 setEntity(null);
               }}
               className={cn(
                 "rounded-md px-3 py-1 text-xs font-semibold transition-colors",
-                layer === o.key
+                mode === m.key
                   ? "bg-primary text-white"
                   : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
               )}
             >
-              {o.label}
+              {m.label}
             </button>
           ))}
         </div>
+        {mode !== "incident" ? (
+          <select
+            value={closest}
+            onChange={(e) => setClosest(Number(e.target.value))}
+            disabled={!selectedId}
+            title={
+              selectedId
+                ? undefined
+                : t(
+                    "dispatcher.closestNeedsIncident",
+                    "Select an incident to filter by distance",
+                  )
+            }
+            aria-label={t("dispatcher.closest", "Show closest")}
+            className="ms-auto h-8 rounded-md border border-[hsl(var(--border))] bg-transparent px-2 text-xs font-semibold outline-none disabled:opacity-50"
+          >
+            <option value={0}>{t("dispatcher.closestAll", "Show all")}</option>
+            {CLOSEST_OPTIONS.map((n) => (
+              <option key={n} value={n}>
+                {t("dispatcher.closestN", "Show closest {{count}}", {
+                  count: n,
+                })}
+              </option>
+            ))}
+          </select>
+        ) : null}
+      </div>
+      <div className="relative z-[1200] flex items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--card))] p-2">
+        {mode === "default" ? (
+          <div className="inline-flex rounded-lg border border-[hsl(var(--border))] p-0.5">
+            {options.map((o) => (
+              <button
+                key={o.key}
+                type="button"
+                onClick={() => {
+                  setLayer(o.key);
+                  setEntity(null);
+                }}
+                className={cn(
+                  "rounded-md px-3 py-1 text-xs font-semibold transition-colors",
+                  layer === o.key
+                    ? "bg-primary text-white"
+                    : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
+                )}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="relative ms-2 w-72 max-w-[45%]">
           <Search className="pointer-events-none absolute start-2.5 top-2 h-4 w-4 text-[hsl(var(--muted-foreground))]" />
           <input

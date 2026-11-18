@@ -442,6 +442,14 @@
     "accountSettings": "Account Settings"
   },
   "dispatcher": {
+    "pushFailed": "Could not notify {{target}} about {{incident}}",
+    "closestAll": "Show all",
+    "closestN": "Show closest {{count}}",
+    "closest": "Show closest",
+    "closestNeedsIncident": "Select an incident to filter by distance",
+    "modeDefault": "Default mode",
+    "modeLive": "Live tracking",
+    "modeIncident": "Show incident",
     "incidentsOnMap": "{{count}} incidents on map",
     "withoutCoordinates": "({{count}} without location)",
     "mapLimit": "Showing first {{max}} of {{total}}",
@@ -2287,7 +2295,7 @@
       "dispatched": "Dispatched",
       "maintenance": "Maintenance"
     },
-    "unitCodeExists": "This Unit ID already exists",
+    "unitCodeExists": "This Unique ID already exists",
     "radioIdExists": "This radio ID already exists in the department",
     "saveFailedUnit": "Could not save the unit",
     "saveFailedStation": "Could not save the fire station",
@@ -2420,6 +2428,8 @@
     "deleteFireStationMessage": "Are you sure you want to delete this fire station?",
     "unitName": "Unit Name",
     "unitId": "Unit ID",
+    "uniqueId": "Unique ID",
+    "chassisNumber": "Chassis Number",
     "alternateName": "Alternate Name",
     "plateNumber": "Plate Number",
     "unitType": "Unit Type",

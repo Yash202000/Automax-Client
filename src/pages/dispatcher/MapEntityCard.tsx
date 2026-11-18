@@ -76,7 +76,7 @@ export function MapEntityCard({
   const stationName = (s: ServicePoint) =>
     ar && s.alt_name ? s.alt_name : s.name;
 
-  const title = station ? stationName(station) : unit!.unit_code || unit!.name;
+  const title = station ? stationName(station) : unit!.unique_id || unit!.name;
   const statusKey = unit?.status;
 
   return (
@@ -147,7 +147,7 @@ export function MapEntityCard({
                           background: STATUS_COLOR[r.status ?? "available"],
                         }}
                       />
-                      <span className="truncate">{r.unit_code || r.name}</span>
+                      <span className="truncate">{r.unique_id || r.name}</span>
                       <span className="ms-auto text-[hsl(var(--muted-foreground))]">
                         {t(...STATUS[r.status ?? "available"])}
                       </span>

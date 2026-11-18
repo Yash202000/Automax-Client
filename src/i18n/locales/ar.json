@@ -442,6 +442,14 @@
     "accountSettings": "إعدادات الحساب"
   },
   "dispatcher": {
+    "pushFailed": "تعذّر إشعار {{target}} بخصوص {{incident}}",
+    "closestAll": "عرض الكل",
+    "closestN": "عرض أقرب {{count}}",
+    "closest": "عرض الأقرب",
+    "closestNeedsIncident": "اختر بلاغاً للتصفية حسب المسافة",
+    "modeDefault": "الوضع الافتراضي",
+    "modeLive": "التتبع المباشر",
+    "modeIncident": "عرض البلاغ",
     "incidentsOnMap": "{{count}} بلاغ على الخريطة",
     "withoutCoordinates": "({{count}} بدون موقع)",
     "mapLimit": "عرض أول {{max}} من {{total}}",
@@ -2418,6 +2426,8 @@
     "deleteFireStationMessage": "هل أنت متأكد من حذف محطة الإطفاء هذه؟",
     "unitName": "اسم الوحدة",
     "unitId": "رقم الوحدة",
+    "uniqueId": "المعرّف الفريد",
+    "chassisNumber": "رقم الشاسيه",
     "alternateName": "الاسم البديل",
     "plateNumber": "رقم اللوحة",
     "unitType": "نوع الوحدة",
