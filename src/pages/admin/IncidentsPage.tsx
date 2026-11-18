@@ -65,6 +65,10 @@ interface ColumnConfig {
   required?: boolean; // Can't be hidden
 }
 
+const isNazahaClient =
+  window.APP_CONFIG?.CLIENT === "NAZAHA" ||
+  import.meta.env.VITE_CLIENT === "NAZAHA";
+
 const COLUMN_STORAGE_KEY = "incident_columns_config";
 
 const defaultColumns: ColumnConfig[] = [
@@ -74,6 +78,15 @@ const defaultColumns: ColumnConfig[] = [
     visible: true,
     required: true,
   },
+  ...(isNazahaClient
+    ? [
+        {
+          id: "classification",
+          label: "incidents.classification",
+          visible: true,
+        },
+      ]
+    : []),
   {
     id: "recurring_incidents",
     label: "incidents.recurringIncidents",
@@ -84,7 +97,11 @@ const defaultColumns: ColumnConfig[] = [
   { id: "assignee", label: "incidents.assignee", visible: true },
   { id: "department", label: "incidents.department", visible: false },
   { id: "due_date", label: "incidents.dueDate", visible: true },
-  { id: "created_at", label: "incidents.createdAt", visible: false },
+  {
+    id: "created_at",
+    label: "incidents.createdAt",
+    visible: isNazahaClient,
+  },
   { id: "sla", label: "incidents.slaStatus", visible: true },
   { id: "actions", label: "common.actions", visible: true, required: true },
 ];
@@ -1000,6 +1017,13 @@ export const IncidentsPage: React.FC = () => {
                         </span>
                       </th>
                     )}
+                    {isNazahaClient && isColumnVisible("classification") && (
+                      <th className="px-6 py-4 text-start">
+                        <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                          {t("incidents.classification")}
+                        </span>
+                      </th>
+                    )}
                     {isVD2Client && isColumnVisible("recurring_incidents") && (
                       <th className="w-56 min-w-56 px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
@@ -1077,6 +1101,9 @@ export const IncidentsPage: React.FC = () => {
                       city: incident.city,
                       address: incident.address,
                     });
+                    const classificationName = getLocalizedName(
+                      incident.classification,
+                    );
                     // Detect master and child incidents
                     const isMasterIncident =
                       (incident.merged_incidents_count ?? 0) > 0;
@@ -1174,6 +1201,23 @@ export const IncidentsPage: React.FC = () => {
                             </div>
                           </td>
                         )}
+                        {isNazahaClient &&
+                          isColumnVisible("classification") && (
+                            <td className="px-6 py-4">
+                              {classificationName ? (
+                                <span
+                                  className="block max-w-[220px] truncate text-sm text-[hsl(var(--foreground))]"
+                                  title={classificationName}
+                                >
+                                  {classificationName}
+                                </span>
+                              ) : (
+                                <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                                  -
+                                </span>
+                              )}
+                            </td>
+                          )}
                         {isVD2Client &&
                           isColumnVisible("recurring_incidents") && (
                             <td className="w-56 min-w-56 px-6 py-4">

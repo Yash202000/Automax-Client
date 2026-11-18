@@ -109,6 +109,9 @@ export function IncidentEditPage() {
   const isEPM940 =
     window.APP_CONFIG?.CLIENT === "EPM940" ||
     import.meta.env.VITE_CLIENT === "EPM940";
+  const isNazahaClient =
+    window.APP_CONFIG?.CLIENT === "NAZAHA" ||
+    import.meta.env.VITE_CLIENT === "NAZAHA";
 
   const [formData, setFormData] = useState<
     Omit<
@@ -1293,7 +1296,7 @@ export function IncidentEditPage() {
                         )}
                         error={errors.geolocation}
                         onToggleExpand={() => setShowLocationModal(true)}
-                        showCoordinateInputs={isEPM940}
+                        showCoordinateInputs={isEPM940 || isNazahaClient}
                         onCoordinateErrorChange={setCoordinateInputError}
                       />
 
