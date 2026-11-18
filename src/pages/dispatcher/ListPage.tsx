@@ -1,11 +1,16 @@
 import { useMemo, useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Eye, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { INCIDENT_DRAG_TYPE } from "../../components/dispatcher/incidentMap.types";
+import { isAxiosError } from "axios";
+import {
+  INCIDENT_DRAG_TYPE,
+  type IncidentMapMarker,
+} from "../../components/dispatcher/incidentMap.types";
+import { dispatcherApi } from "../../api/dispatcher";
 import { DispatcherMapPanel } from "./DispatcherMapPanel";
 import { IncidentDetailModal } from "./IncidentDetailModal";
 import { FireStationAlertModal } from "../../components/dispatcher/FireStationAlertModal";
@@ -130,7 +135,13 @@ export function DispatcherListPage() {
   // Only incidents with coordinates can be plotted on the map.
   const mappable = useMemo(() => incidents.filter(hasCoordinates), [incidents]);
 
-  const assign = (incidentId: string, target: { label: string }) => {
+  // Dropping an incident on a fire station sends it a push notification.
+  const pushMutation = useMutation({
+    mutationFn: (v: { serviceId: string; incidentId: string }) =>
+      dispatcherApi.pushToFireStation(v.serviceId, v.incidentId),
+  });
+
+  const assign = (incidentId: string, target: IncidentMapMarker) => {
     const inc = allIncidents.find((x) => x.id === incidentId);
     if (!inc) return;
     if (inc.status === "resolved" || inc.status === "completed") {
@@ -143,15 +154,39 @@ export function DispatcherListPage() {
       );
       return;
     }
-    setOverrides((prev) => ({
-      ...prev,
-      [incidentId]: { status: "dispatched", assignee: target.label },
-    }));
-    toast.success(
-      t("dispatcher.incidentAssigned", "{{incident}} assigned to {{target}}", {
-        incident: inc.number,
-        target: target.label,
-      }),
+    const apply = () => {
+      setOverrides((prev) => ({
+        ...prev,
+        [incidentId]: { status: "dispatched", assignee: target.label },
+      }));
+      toast.success(
+        t(
+          "dispatcher.incidentAssigned",
+          "{{incident}} assigned to {{target}}",
+          { incident: inc.number, target: target.label },
+        ),
+      );
+    };
+    // Units have no endpoint yet: assignment stays local for them.
+    if (target.kind !== "station") return apply();
+    pushMutation.mutate(
+      { serviceId: target.id, incidentId },
+      {
+        onSuccess: apply,
+        onError: (error) => {
+          const message = isAxiosError(error)
+            ? error.response?.data?.message
+            : undefined;
+          toast.error(
+            message ||
+              t(
+                "dispatcher.pushFailed",
+                "Could not notify {{target}} about {{incident}}",
+                { target: target.label, incident: inc.number },
+              ),
+          );
+        },
+      },
     );
   };
 
@@ -165,8 +200,8 @@ export function DispatcherListPage() {
   return (
     <>
       <div className="flex h-[calc(100vh-70px-1rem)] min-h-0 w-full overflow-hidden lg:h-[calc(100vh-70px-2rem)]">
-        <div className="flex min-h-0 w-full max-w-md shrink-0 flex-col border-e border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-          <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] p-3">
+        <div className="flex min-h-0 w-full max-w-[19rem] shrink-0 flex-col border-e border-[hsl(var(--border))] bg-[hsl(var(--card))]">
+          <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] p-2">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute start-2.5 top-2.5 h-4 w-4 text-[hsl(var(--muted-foreground))]" />
               <input
@@ -193,7 +228,7 @@ export function DispatcherListPage() {
                 type="button"
                 onClick={() => setTab(tb.key)}
                 className={cn(
-                  "flex-1 px-3 py-2 text-sm font-medium",
+                  "flex-1 truncate px-2 py-1.5 text-xs font-medium",
                   tab === tb.key
                     ? "border-b-2 border-primary text-primary"
                     : "text-[hsl(var(--muted-foreground))]",
@@ -220,16 +255,18 @@ export function DispatcherListPage() {
                   type="button"
                   onClick={() => select(i.id)}
                   className={cn(
-                    "w-full border-b border-[hsl(var(--border))] px-3 py-2.5 text-start hover:bg-[hsl(var(--muted))]",
+                    "w-full border-b border-[hsl(var(--border))] px-3 py-1.5 text-start hover:bg-[hsl(var(--muted))]",
                     id === i.id && "bg-[hsl(var(--muted))]",
                   )}
                 >
                   <div className="flex items-center gap-2">
                     <span
-                      className="h-2.5 w-2.5 rounded-full"
+                      className="h-2 w-2 shrink-0 rounded-full"
                       style={{ background: STATUS_COLORS[i.status] }}
                     />
-                    <span className="text-sm font-semibold">{i.number}</span>
+                    <span className="text-[13px] font-semibold">
+                      {i.number}
+                    </span>
                     <span className="ms-auto text-xs text-[hsl(var(--muted-foreground))]">
                       {new Date(i.reportedAt).toLocaleTimeString([], {
                         hour: "2-digit",
@@ -251,15 +288,15 @@ export function DispatcherListPage() {
                           setDetailId(i.id);
                         }
                       }}
-                      className="rounded p-1 text-primary hover:bg-primary/10"
+                      className="rounded p-0.5 text-primary hover:bg-primary/10"
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-3.5 w-3.5" />
                     </span>
                   </div>
-                  <div className="mt-0.5 text-sm">
+                  <div className="truncate text-[13px] leading-snug">
                     {i18n.language === "ar" ? i.title_ar : i.title}
                   </div>
-                  <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                  <div className="truncate text-[11px] leading-snug text-[hsl(var(--muted-foreground))]">
                     {i.location}
                     {i.assignee !== "Unassigned" ? ` · ${i.assignee}` : ""}
                   </div>

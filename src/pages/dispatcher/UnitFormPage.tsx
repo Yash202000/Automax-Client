@@ -42,7 +42,8 @@ import { parseApiError } from "./apiError";
 type Form = {
   name: string;
   alternate_name: string;
-  unit_code: string;
+  unique_id: string;
+  chassis_number: string;
   plate_number: string;
   resource_type_id: string;
   service_point_id: string;
@@ -65,7 +66,8 @@ type Form = {
 const emptyForm: Form = {
   name: "",
   alternate_name: "",
-  unit_code: "",
+  unique_id: "",
+  chassis_number: "",
   plate_number: "",
   resource_type_id: "",
   service_point_id: "",
@@ -116,7 +118,8 @@ const toForm = (existing: Resource): Form => ({
   ...emptyForm,
   name: existing.name,
   alternate_name: existing.alternate_name ?? "",
-  unit_code: existing.unit_code ?? "",
+  unique_id: existing.unique_id ?? "",
+  chassis_number: existing.chassis_number ?? "",
   plate_number: existing.plate_number ?? "",
   resource_type_id: existing.resource_type_id,
   service_point_id: existing.service_point_id ?? "",
@@ -282,7 +285,8 @@ const UnitFormInner: React.FC<{ id?: string; existing?: Resource }> = ({
       thing_id: existing?.thing_id ?? null,
       resource_type_id: form.resource_type_id,
       service_point_id: form.service_point_id || null,
-      unit_code: blankToNull(form.unit_code),
+      unique_id: blankToNull(form.unique_id),
+      chassis_number: blankToNull(form.chassis_number),
       plate_number: blankToNull(form.plate_number),
       alternate_name: blankToNull(form.alternate_name),
       radio_id: blankToNull(form.radio_id),
@@ -323,9 +327,12 @@ const UnitFormInner: React.FC<{ id?: string; existing?: Resource }> = ({
       const { status, message, fields } = parseApiError(e);
       if (status === 409) {
         setServerErrors({
-          unit_code: [
+          unique_id: [
             message ||
-              t("unitManagement.unitCodeExists", "This Unit ID already exists"),
+              t(
+                "unitManagement.unitCodeExists",
+                "This Unique ID already exists",
+              ),
           ],
         });
       } else {
@@ -359,9 +366,9 @@ const UnitFormInner: React.FC<{ id?: string; existing?: Resource }> = ({
               ? t("unitManagement.editUnit", "Edit Unit")
               : t("unitManagement.addUnit", "Add Unit")}
           </h1>
-          {existing?.unit_code && (
+          {existing?.unique_id && (
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              {existing.unit_code}
+              {existing.unique_id}
             </p>
           )}
         </div>
@@ -386,10 +393,16 @@ const UnitFormInner: React.FC<{ id?: string; existing?: Resource }> = ({
           error={err("alternate_name")}
         />
         <Input
-          label={t("unitManagement.unitId", "Unit ID")}
-          value={form.unit_code}
-          onChange={text("unit_code")}
-          error={err("unit_code")}
+          label={t("unitManagement.uniqueId", "Unique ID")}
+          value={form.unique_id}
+          onChange={text("unique_id")}
+          error={err("unique_id")}
+        />
+        <Input
+          label={t("unitManagement.chassisNumber", "Chassis Number")}
+          value={form.chassis_number}
+          onChange={text("chassis_number")}
+          error={err("chassis_number")}
         />
         <Input
           label={t("unitManagement.plateNumber", "Plate Number")}

@@ -875,41 +875,125 @@ function App() {
                           element={<DispatcherListPage />}
                         />
                         <Route
-                          path="/unit-management/units"
-                          element={<UnitManagementPage kind="units" />}
-                        />
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[PERMISSIONS.UNITS_VIEW]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/units"
+                            element={<UnitManagementPage kind="units" />}
+                          />
+                        </Route>
                         <Route
-                          path="/unit-management/units/new"
-                          element={<UnitFormPage />}
-                        />
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[PERMISSIONS.UNITS_CREATE]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/units/new"
+                            element={<UnitFormPage />}
+                          />
+                        </Route>
                         <Route
-                          path="/unit-management/units/:id/edit"
-                          element={<UnitFormPage />}
-                        />
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[PERMISSIONS.UNITS_UPDATE]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/units/:id/edit"
+                            element={<UnitFormPage />}
+                          />
+                        </Route>
                         <Route
-                          path="/unit-management/unit-types"
-                          element={<UnitManagementPage kind="unitTypes" />}
-                        />
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[
+                                PERMISSIONS.UNIT_TYPES_VIEW,
+                              ]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/unit-types"
+                            element={<UnitManagementPage kind="unitTypes" />}
+                          />
+                        </Route>
                         <Route
-                          path="/unit-management/unit-types/new"
-                          element={<UnitTypeFormPage />}
-                        />
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[
+                                PERMISSIONS.UNIT_TYPES_CREATE,
+                              ]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/unit-types/new"
+                            element={<UnitTypeFormPage />}
+                          />
+                        </Route>
                         <Route
-                          path="/unit-management/unit-types/:id/edit"
-                          element={<UnitTypeFormPage />}
-                        />
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[
+                                PERMISSIONS.UNIT_TYPES_UPDATE,
+                              ]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/unit-types/:id/edit"
+                            element={<UnitTypeFormPage />}
+                          />
+                        </Route>
                         <Route
-                          path="/unit-management/fire-stations"
-                          element={<UnitManagementPage kind="fireStations" />}
-                        />
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[
+                                PERMISSIONS.FIRE_STATIONS_VIEW,
+                              ]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/fire-stations"
+                            element={<UnitManagementPage kind="fireStations" />}
+                          />
+                        </Route>
                         <Route
-                          path="/unit-management/fire-stations/new"
-                          element={<FireStationFormPage />}
-                        />
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[
+                                PERMISSIONS.FIRE_STATIONS_CREATE,
+                              ]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/fire-stations/new"
+                            element={<FireStationFormPage />}
+                          />
+                        </Route>
                         <Route
-                          path="/unit-management/fire-stations/:id/edit"
-                          element={<FireStationFormPage />}
-                        />
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[
+                                PERMISSIONS.FIRE_STATIONS_UPDATE,
+                              ]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/fire-stations/:id/edit"
+                            element={<FireStationFormPage />}
+                          />
+                        </Route>
                       </Route>
                     </Route>
                   </Route>

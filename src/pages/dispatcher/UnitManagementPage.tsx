@@ -48,6 +48,8 @@ import {
   departmentApi,
 } from "../../api/admin";
 import type { User } from "../../types";
+import { usePermissions } from "../../hooks/usePermissions";
+import { PERMISSIONS } from "../../constants/permissions";
 import { ConfirmationModal } from "../../components/common/ConfirmationModal";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -79,13 +81,21 @@ const Th: React.FC<{ children?: React.ReactNode; actions?: boolean }> = ({
   </th>
 );
 
+type EntityPerm = "UNITS" | "UNIT_TYPES" | "FIRE_STATIONS";
+
 /** Hover "…" button in the sticky actions column, opening an Edit/Delete menu. */
 const RowActions: React.FC<{
   id: string;
+  entity: EntityPerm;
   onEdit: () => void;
   onDelete: () => void;
-}> = ({ id, onEdit, onDelete }) => {
+}> = ({ id, entity, onEdit, onDelete }) => {
   const { t, i18n } = useTranslation();
+  const { hasPermission, isSuperAdmin } = usePermissions();
+  const canEdit =
+    isSuperAdmin || hasPermission(PERMISSIONS[`${entity}_UPDATE`]);
+  const canDelete =
+    isSuperAdmin || hasPermission(PERMISSIONS[`${entity}_DELETE`]);
   const [pos, setPos] = useState<{
     top: number;
     right: number;
@@ -105,6 +115,12 @@ const RowActions: React.FC<{
       });
     }
   };
+
+  if (!canEdit && !canDelete) {
+    return (
+      <td className="sticky end-0 z-10 bg-[hsl(var(--card))] group-hover:bg-[hsl(var(--muted))] px-6 py-4 transition-colors" />
+    );
+  }
 
   return (
     <td className="sticky end-0 z-10 bg-[hsl(var(--card))] group-hover:bg-[hsl(var(--muted))] px-6 py-4 text-end transition-colors">
@@ -136,27 +152,33 @@ const RowActions: React.FC<{
                   : { right: pos.right }),
               }}
             >
-              <button
-                onClick={() => {
-                  setPos(null);
-                  onEdit();
-                }}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
-              >
-                <Edit2 className="w-4 h-4" />
-                {t("common.edit", "Edit")}
-              </button>
-              <div className="my-1 border-t border-[hsl(var(--border))]" />
-              <button
-                onClick={() => {
-                  setPos(null);
-                  onDelete();
-                }}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                {t("common.delete", "Delete")}
-              </button>
+              {canEdit && (
+                <button
+                  onClick={() => {
+                    setPos(null);
+                    onEdit();
+                  }}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  {t("common.edit", "Edit")}
+                </button>
+              )}
+              {canEdit && canDelete && (
+                <div className="my-1 border-t border-[hsl(var(--border))]" />
+              )}
+              {canDelete && (
+                <button
+                  onClick={() => {
+                    setPos(null);
+                    onDelete();
+                  }}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)] transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {t("common.delete", "Delete")}
+                </button>
+              )}
             </div>
           </>,
           document.body,
@@ -182,6 +204,7 @@ const StatusBadge: React.FC<{ active: boolean }> = ({ active }) => {
 
 const TableShell: React.FC<{
   icon: LucideIcon;
+  entity: EntityPerm;
   title: string;
   subtitle: string;
   addLabel: string;
@@ -203,6 +226,7 @@ const TableShell: React.FC<{
   children: React.ReactNode;
 }> = ({
   icon: Icon,
+  entity,
   title,
   subtitle,
   addLabel,
@@ -222,6 +246,9 @@ const TableShell: React.FC<{
   children,
 }) => {
   const { t } = useTranslation();
+  const { hasPermission, isSuperAdmin } = usePermissions();
+  const canCreate =
+    isSuperAdmin || hasPermission(PERMISSIONS[`${entity}_CREATE`]);
   const [filterOpen, setFilterOpen] = useState(false);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -243,9 +270,11 @@ const TableShell: React.FC<{
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-start lg:justify-end gap-3">
-          <Button leftIcon={<Plus className="w-4 h-4" />} onClick={onAdd}>
-            {addLabel}
-          </Button>
+          {canCreate && (
+            <Button leftIcon={<Plus className="w-4 h-4" />} onClick={onAdd}>
+              {addLabel}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -586,6 +615,7 @@ const UnitsTable: React.FC = () => {
   return (
     <>
       <TableShell
+        entity="UNITS"
         icon={Truck}
         title={t("sidebar.units", "Units")}
         subtitle={t("unitManagement.unitsSubtitle", "Manage dispatch units")}
@@ -669,9 +699,10 @@ const UnitsTable: React.FC = () => {
         head={
           <>
             <Th>{t("unitManagement.unitName", "Unit Name")}</Th>
-            <Th>{t("unitManagement.unitId", "Unit ID")}</Th>
+            <Th>{t("unitManagement.uniqueId", "Unique ID")}</Th>
             <Th>{t("unitManagement.alternateName", "Alternate Name")}</Th>
             <Th>{t("unitManagement.plateNumber", "Plate Number")}</Th>
+            <Th>{t("unitManagement.chassisNumber", "Chassis Number")}</Th>
             <Th>{t("unitManagement.unitType", "Unit Type")}</Th>
             <Th>{t("unitManagement.radioId", "Radio ID")}</Th>
             <Th>{t("unitManagement.modifiedDate", "Modified Date")}</Th>
@@ -682,9 +713,10 @@ const UnitsTable: React.FC = () => {
         {rows.map((u) => (
           <tr key={u.id} className={rowCls}>
             <td className={`${cell} font-semibold`}>{u.name}</td>
-            <td className={cell}>{u.unit_code || "—"}</td>
+            <td className={cell}>{u.unique_id || "—"}</td>
             <td className={mutedCell}>{u.alternate_name || "—"}</td>
             <td className={cell}>{u.plate_number || "—"}</td>
+            <td className={cell}>{u.chassis_number || "—"}</td>
             <td className={cell}>{typeName.get(u.resource_type_id) ?? "—"}</td>
             <td className={cell}>{u.radio_id || "—"}</td>
             <td className={mutedCell}>
@@ -693,6 +725,7 @@ const UnitsTable: React.FC = () => {
                 : "—"}
             </td>
             <RowActions
+              entity="UNITS"
               id={u.id}
               onEdit={() => openForm(u)}
               onDelete={() => setDeleting(u)}
@@ -792,6 +825,7 @@ const UnitTypesTable: React.FC = () => {
   return (
     <>
       <TableShell
+        entity="UNIT_TYPES"
         icon={Layers}
         title={t("sidebar.unitTypes", "Unit Types")}
         subtitle={t("unitManagement.unitTypesSubtitle", "Manage unit types")}
@@ -871,6 +905,7 @@ const UnitTypesTable: React.FC = () => {
               </div>
             </td>
             <RowActions
+              entity="UNIT_TYPES"
               id={x.id}
               onEdit={() => openForm(x)}
               onDelete={() => setDeleting(x)}
@@ -978,6 +1013,7 @@ const FireStationsTable: React.FC = () => {
   return (
     <>
       <TableShell
+        entity="FIRE_STATIONS"
         icon={Building2}
         title={t("sidebar.fireStations", "Fire Stations")}
         subtitle={t(
@@ -1047,6 +1083,7 @@ const FireStationsTable: React.FC = () => {
               <StatusBadge active={fs.is_active ?? true} />
             </td>
             <RowActions
+              entity="FIRE_STATIONS"
               id={fs.id}
               onEdit={() => openForm(fs)}
               onDelete={() => setDeleting(fs)}

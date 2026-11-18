@@ -5,8 +5,12 @@ import GoogleBaseMap from "../maps/google/GoogleBaseMap";
 import {
   DEFAULT_PIN_COLOR,
   FOCUS_PIN_COLOR,
+  GLIDE_MS,
+  TRAIL_POINTS,
   type FocusPoint,
   bindDropTarget,
+  isUnitMarker,
+  staticMarkerKey,
   playDropAnimation,
   pinHtml,
   type IncidentMapMarker,
@@ -37,7 +41,33 @@ function ClusteredMarkers({
 }: IncidentsMapProps) {
   const map = useMap();
   const onDropRef = useRef(onDropIncident);
-  onDropRef.current = onDropIncident;
+  const onSelectRef = useRef(onSelect);
+  const markersRef = useRef(markers);
+  const staticRef = useRef<IncidentMapMarker[]>([]);
+  const selectedRef = useRef<string | null>(selectedId);
+  // Keep the latest props available to effects and event handlers. Declared
+  // first so it runs before the effects below.
+  useEffect(() => {
+    onDropRef.current = onDropIncident;
+    onSelectRef.current = onSelect;
+    markersRef.current = markers;
+    staticRef.current = markers.filter((m) => !isUnitMarker(m));
+    selectedRef.current = selectedId;
+  });
+  const staticKey = staticMarkerKey(markers);
+  // Units glide between fixes and leave a short trail.
+  const unitsRef = useRef<
+    Map<
+      string,
+      {
+        trail: google.maps.Polyline;
+        history: google.maps.LatLngLiteral[];
+        pos: google.maps.LatLngLiteral;
+        target: google.maps.LatLngLiteral;
+        raf: number;
+      }
+    >
+  >(new Map());
   const markerLib = useMapsLibrary("marker");
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const elementsRef = useRef<
@@ -56,19 +86,22 @@ function ClusteredMarkers({
       target.color || DEFAULT_PIN_COLOR,
       () => onDropRef.current?.(incidentId, target),
     );
-  const selectedRef = useRef<string | null>(selectedId);
   const prevSelectedRef = useRef<string | null>(null);
-  selectedRef.current = selectedId;
   const markerKey = `${markers.length}:${markers[0]?.id ?? ""}:${markers[markers.length - 1]?.id ?? ""}`;
 
-  // Build the clustered markers when the incident set changes.
+  // Build the clustered markers when the incident set changes (units are
+  // handled separately so their movement never rebuilds these).
   useEffect(() => {
     if (!map || !markerLib) return;
     const elements = elementsRef.current;
-    elements.clear();
+    const dropStatic = () =>
+      Array.from(elements.entries()).forEach(([id, e]) => {
+        if (!isUnitMarker(e.data)) elements.delete(id);
+      });
+    dropStatic();
     const clustered: google.maps.marker.AdvancedMarkerElement[] = [];
     const plain: google.maps.marker.AdvancedMarkerElement[] = [];
-    markers.forEach((m) => {
+    staticRef.current.forEach((m) => {
       const marker = new markerLib.AdvancedMarkerElement({
         position: { lat: m.latitude, lng: m.longitude },
         title: m.label,
@@ -78,7 +111,7 @@ function ClusteredMarkers({
           m.id === selectedRef.current,
         ),
       });
-      marker.addListener("click", () => onSelect(m.id));
+      marker.addListener("click", () => onSelectRef.current(m.id));
       if (m.kind !== "station" && m.kind !== "unit") {
         // Drag an incident pin onto a fire station / unit to assign it.
         marker.gmpDraggable = true;
@@ -117,35 +150,128 @@ function ClusteredMarkers({
     const clusterer = new MarkerClusterer({ map, markers: clustered });
     clustererRef.current = clusterer;
 
-    if (markers.length > 0) {
-      const bounds = new google.maps.LatLngBounds();
-      markers.forEach((m) =>
-        bounds.extend({ lat: m.latitude, lng: m.longitude }),
-      );
-      const fit = () => {
-        map.fitBounds(bounds, 40);
-        google.maps.event.addListenerOnce(map, "idle", () => {
-          if ((map.getZoom() ?? 0) > 14) map.setZoom(14);
-        });
-      };
-      if (map.getBounds()) fit();
-      else google.maps.event.addListenerOnce(map, "idle", fit);
-    }
-
     return () => {
       clusterer.clearMarkers();
       clusterer.setMap(null);
       plain.forEach((p) => (p.map = null));
       clustererRef.current = null;
-      elements.clear();
+      dropStatic();
     };
-    // Markers are rebuilt only when the set changes, not on every selection.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, markerLib, markerKey]);
+    // Rebuilt only when the non-unit pins change, not on selection or movement.
+  }, [map, markerLib, staticKey]);
+
+  // Fit to all pins (units included) when the set of pins changes.
+  useEffect(() => {
+    if (!map) return;
+    const list = markersRef.current;
+    if (list.length === 0) return;
+    const bounds = new google.maps.LatLngBounds();
+    list.forEach((m) => bounds.extend({ lat: m.latitude, lng: m.longitude }));
+    const fit = () => {
+      map.fitBounds(bounds, 40);
+      google.maps.event.addListenerOnce(map, "idle", () => {
+        if ((map.getZoom() ?? 0) > 14) map.setZoom(14);
+      });
+    };
+    if (map.getBounds()) fit();
+    else google.maps.event.addListenerOnce(map, "idle", fit);
+  }, [map, markerKey]);
+
+  // Add, glide and trail the unit pins.
+  useEffect(() => {
+    if (!map || !markerLib) return;
+    const elements = elementsRef.current;
+    const live = unitsRef.current;
+    const seen = new Set<string>();
+    markers.filter(isUnitMarker).forEach((m) => {
+      seen.add(m.id);
+      const to = { lat: m.latitude, lng: m.longitude };
+      const color = m.color || DEFAULT_PIN_COLOR;
+      const existing = elements.get(m.id);
+      const u = live.get(m.id);
+      if (!existing || !u) {
+        const marker = new markerLib.AdvancedMarkerElement({
+          map,
+          position: to,
+          title: m.label,
+          content: styledPin("unit", color, m.id === selectedRef.current),
+        });
+        marker.addListener("click", () => onSelectRef.current(m.id));
+        bindDropTarget(marker.content as HTMLElement, (id) =>
+          fireDrop(id, elements.get(m.id)?.data ?? m),
+        );
+        const trail = new google.maps.Polyline({
+          map,
+          path: [],
+          clickable: false,
+          strokeColor: color,
+          strokeOpacity: 0.55,
+          strokeWeight: 3,
+        });
+        elements.set(m.id, { marker, data: m });
+        live.set(m.id, { trail, history: [], pos: to, target: to, raf: 0 });
+        return;
+      }
+      existing.data = m;
+      existing.marker.title = m.label;
+      if (u.target.lat === to.lat && u.target.lng === to.lng) return;
+      cancelAnimationFrame(u.raf);
+      const from = u.pos;
+      u.target = to;
+      u.history = [...u.history, from].slice(-TRAIL_POINTS);
+      const start = performance.now();
+      const tick = (now: number) => {
+        const k = Math.min(1, (now - start) / GLIDE_MS);
+        u.pos = {
+          lat: from.lat + (to.lat - from.lat) * k,
+          lng: from.lng + (to.lng - from.lng) * k,
+        };
+        existing.marker.position = u.pos;
+        u.trail.setPath([...u.history, u.pos]);
+        if (k < 1) u.raf = requestAnimationFrame(tick);
+      };
+      u.raf = requestAnimationFrame(tick);
+    });
+    // Units that left the map.
+    Array.from(live.entries()).forEach(([id, u]) => {
+      if (seen.has(id)) return;
+      cancelAnimationFrame(u.raf);
+      u.trail.setMap(null);
+      const e = elements.get(id);
+      if (e) e.marker.map = null;
+      live.delete(id);
+      elements.delete(id);
+    });
+  }, [map, markerLib, markers]);
+
+  // Tear the units down with the map.
+  useEffect(() => {
+    const live = unitsRef.current;
+    const elements = elementsRef.current;
+    return () => {
+      live.forEach((u, id) => {
+        cancelAnimationFrame(u.raf);
+        u.trail.setMap(null);
+        const e = elements.get(id);
+        if (e) e.marker.map = null;
+        elements.delete(id);
+      });
+      live.clear();
+    };
+  }, [map, markerLib]);
 
   // Highlight the selected pin and pan to it (zooming in if it sits in a cluster).
   useEffect(() => {
     if (!map) return;
+    // Swapping a pin's content (on selection) replaces its element, so the
+    // station/unit drop binding is redone afterwards.
+    const bindTarget = (id: string) => {
+      const e = elementsRef.current.get(id);
+      if (!e || (e.data.kind !== "station" && e.data.kind !== "unit")) return;
+      bindDropTarget(e.marker.content as HTMLElement, (incidentId) =>
+        fireDrop(incidentId, elementsRef.current.get(id)?.data ?? e.data),
+      );
+    };
     const prev = prevSelectedRef.current;
     if (prev) {
       const p = elementsRef.current.get(prev);
@@ -155,6 +281,7 @@ function ClusteredMarkers({
           p.data.color || DEFAULT_PIN_COLOR,
           false,
         );
+      bindTarget(prev);
     }
     prevSelectedRef.current = selectedId;
     if (!selectedId) return;
@@ -165,6 +292,7 @@ function ClusteredMarkers({
       cur.data.color || DEFAULT_PIN_COLOR,
       true,
     );
+    bindTarget(selectedId);
     cur.marker.zIndex = 1000;
     const pos = { lat: cur.data.latitude, lng: cur.data.longitude };
     map.panTo(pos);

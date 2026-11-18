@@ -25,6 +25,17 @@ export interface FireStation {
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const dispatcherApi = {
+  /** Push-notify a fire station about an incident (incident dropped on it). */
+  pushToFireStation: async (
+    serviceId: string,
+    incidentId: string,
+  ): Promise<void> => {
+    await apiClient.post("/dispatch/fcm/push", {
+      service_id: serviceId,
+      incident_id: incidentId,
+    });
+  },
+
   /** Alert the given fire stations (map mock). */
   alertFireStations: async (
     fireStationIds: string[],
@@ -296,9 +307,10 @@ export interface Resource {
   resource_type_id: string;
   /** Home fire station. */
   service_point_id?: string | null;
-  /** The "Unit ID" on the form; unique when set. */
-  unit_code?: string | null;
+  /** The "Unique ID" on the form (e.g. DEV952250); unique when set. */
+  unique_id?: string | null;
   plate_number?: string | null;
+  chassis_number?: string | null;
   alternate_name?: string | null;
   radio_id?: string | null;
   call_code?: string | null;

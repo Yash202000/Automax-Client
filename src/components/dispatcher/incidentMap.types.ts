@@ -6,8 +6,11 @@ export interface IncidentMapMarker {
   label: string;
   /** Pin colour, usually the incident's workflow-state colour. */
   color?: string;
-  /** Pin shape: incident = circle, station = square, unit = diamond. */
-  kind?: "incident" | "station" | "unit";
+  /**
+   * Pin icon: incident = "!" pin (waiting), incident_dispatched = check pin,
+   * station = fire station, unit = fire truck.
+   */
+  kind?: "incident" | "incident_dispatched" | "station" | "unit";
 }
 
 export interface IncidentsMapProps {
@@ -31,6 +34,24 @@ export interface FocusPoint {
 }
 
 export const FOCUS_PIN_COLOR = "#7c3aed";
+
+/** Live units glide to each new position over this long (a bit under the refresh). */
+export const GLIDE_MS = 2500;
+/** Past positions kept in a unit's trail. */
+export const TRAIL_POINTS = 12;
+
+/** Units move continuously; everything else only changes with the data. */
+export const isUnitMarker = (m: { kind?: string }) => m.kind === "unit";
+
+/** Identity of the non-unit pins, so unit movement doesn't rebuild them. */
+export const staticMarkerKey = (markers: IncidentMapMarker[]) =>
+  markers
+    .filter((m) => !isUnitMarker(m))
+    .map(
+      (m) =>
+        `${m.id}|${m.latitude}|${m.longitude}|${m.color ?? ""}|${m.kind ?? ""}|${m.label}`,
+    )
+    .join(";");
 
 /** dataTransfer type carrying the id of an incident dragged from the list. */
 export const INCIDENT_DRAG_TYPE = "application/x-incident-id";
@@ -87,8 +108,12 @@ export function pinHtml(
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 32 40" style="filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))">
 <path d="M16 38.5S3 24.5 3 15.5a13 13 0 0 1 26 0c0 9-13 23-13 23z" fill="${color}" stroke="#fff" stroke-width="2"/>
 <circle cx="16" cy="15.5" r="8" fill="#fff"/>
-<rect x="14.8" y="10.5" width="2.4" height="6" rx="1.2" fill="${color}"/>
-<circle cx="16" cy="19.6" r="1.4" fill="${color}"/>
+${
+  kind === "incident_dispatched"
+    ? `<path d="M11.8 15.6l3 3 5.4-6" fill="none" stroke="${color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`
+    : `<rect x="14.8" y="10.5" width="2.4" height="6" rx="1.2" fill="${color}"/>
+<circle cx="16" cy="19.6" r="1.4" fill="${color}"/>`
+}
 </svg>`;
   }
   const size = selected ? 40 : 32;

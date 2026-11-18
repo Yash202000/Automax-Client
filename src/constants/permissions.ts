@@ -164,6 +164,20 @@ export const PERMISSIONS = {
   DISPATCHER_VIEW: "dispatcher:view",
   DASHBOARD_DISPATCHER: "dashboard:dispatcher",
 
+  // Unit management
+  UNITS_VIEW: "units:view",
+  UNITS_CREATE: "units:create",
+  UNITS_UPDATE: "units:update",
+  UNITS_DELETE: "units:delete",
+  UNIT_TYPES_VIEW: "unit-types:view",
+  UNIT_TYPES_CREATE: "unit-types:create",
+  UNIT_TYPES_UPDATE: "unit-types:update",
+  UNIT_TYPES_DELETE: "unit-types:delete",
+  FIRE_STATIONS_VIEW: "fire-stations:view",
+  FIRE_STATIONS_CREATE: "fire-stations:create",
+  FIRE_STATIONS_UPDATE: "fire-stations:update",
+  FIRE_STATIONS_DELETE: "fire-stations:delete",
+
   // KPI permissions
   KPI_VIEW: "kpi:view",
   KPI_CREATE: "kpi:create",
