@@ -5,6 +5,8 @@ export { MergeIncidentsModal } from "./MergeIncidentsModal";
 export { UnmergeIncidentsModal } from "./UnmergeIncidentsModal";
 export { BulkUnmergeModal } from "./BulkUnmergeModal";
 export { BulkTransitionModal } from "./BulkTransitionModal";
+export { ShareIncidentsReportModal } from "./ShareIncidentsReportModal";
+export { IncidentSelectionBar } from "./IncidentSelectionBar";
 export { IncidentTransitionDialog } from "./IncidentTransitionDialog";
 export type { IncidentTransitionDialogProps } from "./IncidentTransitionDialog";
 export { SMSLegends } from "./SMSLegends";

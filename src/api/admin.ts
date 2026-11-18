@@ -1819,6 +1819,19 @@ export const incidentApi = {
     return response.data;
   },
 
+  // Generates one PDF report covering the given incidents.
+  generateReport: async (
+    ids: string[],
+    signal?: AbortSignal,
+  ): Promise<Blob> => {
+    const response = await apiClient.post(
+      "/incidents/report",
+      { ids },
+      { responseType: "blob", signal },
+    );
+    return response.data;
+  },
+
   exportRevisions: async (
     incidentId: string,
     format: "xlsx" | "pdf",

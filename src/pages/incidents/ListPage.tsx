@@ -12,11 +12,13 @@ import {
   ArrowRightLeft,
   Repeat,
   Play,
+  Share2,
 } from "lucide-react";
 import { Button } from "../../components/ui";
 import {
   BulkTransitionModal,
   MergeIncidentsModal,
+  ShareIncidentsReportModal,
 } from "../../components/incidents";
 import BulkConvertToRequestModal from "../../components/incidents/BulkConvertToRequestModal";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -38,6 +40,12 @@ import { IncidentDetailsWorkspace } from "./components/IncidentDetailsWorkspace"
 import { FilterDrawer } from "./components/FilterDrawer";
 
 const PAGE_LIMIT = 10;
+
+// Same height and shape for every action in the bulk selection bar.
+const BULK_BTN =
+  "flex h-6 items-center gap-1 px-2 rounded-md bg-[hsl(var(--card))] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] text-[hsl(var(--foreground))] text-[11px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
+const BULK_BTN_PRIMARY =
+  "flex h-6 items-center gap-1 px-2 rounded-md bg-primary hover:bg-primary/90 border border-primary text-primary-foreground text-[11px] font-semibold transition-colors";
 
 /** What a custom right-hand panel gets from the feed. */
 export interface IncidentFeedContext {
@@ -103,6 +111,8 @@ export function IncidentsListPage({
   const user = useAuthStore((s) => s.user);
 
   const canCreate = isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
+  const canShareIncidents =
+    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW);
 
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
@@ -130,6 +140,7 @@ export function IncidentsListPage({
   const [showMergeModal, setShowMergeModal] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [showBulkTransitionModal, setShowBulkTransitionModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [isValidationLoading, setIsValidationLoading] = useState(false);
   const [validationResult, setValidationResult] = useState<{
     canMerge: boolean;
@@ -238,9 +249,9 @@ export function IncidentsListPage({
       const e = err as { response?: { data?: { error?: string } } };
       const errorMsg =
         e.response?.data?.error || t("incidents.merge.validationFailed");
+      // Shown as an inline warning in the selection bar, not a toast.
       // eslint-disable-next-line no-console
       console.error(errorMsg);
-      toast.error(errorMsg);
       setValidationResult({
         canMerge: false,
         errors: [errorMsg],
@@ -264,6 +275,21 @@ export function IncidentsListPage({
     isValidationLoading ||
     !validationResult?.canMerge ||
     (validationResult?.errors?.length ?? 0) > 0;
+
+  const showMergeAction = selectedIncidents.length >= 2 && canMergeIncidents;
+  const showConvertAction = canConvertToRequest && selectedIncidents.length > 1;
+  const showTransitionAction =
+    canTransitionIncident && selectedIncidents.length > 1;
+  const mergeErrors = validationResult?.errors ?? [];
+  const bulkWarning =
+    !(showMergeAction || showConvertAction || showTransitionAction) ||
+    isValidationLoading
+      ? null
+      : !canBulkTransition
+        ? t("incidents.bulkActionsWarning")
+        : showMergeAction && mergeErrors.length > 0
+          ? mergeErrors[0]
+          : null;
 
   const handleMergeSuccess = () => {
     clearBulkSelection();
@@ -290,6 +316,23 @@ export function IncidentsListPage({
     refetch,
     isShortSearch,
   } = useIncidentsList({ page, limit: PAGE_LIMIT, search, filters: applied });
+
+  // Select all on the current page. Merged child incidents can't be selected,
+  // and selections made on other pages are kept.
+  const selectableOnPage = incidents.filter((i) => !i.master_incident_id);
+  const allPageSelected =
+    selectableOnPage.length > 0 && selectableOnPage.every(isBulkSelected);
+  const somePageSelected =
+    !allPageSelected && selectableOnPage.some(isBulkSelected);
+  const toggleSelectAllOnPage = () =>
+    setSelectedIncidents((prev) =>
+      allPageSelected
+        ? prev.filter((p) => !selectableOnPage.some((i) => i.id === p.id))
+        : [
+            ...prev,
+            ...selectableOnPage.filter((i) => !prev.some((p) => p.id === i.id)),
+          ],
+    );
 
   // Live viewer-count / list updates (shared singleton, import-only reuse).
   useIncidentListWebSocket();
@@ -563,57 +606,109 @@ export function IncidentsListPage({
 
           {/* bulk selection bar — same gates and modals as the old list */}
           {selectedIncidents.length > 0 ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.4)] flex-wrap shrink-0">
-              <span className="text-[11px] font-medium text-[hsl(var(--muted-foreground))]">
-                {selectedIncidents.length} {t("common.selected")}
-              </span>
-              <button
-                type="button"
-                onClick={clearBulkSelection}
-                className="text-[11px] text-primary hover:text-primary font-medium"
-              >
-                {t("common.clear")}
-              </button>
-              {selectedIncidents.length >= 2 && canMergeIncidents ? (
-                <button
-                  type="button"
-                  onClick={() => setShowMergeModal(true)}
-                  disabled={isMergeDisabled}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] font-semibold transition-colors disabled:opacity-40"
+            <div className="shrink-0 border-b border-[hsl(var(--border))] bg-[hsl(var(--primary)/0.05)]">
+              <div className="flex flex-col gap-1.5 px-2.5 py-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground tabular-nums">
+                    {selectedIncidents.length}
+                  </span>
+                  <span className="text-[11px] font-medium text-[hsl(var(--foreground))]">
+                    {t("common.selected")}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={clearBulkSelection}
+                    className="ms-auto text-[11px] text-primary hover:underline font-medium"
+                  >
+                    {t("common.clear")}
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {canShareIncidents ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowShareModal(true)}
+                      className={BULK_BTN_PRIMARY}
+                    >
+                      <Share2 className="h-3 w-3" />
+                      {t("incidents.sharePdf")}
+                    </button>
+                  ) : null}
+                  {showMergeAction ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowMergeModal(true)}
+                      disabled={isMergeDisabled}
+                      className={BULK_BTN}
+                    >
+                      {isValidationLoading ? (
+                        <span className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-current border-r-transparent" />
+                      ) : (
+                        <ArrowRightLeft className="h-3 w-3" />
+                      )}
+                      {t("incidents.merge.title")}
+                    </button>
+                  ) : null}
+                  {showConvertAction ? (
+                    <button
+                      type="button"
+                      disabled={!allSameState}
+                      onClick={() => setShowConvertModal(true)}
+                      className={BULK_BTN}
+                    >
+                      <Repeat className="h-3 w-3" />
+                      {t("incidents.convertToRequest")}
+                    </button>
+                  ) : null}
+                  {showTransitionAction ? (
+                    <button
+                      type="button"
+                      disabled={!canBulkTransition}
+                      onClick={() => setShowBulkTransitionModal(true)}
+                      title={
+                        !canBulkTransition
+                          ? t("incidents.bulkTransitionDisabled")
+                          : undefined
+                      }
+                      className={BULK_BTN}
+                    >
+                      <Play className="h-3 w-3" />
+                      {t("incidents.bulkTransition")}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              {bulkWarning ? (
+                <div
+                  role="status"
+                  title={mergeErrors.join("\n") || undefined}
+                  className="flex items-center gap-1.5 border-t border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300"
                 >
-                  <ArrowRightLeft className="h-3 w-3" />
-                  {t("incidents.merge.title")}
-                </button>
-              ) : null}
-              {canConvertToRequest &&
-              selectedIncidents.length > 1 &&
-              allSameState ? (
-                <button
-                  type="button"
-                  onClick={() => setShowConvertModal(true)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] text-[hsl(var(--foreground))] text-[11px] font-medium transition-colors"
-                >
-                  <Repeat className="h-3 w-3" />
-                  {t("incidents.convertToRequest")}
-                </button>
-              ) : null}
-              {canTransitionIncident && selectedIncidents.length > 1 ? (
-                <button
-                  type="button"
-                  disabled={!canBulkTransition}
-                  onClick={() => setShowBulkTransitionModal(true)}
-                  title={
-                    !canBulkTransition
-                      ? t("incidents.bulkTransitionDisabled")
-                      : undefined
-                  }
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] text-[hsl(var(--foreground))] text-[11px] font-medium transition-colors disabled:opacity-40"
-                >
-                  <Play className="h-3 w-3" />
-                  {t("incidents.bulkTransition")}
-                </button>
+                  <TriangleAlert className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span className="truncate">{bulkWarning}</span>
+                </div>
               ) : null}
             </div>
+          ) : null}
+
+          {/* select all on this page */}
+          {!isLoading && !isError && !isShortSearch && incidents.length > 0 ? (
+            <label className="flex shrink-0 cursor-pointer select-none items-center gap-2 border-b border-[hsl(var(--border))] px-3.5 py-1.5 text-[11px] font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
+              <input
+                type="checkbox"
+                checked={allPageSelected}
+                ref={(el) => {
+                  if (el) el.indeterminate = somePageSelected;
+                }}
+                disabled={selectableOnPage.length === 0}
+                onChange={toggleSelectAllOnPage}
+                className="h-3.5 w-3.5 shrink-0 rounded border-[hsl(var(--border))] bg-[hsl(var(--muted))] text-primary accent-primary cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+              />
+              {t("common.selectAll")}
+              <span className="ms-auto tabular-nums">
+                {selectableOnPage.length}
+              </span>
+            </label>
           ) : null}
 
           {/* cards — inner scroll from md up, natural flow when stacked */}
@@ -758,6 +853,11 @@ export function IncidentsListPage({
           clearBulkSelection();
           void refetch();
         }}
+      />
+      <ShareIncidentsReportModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        incidents={selectedIncidents}
       />
       <BulkConvertToRequestModal
         incidents={selectedIncidents as IncidentDetail[]}
