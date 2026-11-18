@@ -158,6 +158,7 @@ export function IncidentCreatePage() {
     caller_identity_text: "",
     cooperation_status: "",
     alternate_mobile: "",
+    call_uuid: "",
   });
 
   const [comment, setComment] = useState("");
@@ -789,6 +790,7 @@ export function IncidentCreatePage() {
         caller_identity_text: "",
         cooperation_status: "",
         alternate_mobile: "",
+        call_uuid: "",
       });
       setLookupValues({});
       setAttachments([]);
@@ -810,6 +812,8 @@ export function IncidentCreatePage() {
       reporter_phone: p.reporter_phone || prev.reporter_phone,
       reporter_name: p.reporter_name || prev.reporter_name,
       source: p.source || prev.source,
+      // Keep the CTI call id so the backend links the call to this incident.
+      call_uuid: p.call_uuid || prev.call_uuid,
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1597,6 +1601,7 @@ export function IncidentCreatePage() {
     if (submitData.location_id === "") submitData.location_id = undefined;
     if (submitData.classification_id === "")
       submitData.classification_id = undefined;
+    if (!submitData.call_uuid) submitData.call_uuid = undefined;
 
     // Separate lookup values by field type
     const selectLookupIds: string[] = [];

@@ -12,8 +12,10 @@ import {
   PhoneOutgoing,
   PhoneIncoming,
   Headphones,
+  ShieldCheck,
 } from "lucide-react";
-import { callLogApi, userApi } from "../../../api/admin";
+import { useNavigate } from "react-router-dom";
+import { callLogApi, callRecordingApi, userApi } from "../../../api/admin";
 import { AudioPlayer } from "../../../components/common/AudioPlayer";
 import { cn } from "@/lib/utils";
 import CallablePhone from "../../../components/common/CallablePhone";
@@ -73,6 +75,9 @@ export const CallHistory: React.FC<CallHistoryProps> = ({ userId }) => {
   const limit = 20;
 
   const viewAllCallLogs = hasPermission(PERMISSIONS.VIEW_ALL_CALL_LOGS);
+  const canViewRecordingHistory = hasPermission(
+    PERMISSIONS.CALL_RECORDING_HISTORY,
+  );
 
   const { data, isLoading, refetch, isFetching, error } = useQuery({
     queryKey: ["call-logs", page, limit, userId, selectedUser],
@@ -306,6 +311,7 @@ export const CallHistory: React.FC<CallHistoryProps> = ({ userId }) => {
                   formatDuration={formatDuration}
                   selectedAgentId={selectedAgentId}
                   isAllView={isAllView}
+                  canViewRecordingHistory={canViewRecordingHistory}
                   t={t}
                 />
               ))}
@@ -354,6 +360,7 @@ const CallHistoryItem: React.FC<{
   formatDuration: (seconds?: number) => string;
   selectedAgentId?: string;
   isAllView?: boolean;
+  canViewRecordingHistory?: boolean;
   t: any;
 }> = ({
   call,
@@ -363,8 +370,10 @@ const CallHistoryItem: React.FC<{
   formatDuration,
   selectedAgentId,
   isAllView,
+  canViewRecordingHistory,
   t,
 }) => {
+  const navigate = useNavigate();
   const [showRecording, setShowRecording] = useState(false);
   const isFailed =
     call.status === "missed" ||
@@ -476,7 +485,21 @@ const CallHistoryItem: React.FC<{
           </p>
         </div>
         <div className="flex items-center gap-2 ml-4">
-          {call.recording_url && (
+          {call.has_recording && canViewRecordingHistory && (
+            <button
+              onClick={() => {
+                const params = new URLSearchParams({ call_log_id: call.id });
+                if (call.call_uuid) params.set("call_uuid", call.call_uuid);
+                navigate(`/call-centre/recording-history?${params.toString()}`);
+              }}
+              className="p-2 rounded-xl transition-colors inline-flex items-center gap-2 text-slate-400 hover:bg-primary/10 hover:text-primary"
+              title={t("callCentre.recordingHistory.viewHistory")}
+              aria-label={t("callCentre.recordingHistory.viewHistory")}
+            >
+              <ShieldCheck className="w-4 h-4" />
+            </button>
+          )}
+          {call.has_recording && (
             <button
               onClick={() => setShowRecording(!showRecording)}
               className={cn(
@@ -522,10 +545,12 @@ const CallHistoryItem: React.FC<{
           )}
         </div>
       </div>
-      {showRecording && call.recording_url && (
+      {showRecording && call.has_recording && (
         <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
           <AudioPlayer
-            src={call.recording_url}
+            getSrc={(activity) =>
+              callRecordingApi.requestAccess(call.id, activity)
+            }
             fileName={`recording-${call.id}.mp3`}
           />
         </div>
