@@ -4685,7 +4685,7 @@
       "downloadTemplate": "Download Template",
       "templateDownloadFailed": "Failed to download the import template.",
       "title": "KPI Dictionary Bulk Import",
-      "subtitle": "Upload the KPI Dictionary workbook to load master data, KPI definitions, annual targets and historical quarterly performance.",
+      "subtitle": "Upload the KPI workbook to load all master data, KPI definitions, metrics, annual targets and historical performance (monthly, quarterly, half-yearly or annual).",
       "backToDictionary": "Back to Dictionary",
       "dropHint": "Click or drop the KPI Dictionary workbook here",
       "formatHint": "Excel workbook (.xlsx / .xlsm) in the approved KPI Dictionary template",
@@ -4754,19 +4754,24 @@
       },
       "categories": {
         "department": "Departments",
+        "organization": "Organizations",
         "pillar": "Pillars",
         "enabler": "Enablers",
         "strategic_goal": "Strategic goals",
-        "operational_objective": "Operational objectives",
-        "process": "Processes",
+        "operational_objective": "Parent objectives",
+        "process": "Operational objectives",
         "domain": "Domains",
         "award_criterion": "Award criteria",
         "award_sub_criterion": "Award sub-criteria",
+        "award_kpi_measure": "Award KPIs and measures",
+        "data_source": "Data sources",
+        "segmentation_dimension": "Segmentation dimensions",
         "initiative": "Initiatives",
         "kpi": "KPIs",
         "metric": "KPI metrics",
+        "target": "Targets (all types)",
         "annual_target": "Annual targets",
-        "performance": "Quarterly performance"
+        "performance": "Performance"
       }
     },
     "metricsImport": {
