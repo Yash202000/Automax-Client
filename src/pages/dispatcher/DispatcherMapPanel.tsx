@@ -67,6 +67,7 @@ export function DispatcherMapPanel({
   selectedId,
   onSelect,
   onDropIncident,
+  onAlertIncident,
 }: {
   incidents: DummyIncident[];
   selectedId: string | null;
@@ -74,6 +75,9 @@ export function DispatcherMapPanel({
   onSelect: (id: string) => void;
   // eslint-disable-next-line no-unused-vars
   onDropIncident: (incidentId: string, target: IncidentMapMarker) => void;
+  /** The responders panel's Alert button (defaults to the drop handler). */
+  // eslint-disable-next-line no-unused-vars
+  onAlertIncident?: (incidentId: string, target: IncidentMapMarker) => void;
 }) {
   const { t, i18n } = useTranslation();
   const [layer, setLayer] = useState<Layer>("all");
@@ -574,7 +578,7 @@ export function DispatcherMapPanel({
             key={selectedIncident.id}
             incident={selectedIncident}
             onRoute={setRoutePath}
-            onAlert={onDropIncident}
+            onAlert={onAlertIncident ?? onDropIncident}
           />
         ) : null}
         <StationDropDock incidents={incidents} onDrop={onDropIncident} />

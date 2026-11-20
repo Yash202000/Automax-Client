@@ -22,6 +22,17 @@ export interface FireStation {
 }
 
 export const dispatcherApi = {
+  /** Push-notify a fire station about an incident (incident dropped on it). */
+  pushToFireStation: async (
+    serviceId: string,
+    incidentId: string,
+  ): Promise<void> => {
+    await apiClient.post("/dispatch/fcm/push", {
+      service_id: serviceId,
+      incident_id: incidentId,
+    });
+  },
+
   /** Alert the selected fire stations (service points). */
   alertFireStations: async (servicePointIds: string[]): Promise<void> => {
     await apiClient.post("/dispatch/fire-station-alerts", {

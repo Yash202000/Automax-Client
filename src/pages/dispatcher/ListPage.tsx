@@ -210,13 +210,25 @@ export function DispatcherListPage() {
   // Only incidents with coordinates can be plotted on the map.
   const mappable = useMemo(() => incidents.filter(hasCoordinates), [incidents]);
 
-  // Alerting a fire station (drop on its pin, or the responders panel).
+  // Dropping an incident on a fire station pushes it to that station
+  // (POST /dispatch/fcm/push, with the incident). The responders panel's Alert
+  // button uses POST /dispatch/fire-station-alerts instead.
   const pushMutation = useMutation({
-    mutationFn: (v: { serviceId: string; incidentId: string }) =>
-      dispatcherApi.alertFireStations([v.serviceId]),
+    mutationFn: (v: {
+      serviceId: string;
+      incidentId: string;
+      via: "drop" | "alert";
+    }) =>
+      v.via === "drop"
+        ? dispatcherApi.pushToFireStation(v.serviceId, v.incidentId)
+        : dispatcherApi.alertFireStations([v.serviceId]),
   });
 
-  const assign = (incidentId: string, target: IncidentMapMarker) => {
+  const assign = (
+    incidentId: string,
+    target: IncidentMapMarker,
+    via: "drop" | "alert" = "drop",
+  ) => {
     // Only fire stations can be alerted; units have no assignment endpoint.
     if (target.kind !== "station") return;
     const inc = allIncidents.find((x) => x.id === incidentId);
@@ -248,7 +260,7 @@ export function DispatcherListPage() {
       );
     };
     pushMutation.mutate(
-      { serviceId: target.id, incidentId },
+      { serviceId: target.id, incidentId, via },
       {
         onSuccess: apply,
         onError: (error) => {
@@ -504,6 +516,9 @@ export function DispatcherListPage() {
             selectedId={id ?? null}
             onSelect={select}
             onDropIncident={assign}
+            onAlertIncident={(incidentId, target) =>
+              assign(incidentId, target, "alert")
+            }
           />
         </main>
       </div>
