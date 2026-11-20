@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
   ArrowRight,
@@ -21,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
 import { Modal, ModalBody, ModalFooter } from "../../components/ui/Modal";
 import { incidentApi } from "../../api/admin";
-import type { User as UserType } from "../../types";
+import type { AvailableTransition, User as UserType } from "../../types";
 import { useFireStations } from "./useDispatchData";
 import { AssociateFireStationsModal } from "./AssociateFireStationsModal";
 import { STATUS_COLORS, type DummyIncident } from "./dummyIncidents";
@@ -90,7 +91,48 @@ export function IncidentDetailModal({
     queryKey: ["incidents", "dispatcher", "history", incident.id],
     queryFn: () => incidentApi.getHistory(incident.id),
   });
+  const queryClient = useQueryClient();
+  const { data: transitionsRes, isLoading: transitionsLoading } = useQuery({
+    queryKey: ["incidents", "dispatcher", "transitions", incident.id],
+    queryFn: () => incidentApi.getAvailableTransitions(incident.id),
+  });
+  const transitions = transitionsRes?.data ?? [];
+  const [selected, setSelected] = useState<AvailableTransition | null>(null);
+  const [comment, setComment] = useState("");
   const full = detailRes?.data;
+  const unsupportedReqs = (selected?.requirements ?? []).filter(
+    (r) =>
+      r.is_mandatory &&
+      (r.requirement_type === "attachment" ||
+        r.requirement_type === "feedback" ||
+        r.requirement_type === "rating" ||
+        r.requirement_type === "field_value"),
+  );
+  const commentRequired = (selected?.requirements ?? []).some(
+    (r) => r.requirement_type === "comment" && r.is_mandatory,
+  );
+  const transitionMutation = useMutation({
+    mutationFn: () =>
+      incidentApi.transition(incident.id, {
+        transition_id: selected!.transition.id,
+        comment: comment.trim() || undefined,
+        version: full?.version ?? 0,
+      }),
+    onSuccess: () => {
+      toast.success(t("incidents.transitionSuccess", "Transition completed"));
+      setSelected(null);
+      setComment("");
+      queryClient.invalidateQueries({ queryKey: ["incidents"] });
+    },
+    onError: (e: {
+      response?: { data?: { error?: { message?: string }; message?: string } };
+    }) =>
+      toast.error(
+        e?.response?.data?.error?.message ||
+          e?.response?.data?.message ||
+          t("incidents.transitionFailed", "Transition failed"),
+      ),
+  });
   const history = [...(historyRes?.data ?? [])].sort(
     (a, b) =>
       new Date(b.transitioned_at).getTime() -
@@ -162,7 +204,7 @@ export function IncidentDetailModal({
       isOpen
       onClose={onClose}
       size="full"
-      className="max-w-5xl max-h-[92vh] flex flex-col overflow-hidden"
+      className="max-w-5xl h-[92vh] flex flex-col overflow-hidden"
     >
       <ModalBody className="flex-1 overflow-y-auto p-4 space-y-3">
         {/* header */}
@@ -554,10 +596,83 @@ export function IncidentDetailModal({
           )
         ) : null}
       </ModalBody>
-      <ModalFooter className="flex justify-end">
-        <Button variant="outline" onClick={onClose}>
-          {t("common.close", "Close")}
-        </Button>
+      <ModalFooter className="flex flex-col gap-2 items-stretch">
+        {selected ? (
+          <div className="space-y-2 rounded-lg border border-[hsl(var(--border))] p-2">
+            <div className="text-xs font-semibold">
+              {selected.transition.name}
+              {commentRequired ? " *" : ""}
+            </div>
+            {unsupportedReqs.length > 0 ? (
+              <p className="text-xs text-rose-600">
+                {t(
+                  "dispatcher.transitionNeedsFullPage",
+                  "This transition requires extra input (attachment, feedback or fields). Please perform it from the incident management page.",
+                )}
+              </p>
+            ) : null}
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={2}
+              placeholder={t("incidents.comment", "Comment")}
+              className="w-full rounded-md border border-[hsl(var(--border))] bg-transparent p-2 text-xs"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSelected(null);
+                  setComment("");
+                }}
+              >
+                {t("common.cancel", "Cancel")}
+              </Button>
+              <Button
+                disabled={
+                  transitionMutation.isPending ||
+                  unsupportedReqs.length > 0 ||
+                  (commentRequired && !comment.trim())
+                }
+                onClick={() => transitionMutation.mutate()}
+              >
+                {t("common.confirm", "Confirm")}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {transitionsLoading ? (
+              <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                {t("common.loading", "Loading...")}
+              </span>
+            ) : (
+              transitions.map((tr) => (
+                <Button
+                  key={tr.transition.id}
+                  size="sm"
+                  variant={
+                    tr.transition.is_rejection ? "destructive" : "default"
+                  }
+                  disabled={!tr.can_execute}
+                  title={tr.reason}
+                  onClick={() => {
+                    setSelected(tr);
+                    setComment("");
+                  }}
+                >
+                  {i18n.language === "ar" && tr.transition.name_ar
+                    ? tr.transition.name_ar
+                    : tr.transition.name}
+                </Button>
+              ))
+            )}
+          </div>
+          <Button variant="outline" onClick={onClose}>
+            {t("common.close", "Close")}
+          </Button>
+        </div>
       </ModalFooter>
       {associateOpen ? (
         <AssociateFireStationsModal

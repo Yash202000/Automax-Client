@@ -50,7 +50,12 @@ export function AssociateFireStationsModal({
     );
 
   return (
-    <Modal isOpen onClose={onClose} size="lg">
+    <Modal
+      isOpen
+      onClose={onClose}
+      size="lg"
+      className="h-[80vh] flex flex-col overflow-hidden"
+    >
       <ModalHeader className="flex items-center gap-3 py-3.5 px-6 border-b border-[hsl(var(--border))]">
         <div className="p-2 rounded-lg bg-red-500/10 text-red-600">
           <Flame className="w-5 h-5" />
@@ -62,7 +67,7 @@ export function AssociateFireStationsModal({
           )}
         </ModalTitle>
       </ModalHeader>
-      <ModalBody className="p-0">
+      <ModalBody className="flex min-h-0 flex-col p-0">
         <div className="relative border-b border-[hsl(var(--border))] p-3">
           <Search className="pointer-events-none absolute start-5 top-5 h-4 w-4 text-[hsl(var(--muted-foreground))]" />
           <input
@@ -72,7 +77,7 @@ export function AssociateFireStationsModal({
             className="h-9 w-full rounded-md border border-[hsl(var(--border))] bg-transparent ps-8 pe-2 text-sm outline-none"
           />
         </div>
-        <ul className="max-h-[50vh] divide-y divide-[hsl(var(--border))] overflow-y-auto">
+        <ul className="min-h-0 flex-1 divide-y divide-[hsl(var(--border))] overflow-y-auto">
           {available.length === 0 ? (
             <li className="p-6 text-center text-sm text-[hsl(var(--muted-foreground))]">
               {isLoading

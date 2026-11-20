@@ -1,3 +1,4 @@
+import { isAxiosError } from "axios";
 import { useCallback, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -66,8 +67,11 @@ export function FireStationAlertModal({
       );
       onProceed();
     },
-    onError: () =>
-      toast.error(t("dispatcher.alertFailed", "Failed to alert fire stations")),
+    onError: (error) =>
+      toast.error(
+        (isAxiosError(error) && error.response?.data?.message) ||
+          t("dispatcher.alertFailed", "Failed to alert fire stations"),
+      ),
   });
 
   const toggle = useCallback(
@@ -88,7 +92,7 @@ export function FireStationAlertModal({
       isOpen={isOpen}
       onClose={busy ? () => undefined : onClose}
       size="full"
-      className="max-h-[92vh] max-w-6xl flex flex-col overflow-hidden"
+      className="h-[92vh] max-w-6xl flex flex-col overflow-hidden"
     >
       <ModalHeader className="flex items-center gap-3 py-3.5 px-6 border-b border-[hsl(var(--border))]">
         <div className="p-2 rounded-lg bg-red-500/10 text-red-600">

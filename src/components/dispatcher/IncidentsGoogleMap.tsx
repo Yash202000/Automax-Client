@@ -5,6 +5,7 @@ import GoogleBaseMap from "../maps/google/GoogleBaseMap";
 import {
   DEFAULT_PIN_COLOR,
   FOCUS_PIN_COLOR,
+  ROUTE_COLOR,
   GLIDE_MS,
   TRAIL_POINTS,
   type FocusPoint,
@@ -326,6 +327,39 @@ function FocusPin({ point }: { point?: FocusPoint | null }) {
   return null;
 }
 
+/** Draws a road route and fits the map to it. */
+function RouteLine({ path }: { path?: IncidentsMapProps["routePath"] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!map || !path || path.length < 2) return;
+    const latLngs = path.map((p) => ({ lat: p.latitude, lng: p.longitude }));
+    const casing = new google.maps.Polyline({
+      map,
+      path: latLngs,
+      strokeColor: "#ffffff",
+      strokeOpacity: 1,
+      strokeWeight: 9,
+      zIndex: 10,
+    });
+    const line = new google.maps.Polyline({
+      map,
+      path: latLngs,
+      strokeColor: ROUTE_COLOR,
+      strokeOpacity: 1,
+      strokeWeight: 5,
+      zIndex: 11,
+    });
+    const bounds = new google.maps.LatLngBounds();
+    latLngs.forEach((p) => bounds.extend(p));
+    map.fitBounds(bounds, 60);
+    return () => {
+      casing.setMap(null);
+      line.setMap(null);
+    };
+  }, [map, path]);
+  return null;
+}
+
 /** Native Google Maps version of the incidents map, clustered. */
 export default function IncidentsGoogleMap(props: IncidentsMapProps) {
   return (
@@ -336,6 +370,7 @@ export default function IncidentsGoogleMap(props: IncidentsMapProps) {
     >
       <ClusteredMarkers {...props} />
       <FocusPin point={props.focusPoint} />
+      <RouteLine path={props.routePath} />
     </GoogleBaseMap>
   );
 }

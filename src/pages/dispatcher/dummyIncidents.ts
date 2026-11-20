@@ -16,6 +16,9 @@ export interface DummyIncident {
   location: string;
   reportedAt: string;
   status: DispatchStatus;
+  /** Workflow state name/colour from the incident API (when available). */
+  stateName?: string;
+  stateColor?: string;
   latitude: number;
   longitude: number;
   description: string;

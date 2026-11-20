@@ -23,7 +23,11 @@ export interface IncidentsMapProps {
   onDropIncident?: (incidentId: string, target: IncidentMapMarker) => void;
   /** Searched location: the map flies there and shows a temporary pin. */
   focusPoint?: FocusPoint | null;
+  /** Road route to draw (e.g. incident to the chosen responder); the map fits it. */
+  routePath?: { latitude: number; longitude: number }[] | null;
 }
+
+export const ROUTE_COLOR = "#2563eb";
 
 export interface FocusPoint {
   latitude: number;

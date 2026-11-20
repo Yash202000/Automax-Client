@@ -11,6 +11,7 @@ import {
   DEFAULT_PIN_COLOR,
   FOCUS_PIN_COLOR,
   GLIDE_MS,
+  ROUTE_COLOR,
   TRAIL_POINTS,
   bindDropTarget,
   isUnitMarker,
@@ -45,6 +46,7 @@ export default function IncidentsLeafletMap({
   onSelect,
   onDropIncident,
   focusPoint,
+  routePath,
 }: IncidentsMapProps) {
   const focusMarkerRef = useRef<L.Marker | null>(null);
   const onDropRef = useRef(onDropIncident);
@@ -349,6 +351,23 @@ export default function IncidentsLeafletMap({
       duration: 1,
     });
   }, [focusPoint]);
+
+  // Draw a road route and fit the map to it.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !routePath || routePath.length < 2) return;
+    const latLngs = routePath.map(
+      (p) => [p.latitude, p.longitude] as [number, number],
+    );
+    const group = L.layerGroup([
+      L.polyline(latLngs, { color: "#ffffff", weight: 9, opacity: 1 }),
+      L.polyline(latLngs, { color: ROUTE_COLOR, weight: 5, opacity: 1 }),
+    ]).addTo(map);
+    map.fitBounds(L.latLngBounds(latLngs), { padding: [50, 50] });
+    return () => {
+      group.remove();
+    };
+  }, [routePath]);
 
   return (
     <div className="relative h-full w-full">

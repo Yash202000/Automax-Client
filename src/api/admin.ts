@@ -1409,7 +1409,9 @@ function buildIncidentSearchBody(
     body.cooperation_status = filter.cooperation_status;
   if (filter.momra_ref) body.momra_ref = filter.momra_ref;
   if (filter.current_state_code)
-    body.current_state_code = [filter.current_state_code];
+    body.current_state_code = Array.isArray(filter.current_state_code)
+      ? filter.current_state_code
+      : [filter.current_state_code];
   if (filter.radius) body.radius = filter.radius;
   return body;
 }
