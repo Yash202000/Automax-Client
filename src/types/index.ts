@@ -1602,7 +1602,7 @@ export interface IncidentFilter {
   reporter_phone_search?: string;
   cooperation_status?: "cooperative" | "uncooperative";
   momra_ref?: string;
-  current_state_code?: string;
+  current_state_code?: string | string[];
   radius?: number;
 }
 

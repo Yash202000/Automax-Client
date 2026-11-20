@@ -11,6 +11,7 @@ import {
   DEFAULT_PIN_COLOR,
   FOCUS_PIN_COLOR,
   GLIDE_MS,
+  ROUTE_COLOR,
   TRAIL_POINTS,
   bindDropTarget,
   isUnitMarker,
@@ -45,6 +46,7 @@ export default function IncidentsLeafletMap({
   onSelect,
   onDropIncident,
   focusPoint,
+  routePath,
 }: IncidentsMapProps) {
   const focusMarkerRef = useRef<L.Marker | null>(null);
   const onDropRef = useRef(onDropIncident);
@@ -91,12 +93,12 @@ export default function IncidentsLeafletMap({
     );
   });
   const dataRefs = useRef<Map<string, IncidentMapMarker>>(new Map());
-  // Station/unit pins accept dropped incidents. Swapping a pin's icon (on
+  // Station pins accept dropped incidents. Swapping a pin's icon (on
   // selection) replaces its element, so the binding is redone afterwards.
   const bindTarget = useRef((id: string) => {
     const d = dataRefs.current.get(id);
     const el = markerRefs.current.get(id)?.getElement();
-    if (!d || !el || (d.kind !== "station" && d.kind !== "unit")) return;
+    if (!d || !el || d.kind !== "station") return;
     bindDropTarget(el, (incidentId) =>
       fireDrop.current(incidentId, dataRefs.current.get(id) ?? d),
     );
@@ -180,7 +182,7 @@ export default function IncidentsLeafletMap({
         let hit: IncidentMapMarker | null = null;
         let best = 28; // px
         for (const [id, d] of Array.from(dataRefs.current.entries())) {
-          if (d.kind !== "station" && d.kind !== "unit") continue;
+          if (d.kind !== "station") continue;
           const mk = markerRefs.current.get(id);
           if (!mk) continue;
           const dist = p.distanceTo(map.latLngToContainerPoint(mk.getLatLng()));
@@ -349,6 +351,23 @@ export default function IncidentsLeafletMap({
       duration: 1,
     });
   }, [focusPoint]);
+
+  // Draw a road route and fit the map to it.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !routePath || routePath.length < 2) return;
+    const latLngs = routePath.map(
+      (p) => [p.latitude, p.longitude] as [number, number],
+    );
+    const group = L.layerGroup([
+      L.polyline(latLngs, { color: "#ffffff", weight: 9, opacity: 1 }),
+      L.polyline(latLngs, { color: ROUTE_COLOR, weight: 5, opacity: 1 }),
+    ]).addTo(map);
+    map.fitBounds(L.latLngBounds(latLngs), { padding: [50, 50] });
+    return () => {
+      group.remove();
+    };
+  }, [routePath]);
 
   return (
     <div className="relative h-full w-full">

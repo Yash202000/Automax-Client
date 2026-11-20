@@ -12,8 +12,10 @@ import {
   searchGooglePlaces,
   type PlaceSuggestion,
 } from "../../utils/googleGeo";
+import { hasCoordinates } from "./incidentAdapter";
 import { STATUS_COLORS, type DummyIncident } from "./dummyIncidents";
 import { useFireStations, useMapUnits } from "./useDispatchData";
+import { NearestRespondersPanel } from "./NearestRespondersPanel";
 import { MapEntityCard, type MapEntity } from "./MapEntityCard";
 
 type Layer = "all" | "stations" | "units";
@@ -175,6 +177,12 @@ export function DispatcherMapPanel({
     mode === "live" ? LIVE_REFRESH_MS : undefined,
   );
   const [entity, setEntity] = useState<MapEntity | null>(null);
+  const [routePath, setRoutePath] = useState<
+    { latitude: number; longitude: number }[] | null
+  >(null);
+  const selectedIncident = selectedId
+    ? incidents.find((i) => i.id === selectedId)
+    : undefined;
 
   const markers = useMemo<IncidentMapMarker[]>(() => {
     const out: IncidentMapMarker[] = [];
@@ -436,7 +444,18 @@ export function DispatcherMapPanel({
           onSelect={handleSelect}
           onDropIncident={onDropIncident}
           focusPoint={focus}
+          routePath={routePath}
         />
+        {mode !== "live" &&
+        selectedIncident &&
+        hasCoordinates(selectedIncident) ? (
+          <NearestRespondersPanel
+            key={selectedIncident.id}
+            incident={selectedIncident}
+            onRoute={setRoutePath}
+            onAlert={onDropIncident}
+          />
+        ) : null}
         {entity ? (
           <MapEntityCard
             entity={entity}

@@ -6,8 +6,7 @@
  * the payload in `data`; list responses add `page`, `limit`, `total_items`
  * and `total_pages` next to it.
  *
- * `FireStation` is the dispatcher map's view of a service point, and
- * `dispatcherApi.alertFireStations` is still a mock (no alert endpoint yet).
+ * `FireStation` is the dispatcher map's view of a service point.
  */
 import { apiClient } from "./client";
 
@@ -22,26 +21,13 @@ export interface FireStation {
   longitude: number;
 }
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export const dispatcherApi = {
-  /** Push-notify a fire station about an incident (incident dropped on it). */
-  pushToFireStation: async (
-    serviceId: string,
-    incidentId: string,
-  ): Promise<void> => {
-    await apiClient.post("/dispatch/fcm/push", {
-      service_id: serviceId,
-      incident_id: incidentId,
+  /** Alert the selected fire stations (service points). */
+  alertFireStations: async (servicePointIds: string[]): Promise<void> => {
+    await apiClient.post("/dispatch/fire-station-alerts", {
+      service_point_ids: servicePointIds,
+      all: false,
     });
-  },
-
-  /** Alert the given fire stations (map mock). */
-  alertFireStations: async (
-    fireStationIds: string[],
-  ): Promise<{ success: boolean; alerted: string[] }> => {
-    await delay(600);
-    return { success: true, alerted: fireStationIds };
   },
 };
 

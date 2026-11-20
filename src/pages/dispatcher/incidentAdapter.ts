@@ -4,6 +4,13 @@ import type { DispatchStatus, DummyIncident } from "./dummyIncidents";
 /** Workflow state codes the dispatcher tabs are built on. */
 export const WAITING_STATE_CODE = "waiting_for_dispatch";
 export const DISPATCHED_STATE_CODE = "dispatched";
+/** Every workflow state listed under the "Dispatched" tab. */
+export const DISPATCHED_TAB_STATE_CODES = [
+  DISPATCHED_STATE_CODE,
+  "en_route",
+  "reached",
+  "completed",
+];
 
 const PRIORITY_NAMES = ["Low", "Medium", "High", "Critical"];
 
@@ -27,7 +34,11 @@ export function toDispatchIncident(inc: Incident): DummyIncident {
     : "";
 
   let status: DispatchStatus = "waiting";
-  if (inc.current_state?.code === DISPATCHED_STATE_CODE) {
+  if (
+    inc.current_state?.code === DISPATCHED_STATE_CODE ||
+    inc.current_state?.code === "en_route" ||
+    inc.current_state?.code === "reached"
+  ) {
     status = "dispatched";
   } else if (inc.current_state?.code === WAITING_STATE_CODE) {
     status = "waiting";
@@ -47,6 +58,8 @@ export function toDispatchIncident(inc: Incident): DummyIncident {
     location: inc.address || inc.location?.name || inc.city || "",
     reportedAt: inc.created_at,
     status,
+    stateName: inc.current_state?.name,
+    stateColor: inc.current_state?.color,
     // Incidents without coordinates are filtered out before plotting.
     latitude: inc.latitude ?? Number.NaN,
     longitude: inc.longitude ?? Number.NaN,
