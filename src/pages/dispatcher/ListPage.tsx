@@ -217,6 +217,8 @@ export function DispatcherListPage() {
   });
 
   const assign = (incidentId: string, target: IncidentMapMarker) => {
+    // Only fire stations can be alerted; units have no assignment endpoint.
+    if (target.kind !== "station") return;
     const inc = allIncidents.find((x) => x.id === incidentId);
     if (!inc) return;
     if (inc.status === "resolved" || inc.status === "completed") {
@@ -233,9 +235,7 @@ export function DispatcherListPage() {
       setOverrides((prev) => ({
         ...prev,
         [incidentId]: {
-          // Dropping on a fire station only notifies it; the incident stays
-          // in its current tab. Units still move it to dispatched.
-          ...(target.kind === "station" ? {} : { status: "dispatched" }),
+          // Alerting a fire station doesn't move the incident between tabs.
           assignee: target.label,
         },
       }));
@@ -247,8 +247,6 @@ export function DispatcherListPage() {
         ),
       );
     };
-    // Units have no endpoint yet: assignment stays local for them.
-    if (target.kind !== "station") return apply();
     pushMutation.mutate(
       { serviceId: target.id, incidentId },
       {

@@ -93,12 +93,12 @@ export default function IncidentsLeafletMap({
     );
   });
   const dataRefs = useRef<Map<string, IncidentMapMarker>>(new Map());
-  // Station/unit pins accept dropped incidents. Swapping a pin's icon (on
+  // Station pins accept dropped incidents. Swapping a pin's icon (on
   // selection) replaces its element, so the binding is redone afterwards.
   const bindTarget = useRef((id: string) => {
     const d = dataRefs.current.get(id);
     const el = markerRefs.current.get(id)?.getElement();
-    if (!d || !el || (d.kind !== "station" && d.kind !== "unit")) return;
+    if (!d || !el || d.kind !== "station") return;
     bindDropTarget(el, (incidentId) =>
       fireDrop.current(incidentId, dataRefs.current.get(id) ?? d),
     );
@@ -182,7 +182,7 @@ export default function IncidentsLeafletMap({
         let hit: IncidentMapMarker | null = null;
         let best = 28; // px
         for (const [id, d] of Array.from(dataRefs.current.entries())) {
-          if (d.kind !== "station" && d.kind !== "unit") continue;
+          if (d.kind !== "station") continue;
           const mk = markerRefs.current.get(id);
           if (!mk) continue;
           const dist = p.distanceTo(map.latLngToContainerPoint(mk.getLatLng()));

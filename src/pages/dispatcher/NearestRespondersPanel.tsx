@@ -6,8 +6,8 @@ import {
   ChevronDown,
   ChevronUp,
   Route,
-  TriangleAlert,
   Truck,
+  TriangleAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
@@ -24,6 +24,9 @@ import {
 import type { DummyIncident } from "./dummyIncidents";
 import { useFireStations, useMapUnits } from "./useDispatchData";
 
+/** How often unit positions are re-read; a moved unit re-routes on its own. */
+const UNIT_REFRESH_MS = 15_000;
+
 const STATUS_LABELS: Record<string, [string, string]> = {
   available: ["dispatcher.resourceStatus.available", "Available"],
   offered: ["dispatcher.resourceStatus.offered", "Offered"],
@@ -31,8 +34,6 @@ const STATUS_LABELS: Record<string, [string, string]> = {
   maintenance: ["dispatcher.resourceStatus.maintenance", "Maintenance"],
 };
 
-/** How often unit positions are re-read; a moved unit re-routes on its own. */
-const UNIT_REFRESH_MS = 15_000;
 /** ~11 m grid: GPS jitter is ignored, a real move changes the key. */
 const round = (n: number) => n.toFixed(4);
 
@@ -54,7 +55,8 @@ interface Candidate {
 /**
  * Nearest fire stations and units to the selected incident by exact road
  * route (Google Routes on the Google map, OSRM on the OSM map). Picking a row
- * draws its route on the map; the action button alerts that responder.
+ * draws its route on the map. Only fire stations can be alerted; units are
+ * shown for distance and ETA only.
  */
 export function NearestRespondersPanel({
   incident,
@@ -183,7 +185,6 @@ export function NearestRespondersPanel({
     station: ranked.filter((r) => r.kind === "station").length,
     unit: ranked.filter((r) => r.kind === "unit").length,
   };
-
   const filters: { key: Filter; label: string }[] = [
     { key: "all", label: t("dispatcher.all", "All") },
     { key: "station", label: t("dispatcher.fireStations", "Fire stations") },
@@ -191,13 +192,13 @@ export function NearestRespondersPanel({
   ];
 
   const alertSelected = () => {
-    if (!selected) return;
+    if (!selected || selected.kind !== "station") return;
     onAlert(incident.id, {
       id: selected.id,
       latitude: selected.point.latitude,
       longitude: selected.point.longitude,
       label: selected.name,
-      kind: selected.kind,
+      kind: "station",
     });
   };
 
@@ -337,18 +338,13 @@ export function NearestRespondersPanel({
                 ? t("dispatcher.routeByGoogle", "Road routes by Google")
                 : t("dispatcher.routeByOsrm", "Road routes by OpenStreetMap")}
             </span>
-            <Button
-              size="sm"
-              className="ms-auto"
-              onClick={alertSelected}
-              disabled={!selected}
-            >
-              {selected
-                ? t("dispatcher.alertTarget", "Alert {{name}}", {
-                    name: selected.name,
-                  })
-                : t("dispatcher.alert", "Alert")}
-            </Button>
+            {selected?.kind === "station" ? (
+              <Button size="sm" className="ms-auto" onClick={alertSelected}>
+                {t("dispatcher.alertTarget", "Alert {{name}}", {
+                  name: selected.name,
+                })}
+              </Button>
+            ) : null}
           </div>
         </div>
       )}

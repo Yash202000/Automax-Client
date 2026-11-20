@@ -114,7 +114,7 @@ function ClusteredMarkers({
       });
       marker.addListener("click", () => onSelectRef.current(m.id));
       if (m.kind !== "station" && m.kind !== "unit") {
-        // Drag an incident pin onto a fire station / unit to assign it.
+        // Drag an incident pin onto a fire station to alert it.
         marker.gmpDraggable = true;
         marker.addListener("dragend", (e: google.maps.MapMouseEvent) => {
           const to = e.latLng;
@@ -124,7 +124,7 @@ function ClusteredMarkers({
           let best = 28; // px
           if (to) {
             for (const d of Array.from(elements.values()).map((x) => x.data)) {
-              if (d.kind !== "station" && d.kind !== "unit") continue;
+              if (d.kind !== "station") continue;
               const dx = (d.longitude - to.lng()) * pxPerDegLng;
               const dy =
                 ((d.latitude - to.lat()) * pxPerDegLng) /
