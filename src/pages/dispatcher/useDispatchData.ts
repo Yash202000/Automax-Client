@@ -15,6 +15,8 @@ export interface MapUnit {
   id: string;
   name: string;
   status?: Resource["status"];
+  /** Incident the unit is assigned to, if any. */
+  incidentId?: string;
   latitude: number;
   longitude: number;
 }
@@ -85,6 +87,7 @@ export function useMapUnits(enabled = true, refetchMs?: number) {
           id: r.id,
           name: r.unique_id || r.name,
           status: r.status,
+          incidentId: r.incident_id || undefined,
           latitude: r.latitude as number,
           longitude: r.longitude as number,
         })),

@@ -11,6 +11,7 @@ import {
   DEFAULT_PIN_COLOR,
   FOCUS_PIN_COLOR,
   GLIDE_MS,
+  LINK_COLOR,
   ROUTE_COLOR,
   TRAIL_POINTS,
   bindDropTarget,
@@ -47,6 +48,7 @@ export default function IncidentsLeafletMap({
   onDropIncident,
   focusPoint,
   routePath,
+  links,
 }: IncidentsMapProps) {
   const focusMarkerRef = useRef<L.Marker | null>(null);
   const onDropRef = useRef(onDropIncident);
@@ -368,6 +370,26 @@ export default function IncidentsLeafletMap({
       group.remove();
     };
   }, [routePath]);
+
+  // Unit → incident road lines: solid, with a white casing for contrast.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !links?.length) return;
+    const group = L.layerGroup(
+      links.flatMap((l) => {
+        const pts = (l.path ?? [l.from, l.to]).map(
+          (p) => [p.latitude, p.longitude] as [number, number],
+        );
+        return [
+          L.polyline(pts, { color: "#ffffff", weight: 7, opacity: 0.9 }),
+          L.polyline(pts, { color: LINK_COLOR, weight: 4, opacity: 1 }),
+        ];
+      }),
+    ).addTo(map);
+    return () => {
+      group.remove();
+    };
+  }, [links]);
 
   return (
     <div className="relative h-full w-full">

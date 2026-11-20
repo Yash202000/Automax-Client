@@ -315,6 +315,8 @@ export interface Resource {
   status?: ResourceStatus;
   description?: string | null;
   is_active?: boolean;
+  /** Incident this unit is currently assigned to (read-only). */
+  incident_id?: string | null;
   /** Last known position (read-only; comes from the linked registry thing). */
   latitude?: number | null;
   longitude?: number | null;
@@ -324,7 +326,7 @@ export interface Resource {
 
 export type ResourceInput = Omit<
   Resource,
-  "id" | "created_at" | "updated_at" | "latitude" | "longitude"
+  "id" | "created_at" | "updated_at" | "latitude" | "longitude" | "incident_id"
 >;
 
 export interface ResourceListParams extends ListParams {

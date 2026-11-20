@@ -3,13 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowRight,
   Boxes,
   Clock,
   FileText,
   Flame,
   MapPin,
-  Paperclip,
   Plus,
   Smartphone,
   Star,
@@ -17,6 +15,7 @@ import {
   TriangleAlert,
   User,
   Users,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
@@ -25,6 +24,10 @@ import { incidentApi } from "../../api/admin";
 import type { AvailableTransition, User as UserType } from "../../types";
 import { useFireStations } from "./useDispatchData";
 import { AssociateFireStationsModal } from "./AssociateFireStationsModal";
+import { ActivityTab } from "../incidents/components/workspace/ActivityTab";
+import { AttachmentsTab } from "../incidents/components/workspace/AttachmentsTab";
+import { CommentsTab } from "../incidents/components/workspace/CommentsTab";
+import { getAttachmentPreviewUrl } from "../incidents/components/workspace/workspaceUtils";
 import { STATUS_COLORS, type DummyIncident } from "./dummyIncidents";
 
 const tile =
@@ -53,11 +56,6 @@ const userName = (u?: Pick<UserType, "first_name" | "last_name" | "email">) =>
     ? [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email || "—"
     : "—";
 
-const fmtSize = (bytes: number) =>
-  bytes >= 1048576
-    ? `${(bytes / 1048576).toFixed(1)} MB`
-    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-
 /**
  * Incident details modal laid out like the incident management workspace
  * (status/SLA/number header, meta tiles, tabs). The list row gives an
@@ -79,12 +77,18 @@ export function IncidentDetailModal({
   const [associateOpen, setAssociateOpen] = useState(false);
   const { stations } = useFireStations();
 
-  const { data: detailRes, isLoading: detailLoading } = useQuery({
+  const { data: detailRes } = useQuery({
     queryKey: ["incidents", "dispatcher", "detail", incident.id],
     queryFn: () => incidentApi.getById(incident.id),
   });
+  // Same query keys as the incident management workspace, so the shared tabs
+  // refresh themselves after an upload / comment.
+  const { data: attachmentsRes } = useQuery({
+    queryKey: ["incidents", "v2-list", "attachments", incident.id],
+    queryFn: () => incidentApi.listAttachments(incident.id),
+  });
   const { data: comments = [], isLoading: commentsLoading } = useQuery({
-    queryKey: ["incidents", "dispatcher", "comments", incident.id],
+    queryKey: ["incidents", "v2-list", "comments", incident.id],
     queryFn: () => incidentApi.listCombinedComments(incident.id),
   });
   const { data: historyRes, isLoading: historyLoading } = useQuery({
@@ -133,12 +137,24 @@ export function IncidentDetailModal({
           t("incidents.transitionFailed", "Transition failed"),
       ),
   });
+  const refreshComments = () => {
+    void queryClient.invalidateQueries({
+      queryKey: ["incidents", "v2-list", "comments", incident.id],
+    });
+  };
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  // Oldest first, as the shared Activity / Attachments tabs expect.
+  const historyAsc = [...(historyRes?.data ?? [])].sort(
+    (a, b) =>
+      new Date(a.transitioned_at).getTime() -
+      new Date(b.transitioned_at).getTime(),
+  );
   const history = [...(historyRes?.data ?? [])].sort(
     (a, b) =>
       new Date(b.transitioned_at).getTime() -
       new Date(a.transitioned_at).getTime(),
   );
-  const attachments = full?.attachments ?? [];
+  const attachments = attachmentsRes?.data ?? full?.attachments ?? [];
   const assignees = full?.assignees?.length
     ? full.assignees
     : full?.assignee
@@ -483,116 +499,30 @@ export function IncidentDetailModal({
         ) : null}
 
         {tab === "attachments" ? (
-          detailLoading ? (
-            loadingText
-          ) : attachments.length === 0 ? (
-            <div
-              className={cn(
-                card,
-                "text-xs text-[hsl(var(--muted-foreground))]",
-              )}
-            >
-              {t("incidents.noAttachments", "No attachments")}
-            </div>
-          ) : (
-            <ul className={cn(card, "space-y-2")}>
-              {attachments.map((a) => (
-                <li key={a.id} className="flex items-center gap-2 text-xs">
-                  <Paperclip className="h-3 w-3 shrink-0 text-primary" />
-                  <span className="min-w-0 truncate font-medium">
-                    {a.file_name}
-                  </span>
-                  <span className="shrink-0 text-[hsl(var(--muted-foreground))]">
-                    {fmtSize(a.file_size)}
-                  </span>
-                  <span className="ms-auto shrink-0 text-[hsl(var(--muted-foreground))]">
-                    {userName(a.uploaded_by)} · {fmt(a.created_at)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )
+          <AttachmentsTab
+            key={`attachments-${incident.id}`}
+            incidentId={incident.id}
+            attachments={attachments}
+            transitionHistory={historyAsc}
+            onPreview={(id) => setPreviewId(id)}
+          />
         ) : null}
 
         {tab === "comments" ? (
-          commentsLoading ? (
-            loadingText
-          ) : comments.length === 0 ? (
-            <div
-              className={cn(
-                card,
-                "text-xs text-[hsl(var(--muted-foreground))]",
-              )}
-            >
-              {t("incidents.noComments", "No comments")}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {comments.map((c) => (
-                <div key={c.id} className={card}>
-                  <div className="flex items-center justify-between gap-2 text-[11px]">
-                    <span className="font-semibold">
-                      {userName(c.author)}
-                      {c.is_internal ? (
-                        <span className="ms-2 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
-                          {t("incidents.internal", "Internal")}
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="text-[hsl(var(--muted-foreground))]">
-                      {fmt(c.created_at)}
-                    </span>
-                  </div>
-                  <p className="mt-1 whitespace-pre-wrap text-xs">
-                    {c.content}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )
+          <CommentsTab
+            key={`comments-${incident.id}`}
+            incidentId={incident.id}
+            comments={comments}
+            loading={commentsLoading}
+            onChanged={refreshComments}
+          />
         ) : null}
 
         {tab === "activity" ? (
           historyLoading ? (
             loadingText
-          ) : history.length === 0 ? (
-            <div
-              className={cn(
-                card,
-                "text-xs text-[hsl(var(--muted-foreground))]",
-              )}
-            >
-              {t("incidents.noActivity", "No activity yet")}
-            </div>
           ) : (
-            <ul className={cn(card, "space-y-3")}>
-              {history.map((h) => (
-                <li key={h.id} className="text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                    <span className="font-medium">
-                      {h.from_state?.name ?? "—"}
-                    </span>
-                    <ArrowRight className="h-3 w-3 text-[hsl(var(--muted-foreground))] rtl:rotate-180" />
-                    <span className="font-medium">
-                      {h.to_state?.name ?? "—"}
-                    </span>
-                    <span className="ms-auto text-[hsl(var(--muted-foreground))]">
-                      {fmt(h.transitioned_at)}
-                    </span>
-                  </div>
-                  <div className="ms-3.5 mt-0.5 text-[hsl(var(--muted-foreground))]">
-                    {h.transition?.name ? `${h.transition.name} · ` : ""}
-                    {userName(h.performed_by)}
-                  </div>
-                  {h.comment ? (
-                    <p className="ms-3.5 mt-0.5 whitespace-pre-wrap">
-                      {h.comment}
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
+            <ActivityTab transitionHistory={historyAsc} />
           )
         ) : null}
       </ModalBody>
@@ -683,6 +613,27 @@ export function IncidentDetailModal({
             onAssociate(ids);
           }}
         />
+      ) : null}
+      {previewId ? (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90"
+          onClick={() => setPreviewId(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewId(null)}
+            className="absolute end-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+            aria-label={t("common.close", "Close")}
+          >
+            <X className="h-6 w-6" />
+          </button>
+          <img
+            src={getAttachmentPreviewUrl(previewId)}
+            alt=""
+            className="max-h-[90vh] max-w-[90vw] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       ) : null}
     </Modal>
   );
