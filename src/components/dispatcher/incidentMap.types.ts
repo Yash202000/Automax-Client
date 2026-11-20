@@ -25,9 +25,21 @@ export interface IncidentsMapProps {
   focusPoint?: FocusPoint | null;
   /** Road route to draw (e.g. incident to the chosen responder); the map fits it. */
   routePath?: { latitude: number; longitude: number }[] | null;
+  /** Unit → assigned-incident lines (live tracking). */
+  links?: MapLink[];
+}
+
+/** A line joining a unit to the incident it is assigned to. */
+export interface MapLink {
+  id: string;
+  from: { latitude: number; longitude: number };
+  to: { latitude: number; longitude: number };
+  /** Road geometry from `from` to `to`; a straight line is drawn without it. */
+  path?: { latitude: number; longitude: number }[];
 }
 
 export const ROUTE_COLOR = "#2563eb";
+export const LINK_COLOR = "#a90000ff";
 
 export interface FocusPoint {
   latitude: number;

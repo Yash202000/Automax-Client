@@ -5,6 +5,7 @@ import GoogleBaseMap from "../maps/google/GoogleBaseMap";
 import {
   DEFAULT_PIN_COLOR,
   FOCUS_PIN_COLOR,
+  LINK_COLOR,
   ROUTE_COLOR,
   GLIDE_MS,
   TRAIL_POINTS,
@@ -31,6 +32,39 @@ function styledPin(
   if (kind === "station" || kind === "unit")
     el.style.transform = "translateY(50%)";
   return el;
+}
+
+/**
+ * Display positions for incident pins that share (almost) the same
+ * coordinate: each gets a spot on a small ring around it, so every pin can be
+ * seen and dragged. Real coordinates are untouched.
+ */
+function spreadOverlapping(
+  list: IncidentMapMarker[],
+): Map<string, google.maps.LatLngLiteral> {
+  const groups = new Map<string, IncidentMapMarker[]>();
+  for (const m of list) {
+    if (m.kind === "station" || m.kind === "unit") continue;
+    const key = `${m.latitude.toFixed(5)},${m.longitude.toFixed(5)}`;
+    const g = groups.get(key);
+    if (g) g.push(m);
+    else groups.set(key, [m]);
+  }
+  const out = new Map<string, google.maps.LatLngLiteral>();
+  for (const g of groups.values()) {
+    if (g.length < 2) continue;
+    // ~6 m per pin of ring radius, at least 8 m.
+    const radiusM = Math.max(8, g.length * 3);
+    g.forEach((m, i) => {
+      const angle = (2 * Math.PI * i) / g.length;
+      const dLat = (radiusM * Math.cos(angle)) / 111_320;
+      const dLng =
+        (radiusM * Math.sin(angle)) /
+        (111_320 * Math.cos((m.latitude * Math.PI) / 180));
+      out.set(m.id, { lat: m.latitude + dLat, lng: m.longitude + dLng });
+    });
+  }
+  return out;
 }
 
 /** Clustered pins for the whole incident set. */
@@ -87,6 +121,9 @@ function ClusteredMarkers({
       target.color || DEFAULT_PIN_COLOR,
       () => onDropRef.current?.(incidentId, target),
     );
+  // Where each pin rests (its ring slot), or its fanned-out spot while a
+  // cluster is open; a dragged pin snaps back here.
+  const restRef = useRef<Map<string, google.maps.LatLngLiteral>>(new Map());
   const prevSelectedRef = useRef<string | null>(null);
   const markerKey = `${markers.length}:${markers[0]?.id ?? ""}:${markers[markers.length - 1]?.id ?? ""}`;
 
@@ -100,11 +137,19 @@ function ClusteredMarkers({
         if (!isUnitMarker(e.data)) elements.delete(id);
       });
     dropStatic();
+    const home = new Map<
+      google.maps.marker.AdvancedMarkerElement,
+      { id: string; at: google.maps.LatLngLiteral }
+    >();
     const clustered: google.maps.marker.AdvancedMarkerElement[] = [];
     const plain: google.maps.marker.AdvancedMarkerElement[] = [];
+    // Incidents sharing one coordinate would sit exactly on top of each other
+    // (and could never be picked apart), so fan them out on a small ring.
+    const shown = spreadOverlapping(staticRef.current);
     staticRef.current.forEach((m) => {
+      const at = shown.get(m.id) ?? { lat: m.latitude, lng: m.longitude };
       const marker = new markerLib.AdvancedMarkerElement({
-        position: { lat: m.latitude, lng: m.longitude },
+        position: at,
         title: m.label,
         content: styledPin(
           m.kind,
@@ -136,10 +181,12 @@ function ClusteredMarkers({
               }
             }
           }
-          marker.position = { lat: m.latitude, lng: m.longitude };
+          marker.position = restRef.current.get(m.id) ?? at;
           if (hit) fireDrop(m.id, hit);
         });
       }
+      restRef.current.set(m.id, at);
+      home.set(marker, { id: m.id, at });
       elements.set(m.id, { marker, data: m });
       // Fire stations and units are never clustered.
       if (m.kind === "station" || m.kind === "unit") {
@@ -148,10 +195,101 @@ function ClusteredMarkers({
         plain.push(marker);
       } else clustered.push(marker);
     });
-    const clusterer = new MarkerClusterer({ map, markers: clustered });
+    // Open cluster ("spiderfy"): the pins fan out on a screen-space ring
+    // around the cluster at the CURRENT zoom (no zooming in, so nearby fire
+    // stations stay visible as drop targets), joined to the centre by legs.
+    let open: {
+      pins: google.maps.marker.AdvancedMarkerElement[];
+      legs: google.maps.Polyline[];
+    } | null = null;
+    const collapse = () => {
+      if (!open) return;
+      const { pins, legs } = open;
+      open = null;
+      legs.forEach((l) => l.setMap(null));
+      pins.forEach((pin) => {
+        const h = home.get(pin);
+        pin.map = null;
+        if (h) {
+          pin.position = h.at;
+          restRef.current.set(h.id, h.at);
+        }
+      });
+      clusterer.addMarkers(pins);
+    };
+    const expand = (
+      pins: google.maps.marker.AdvancedMarkerElement[],
+      center: google.maps.LatLng,
+    ) => {
+      const proj = map.getProjection();
+      if (!proj) return;
+      collapse();
+      clusterer.removeMarkers(pins);
+      const scale = 2 ** (map.getZoom() ?? 10);
+      const c = proj.fromLatLngToPoint(center);
+      if (!c) return;
+      const radius = Math.max(50, (pins.length * 38) / (2 * Math.PI));
+      const legs: google.maps.Polyline[] = [];
+      pins.forEach((pin, i) => {
+        const angle = (2 * Math.PI * i) / pins.length - Math.PI / 2;
+        const ll = proj.fromPointToLatLng(
+          new google.maps.Point(
+            c.x + (radius * Math.cos(angle)) / scale,
+            c.y + (radius * Math.sin(angle)) / scale,
+          ),
+        );
+        if (!ll) return;
+        const pos = { lat: ll.lat(), lng: ll.lng() };
+        pin.position = pos;
+        pin.map = map;
+        const h = home.get(pin);
+        if (h) restRef.current.set(h.id, pos);
+        legs.push(
+          new google.maps.Polyline({
+            map,
+            path: [center.toJSON(), pos],
+            strokeColor: "#475569",
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            zIndex: 1,
+          }),
+        );
+      });
+      open = { pins, legs };
+    };
+    const clusterer: MarkerClusterer = new MarkerClusterer({
+      map,
+      markers: clustered,
+      onClusterClick: (_event, cluster, m) => {
+        const bounds = cluster.bounds;
+        const span = bounds?.toSpan();
+        const pins = (cluster.markers ??
+          []) as google.maps.marker.AdvancedMarkerElement[];
+        if (
+          bounds &&
+          span &&
+          span.lat() < 0.0006 &&
+          span.lng() < 0.0006 &&
+          pins.length > 1
+        ) {
+          // Co-located incidents: fan out in place, like the OSM map.
+          expand(pins, new google.maps.LatLng(cluster.position));
+        } else {
+          collapse();
+          if (bounds) m.fitBounds(bounds, 60);
+        }
+      },
+    });
+    const collapseListeners = [
+      map.addListener("click", collapse),
+      map.addListener("zoom_changed", collapse),
+    ];
     clustererRef.current = clusterer;
 
     return () => {
+      collapseListeners.forEach((l) => l.remove());
+      open?.legs.forEach((l) => l.setMap(null));
+      open = null;
       clusterer.clearMarkers();
       clusterer.setMap(null);
       plain.forEach((p) => (p.map = null));
@@ -360,6 +498,40 @@ function RouteLine({ path }: { path?: IncidentsMapProps["routePath"] }) {
   return null;
 }
 
+/** Unit → incident road lines: solid, with a white casing for contrast. */
+function LinkLines({ links }: { links?: IncidentsMapProps["links"] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!map || !links?.length) return;
+    const lines = links.flatMap((l) => {
+      const path = (l.path ?? [l.from, l.to]).map((p) => ({
+        lat: p.latitude,
+        lng: p.longitude,
+      }));
+      return [
+        new google.maps.Polyline({
+          map,
+          path,
+          strokeColor: "#ffffff",
+          strokeOpacity: 0.9,
+          strokeWeight: 7,
+          zIndex: 8,
+        }),
+        new google.maps.Polyline({
+          map,
+          path,
+          strokeColor: LINK_COLOR,
+          strokeOpacity: 1,
+          strokeWeight: 4,
+          zIndex: 9,
+        }),
+      ];
+    });
+    return () => lines.forEach((p) => p.setMap(null));
+  }, [map, links]);
+  return null;
+}
+
 /** Native Google Maps version of the incidents map, clustered. */
 export default function IncidentsGoogleMap(props: IncidentsMapProps) {
   return (
@@ -371,6 +543,7 @@ export default function IncidentsGoogleMap(props: IncidentsMapProps) {
       <ClusteredMarkers {...props} />
       <FocusPin point={props.focusPoint} />
       <RouteLine path={props.routePath} />
+      <LinkLines links={props.links} />
     </GoogleBaseMap>
   );
 }

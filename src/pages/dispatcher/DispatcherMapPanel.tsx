@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { keepPreviousData, useQueries } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Maximize2, MapPin, Minimize2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -6,16 +7,20 @@ import IncidentsMap from "../../components/dispatcher/IncidentsMap";
 import type {
   FocusPoint,
   IncidentMapMarker,
+  MapLink,
 } from "../../components/dispatcher/incidentMap.types";
 import { useMapProvider } from "../../utils/mapProvider";
 import {
   searchGooglePlaces,
   type PlaceSuggestion,
 } from "../../utils/googleGeo";
-import { hasCoordinates } from "./incidentAdapter";
+import { incidentApi } from "../../api/admin";
+import { getRoutePath } from "../../utils/roadRoute";
+import { hasCoordinates, toDispatchIncident } from "./incidentAdapter";
 import { STATUS_COLORS, type DummyIncident } from "./dummyIncidents";
 import { useFireStations, useMapUnits } from "./useDispatchData";
 import { NearestRespondersPanel } from "./NearestRespondersPanel";
+import { StationDropDock } from "./StationDropDock";
 import { MapEntityCard, type MapEntity } from "./MapEntityCard";
 
 type Layer = "all" | "stations" | "units";
@@ -27,6 +32,8 @@ type Layer = "all" | "stations" | "units";
 type Mode = "default" | "live" | "incident";
 
 const LIVE_REFRESH_MS = 3_000;
+/** Most unit → incident road routes drawn at once. */
+const MAX_ROUTED_LINKS = 15;
 
 /** "Show closest N" choices; 0 shows everything. */
 const CLOSEST_OPTIONS = [2, 5, 10, 20];
@@ -177,12 +184,106 @@ export function DispatcherMapPanel({
     mode === "live" ? LIVE_REFRESH_MS : undefined,
   );
   const [entity, setEntity] = useState<MapEntity | null>(null);
+
+  // Live tracking: each unit's assigned incident (`incident_id` on the unit).
+  // Known incidents come from the list; the rest are fetched by id.
+  const assignedIds = useMemo(
+    () =>
+      mode === "live"
+        ? Array.from(
+            new Set(
+              units.map((u) => u.incidentId).filter((x): x is string => !!x),
+            ),
+          )
+        : [],
+    [mode, units],
+  );
+  const missingIds = assignedIds.filter(
+    (id) => !incidents.some((i) => i.id === id),
+  );
+  const fetched = useQueries({
+    queries: missingIds.map((id) => ({
+      queryKey: ["incidents", "dispatcher", "detail", id],
+      queryFn: () => incidentApi.getById(id),
+      staleTime: 60_000,
+    })),
+  });
+  const assignedIncidents = useMemo(() => {
+    const byId = new Map<string, DummyIncident>();
+    for (const id of assignedIds) {
+      const known = incidents.find((i) => i.id === id);
+      if (known) byId.set(id, known);
+    }
+    for (const q of fetched) {
+      const inc = q.data?.data;
+      if (inc) byId.set(inc.id, toDispatchIncident(inc));
+    }
+    return byId;
+  }, [assignedIds, incidents, fetched]);
   const [routePath, setRoutePath] = useState<
     { latitude: number; longitude: number }[] | null
   >(null);
   const selectedIncident = selectedId
     ? incidents.find((i) => i.id === selectedId)
     : undefined;
+
+  // Unit → incident pairs to draw (capped so routing stays cheap).
+  const pairs = useMemo(() => {
+    if (mode !== "live") return [];
+    const out: { unit: (typeof units)[number]; inc: DummyIncident }[] = [];
+    for (const u of units) {
+      const inc = u.incidentId
+        ? assignedIncidents.get(u.incidentId)
+        : undefined;
+      if (inc && hasCoordinates(inc)) out.push({ unit: u, inc });
+    }
+    return out.slice(0, MAX_ROUTED_LINKS);
+  }, [mode, units, assignedIncidents]);
+
+  // Road route per pair, fetched once and refreshed every 30 s, not on every
+  // 3 s position tick. The line is re-anchored to the unit's live position.
+  const routeQueries = useQueries({
+    queries: pairs.map(({ unit, inc }) => ({
+      queryKey: [
+        "dispatcher",
+        "unit-route",
+        provider,
+        unit.id,
+        inc.id,
+        inc.latitude.toFixed(4),
+        inc.longitude.toFixed(4),
+      ],
+      queryFn: () => getRoutePath(provider, unit, inc),
+      staleTime: 30_000,
+      refetchInterval: 30_000,
+      placeholderData: keepPreviousData,
+      retry: false,
+    })),
+  });
+  const links = useMemo<MapLink[]>(() => {
+    const out: MapLink[] = [];
+    pairs.forEach(({ unit, inc }, idx) => {
+      const q = routeQueries[idx];
+      const road = q?.data?.path;
+      if (road && road.length > 1) {
+        out.push({
+          id: unit.id,
+          from: unit,
+          to: inc,
+          // Re-anchored to the unit's live position.
+          path: [
+            { latitude: unit.latitude, longitude: unit.longitude },
+            ...road.slice(1),
+          ],
+        });
+      } else if (q?.isError) {
+        // Routing failed: a straight line is better than none.
+        out.push({ id: unit.id, from: unit, to: inc });
+      }
+      // Still loading: draw nothing, so a straight line never flashes first.
+    });
+    return out;
+  }, [pairs, routeQueries]);
 
   const markers = useMemo<IncidentMapMarker[]>(() => {
     const out: IncidentMapMarker[] = [];
@@ -226,16 +327,34 @@ export function DispatcherMapPanel({
           kind: "station",
         });
     }
+    if (mode === "live") {
+      // Pins for the incidents the tracked units are working on.
+      for (const i of assignedIncidents.values()) {
+        if (!hasCoordinates(i)) continue;
+        out.push({
+          id: i.id,
+          latitude: i.latitude,
+          longitude: i.longitude,
+          label: i.number,
+          color: STATUS_COLORS[i.status],
+          kind: i.status === "dispatched" ? "incident_dispatched" : "incident",
+        });
+      }
+    }
     if (showUnits) {
-      for (const u of nearest(units))
+      for (const u of nearest(units)) {
+        const assigned = u.incidentId
+          ? assignedIncidents.get(u.incidentId)
+          : undefined;
         out.push({
           id: u.id,
           latitude: u.latitude,
           longitude: u.longitude,
-          label: u.name,
+          label: assigned ? `${u.name} → ${assigned.number}` : u.name,
           color: UNIT_COLOR,
           kind: "unit",
         });
+      }
     }
     return out;
   }, [
@@ -248,6 +367,7 @@ export function DispatcherMapPanel({
     incidents,
     stations,
     units,
+    assignedIncidents,
     i18n.language,
   ]);
 
@@ -445,6 +565,7 @@ export function DispatcherMapPanel({
           onDropIncident={onDropIncident}
           focusPoint={focus}
           routePath={routePath}
+          links={links}
         />
         {mode !== "live" &&
         selectedIncident &&
@@ -456,11 +577,17 @@ export function DispatcherMapPanel({
             onAlert={onDropIncident}
           />
         ) : null}
+        <StationDropDock incidents={incidents} onDrop={onDropIncident} />
         {entity ? (
           <MapEntityCard
             entity={entity}
             servicePoints={servicePoints}
             resources={resources}
+            assignedIncident={(() => {
+              const id = resources.find((r) => r.id === entity.id)?.incident_id;
+              const inc = id ? assignedIncidents.get(id) : undefined;
+              return inc ? { number: inc.number, title: inc.title } : undefined;
+            })()}
             onClose={() => setEntity(null)}
           />
         ) : null}

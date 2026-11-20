@@ -39,11 +39,14 @@ export function MapEntityCard({
   entity,
   servicePoints,
   resources,
+  assignedIncident,
   onClose,
 }: {
   entity: MapEntity;
   servicePoints: ServicePoint[];
   resources: Resource[];
+  /** The incident the selected unit is assigned to, when known. */
+  assignedIncident?: { number: string; title: string };
   onClose: () => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -169,6 +172,16 @@ export function MapEntityCard({
               </div>
             ) : null}
             <Row label={t("dispatcher.unitName", "Name")} value={unit!.name} />
+            {unit!.incident_id ? (
+              <Row
+                label={t("dispatcher.assignedIncident", "Assigned incident")}
+                value={
+                  assignedIncident
+                    ? `${assignedIncident.number} · ${assignedIncident.title}`
+                    : unit!.incident_id
+                }
+              />
+            ) : null}
             <Row label={t("dispatcher.unitType", "Type")} value={typeName} />
             <Row
               label={t("dispatcher.homeStation", "Home station")}
