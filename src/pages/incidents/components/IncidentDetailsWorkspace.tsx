@@ -13,6 +13,7 @@ import {
   Clock,
   Copy,
   Download,
+  Share2,
   ExternalLink,
   FileText,
   Info,
@@ -54,6 +55,7 @@ import {
   BulkUnmergeModal,
   ConvertToRequestModal,
   UnmergeIncidentsModal,
+  ShareIncidentsReportModal,
 } from "../../../components/incidents";
 import { useAuthStore } from "../../../stores/authStore";
 import {
@@ -286,6 +288,9 @@ export function IncidentDetailsWorkspace({
     isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
   const canIncludeReportLogs =
     isSuperAdmin || hasPermission(PERMISSIONS.ACTION_LOGS_VIEW);
+  const canShareIncident =
+    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [generatingReport, setGeneratingReport] = useState(false);
   const [includeReportLogs, setIncludeReportLogs] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -845,6 +850,16 @@ export function IncidentDetailsWorkspace({
               {!isEPM940 && generatingReport
                 ? t("incidents.generating")
                 : t("incidents.downloadReport")}
+            </button>
+          ) : null}
+          {canShareIncident ? (
+            <button
+              type="button"
+              onClick={() => setShareModalOpen(true)}
+              className="flex items-center px-3 py-1.5 text-xs font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-[hsl(var(--muted)/0.8)] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] rounded-md transition-all shadow-sm"
+            >
+              <Share2 className="h-3.5 w-3.5 me-1.5" />
+              {t("incidents.sharePdf")}
             </button>
           ) : null}
           {!hideCopyUrl ? (
@@ -1601,6 +1616,14 @@ export function IncidentDetailsWorkspace({
           });
         }}
       />
+
+      {canShareIncident ? (
+        <ShareIncidentsReportModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          incidents={[incident]}
+        />
+      ) : null}
 
       {/* Same include-logs modal as IncidentDetailPage (EPM940 only). */}
       {canViewReports && isEPM940 ? (

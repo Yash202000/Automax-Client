@@ -55,6 +55,7 @@ import {
   ChevronLeft,
   Mail,
   Globe2,
+  Share2,
 } from "lucide-react";
 import {
   Button,
@@ -76,6 +77,7 @@ import {
   BulkUnmergeModal,
   RejectedAttachmentsList,
   PolicyRejectedList,
+  ShareIncidentsReportModal,
 } from "../../components/incidents";
 import EscalationLogView from "../../components/escalation/EscalationLogView";
 import {
@@ -273,6 +275,8 @@ export const IncidentDetailPage: React.FC = () => {
 
   const canViewReports =
     isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
+  const canShareIncident =
+    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW);
   const canIncludeReportLogs =
     isSuperAdmin || hasPermission(PERMISSIONS.ACTION_LOGS_VIEW);
   const canMergeIncidents =
@@ -1314,6 +1318,7 @@ export const IncidentDetailPage: React.FC = () => {
   const [generatingReport, setGeneratingReport] = useState(false);
   const [includeReportLogs, setIncludeReportLogs] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   const handleDownloadReport = async () => {
     if (!id || !incident) return;
@@ -2248,6 +2253,16 @@ export const IncidentDetailPage: React.FC = () => {
               {!isEPM940 && generatingReport
                 ? t("incidents.generating", "Generating...")
                 : t("incidents.downloadReport", "Download Report")}
+            </Button>
+          )}
+          {canShareIncident && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShareModalOpen(true)}
+              leftIcon={<Share2 className="w-4 h-4" />}
+            >
+              {t("incidents.sharePdf")}
             </Button>
           )}
           <Button
@@ -6890,6 +6905,14 @@ export const IncidentDetailPage: React.FC = () => {
           refetchMergedIncidents();
         }}
       />
+
+      {canShareIncident && (
+        <ShareIncidentsReportModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          incidents={[incident]}
+        />
+      )}
 
       {canViewReports && isEPM940 && (
         <Modal
