@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   Building2,
@@ -12,7 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
 import type { IncidentMapMarker } from "../../components/dispatcher/incidentMap.types";
-import { useMapProvider, type MapProvider } from "../../utils/mapProvider";
+import { useMapProvider } from "../../utils/mapProvider";
 import {
   formatDistance,
   formatDuration,
@@ -31,15 +31,10 @@ const STATUS_LABELS: Record<string, [string, string]> = {
   maintenance: ["dispatcher.resourceStatus.maintenance", "Maintenance"],
 };
 
-const ROUTING_PREF_KEY = "dispatcher.routingProvider";
-const readRoutingPref = (): MapProvider | null => {
-  try {
-    const v = localStorage.getItem(ROUTING_PREF_KEY);
-    return v === "google" || v === "osm" ? v : null;
-  } catch {
-    return null;
-  }
-};
+/** How often unit positions are re-read; a moved unit re-routes on its own. */
+const UNIT_REFRESH_MS = 15_000;
+/** ~11 m grid: GPS jitter is ignored, a real move changes the key. */
+const round = (n: number) => n.toFixed(4);
 
 /** Candidates routed per incident, shortlisted by straight-line distance. */
 const SHORTLIST = 10;
@@ -73,29 +68,16 @@ export function NearestRespondersPanel({
   onAlert: (incidentId: string, target: IncidentMapMarker) => void;
 }) {
   const { t, i18n } = useTranslation();
-  const { provider: mapProvider } = useMapProvider();
-  // Routing service: the user's pick, else whatever the map uses. Google is
-  // only offered when the map is Google.
-  const [routingPick, setRoutingPick] = useState<MapProvider | null>(
-    readRoutingPref,
-  );
-  const provider: MapProvider =
-    mapProvider === "google" ? (routingPick ?? "google") : "osm";
-  const chooseRouting = (next: MapProvider) => {
-    setRoutingPick(next);
-    try {
-      localStorage.setItem(ROUTING_PREF_KEY, next);
-    } catch {
-      // storage unavailable: the pick just lasts for this panel
-    }
-  };
+  // Routing follows the map: Google Routes on the Google map, OSRM on OSM.
+  const { provider } = useMapProvider();
   const { stations } = useFireStations(true);
-  const { units } = useMapUnits(true);
+  const { units } = useMapUnits(true, UNIT_REFRESH_MS);
   const [filter, setFilter] = useState<Filter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
-  const origin = useMemo<LatLng>(
+  // The incident is the DESTINATION: every route runs responder → incident.
+  const incidentPoint = useMemo<LatLng>(
     () => ({ latitude: incident.latitude, longitude: incident.longitude }),
     [incident.latitude, incident.longitude],
   );
@@ -121,31 +103,38 @@ export function NearestRespondersPanel({
     return all
       .sort(
         (a, b) =>
-          straightLineKm(origin, a.point) - straightLineKm(origin, b.point),
+          straightLineKm(incidentPoint, a.point) -
+          straightLineKm(incidentPoint, b.point),
       )
       .slice(0, SHORTLIST);
-  }, [stations, units, origin, i18n.language]);
+  }, [stations, units, incidentPoint, i18n.language]);
 
-  // Unit positions drift, so key on identity only and refresh on a timer.
-  const candidateKey = candidates.map((c) => c.id).join(",");
+  // Key on identity AND position, so a unit that moves is re-routed from its
+  // new coordinates (positions are re-read every UNIT_REFRESH_MS).
+  const candidateKey = candidates
+    .map(
+      (c) => `${c.id}@${round(c.point.latitude)},${round(c.point.longitude)}`,
+    )
+    .join("|");
   const routesQuery = useQuery({
     queryKey: [
       "dispatcher",
       "road-routes",
       provider,
       incident.id,
-      origin.latitude,
-      origin.longitude,
+      incidentPoint.latitude,
+      incidentPoint.longitude,
       candidateKey,
     ],
     queryFn: () =>
       getRoadRoutes(
         provider,
-        origin,
         candidates.map((c) => ({ id: c.id, point: c.point })),
+        incidentPoint,
       ),
     enabled: candidates.length > 0,
     staleTime: 60_000,
+    placeholderData: keepPreviousData,
   });
 
   const ranked = useMemo(() => {
@@ -174,10 +163,11 @@ export function NearestRespondersPanel({
       provider,
       incident.id,
       selected?.id,
-      selectedPoint?.latitude,
-      selectedPoint?.longitude,
+      selectedPoint ? round(selectedPoint.latitude) : null,
+      selectedPoint ? round(selectedPoint.longitude) : null,
     ],
-    queryFn: () => getRoutePath(provider, origin, selectedPoint as LatLng),
+    queryFn: () =>
+      getRoutePath(provider, selectedPoint as LatLng, incidentPoint),
     enabled: !!selectedPoint,
     staleTime: 60_000,
   });
@@ -342,33 +332,11 @@ export function NearestRespondersPanel({
             </p>
           ) : null}
           <div className="flex items-center gap-2 pt-1">
-            {mapProvider === "google" ? (
-              <div
-                className="flex gap-0.5 rounded-md bg-[hsl(var(--muted))] p-0.5"
-                role="group"
-                aria-label={t("dispatcher.routingService", "Routing service")}
-              >
-                {(["google", "osm"] as const).map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => chooseRouting(p)}
-                    className={cn(
-                      "rounded px-2 py-0.5 text-[11px] font-semibold transition",
-                      provider === p
-                        ? "bg-[hsl(var(--card))] text-primary shadow-sm"
-                        : "text-[hsl(var(--muted-foreground))]",
-                    )}
-                  >
-                    {p === "google" ? "Google" : "OSM"}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-                {t("dispatcher.routeByOsrm", "Road routes by OpenStreetMap")}
-              </span>
-            )}
+            <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+              {provider === "google"
+                ? t("dispatcher.routeByGoogle", "Road routes by Google")
+                : t("dispatcher.routeByOsrm", "Road routes by OpenStreetMap")}
+            </span>
             <Button
               size="sm"
               className="ms-auto"

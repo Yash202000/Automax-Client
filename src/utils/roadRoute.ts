@@ -54,28 +54,28 @@ export function straightLineKm(a: LatLng, b: LatLng): number {
 // ── OSRM ─────────────────────────────────────────────────────────────────────
 
 async function osrmMatrix(
-  origin: LatLng,
-  dests: { id: string; point: LatLng }[],
+  from: { id: string; point: LatLng }[],
+  to: LatLng,
 ): Promise<RoadRoute[]> {
-  const coords = [origin, ...dests.map((d) => d.point)].map(lngLat).join(";");
-  const destIdx = dests.map((_, i) => i + 1).join(";");
+  // Coordinates: every responder first, the incident last.
+  const coords = [...from.map((f) => f.point), to].map(lngLat).join(";");
+  const sources = from.map((_, i) => i).join(";");
   const res = await fetch(
-    `${osrmBase()}/table/v1/driving/${coords}?sources=0&destinations=${destIdx}&annotations=duration,distance`,
+    `${osrmBase()}/table/v1/driving/${coords}?sources=${sources}&destinations=${from.length}&annotations=duration,distance`,
   );
   if (!res.ok) throw new Error(`OSRM ${res.status}`);
   const data = await res.json();
   if (data.code !== "Ok") throw new Error(`OSRM ${data.code}`);
-  const durations: (number | null)[] = data.durations?.[0] ?? [];
-  const distances: (number | null)[] = data.distances?.[0] ?? [];
+  // One row per responder, one column (the incident).
+  const durations: (number | null)[][] = data.durations ?? [];
+  const distances: (number | null)[][] = data.distances ?? [];
   const out: RoadRoute[] = [];
-  dests.forEach((d, i) => {
+  from.forEach((f, i) => {
+    const dur = durations[i]?.[0];
+    const dist = distances[i]?.[0];
     // null = no drivable road connection.
-    if (durations[i] == null || distances[i] == null) return;
-    out.push({
-      id: d.id,
-      distanceM: distances[i] as number,
-      durationS: durations[i] as number,
-    });
+    if (dur == null || dist == null) return;
+    out.push({ id: f.id, distanceM: dist, durationS: dur });
   });
   return out;
 }
@@ -113,8 +113,8 @@ const wp = (p: LatLng) => ({
 const seconds = (d?: string) => (d ? parseFloat(d) : 0);
 
 async function googleMatrix(
-  origin: LatLng,
-  dests: { id: string; point: LatLng }[],
+  from: { id: string; point: LatLng }[],
+  to: LatLng,
 ): Promise<RoadRoute[]> {
   const res = await fetch(GOOGLE_MATRIX_URL, {
     method: "POST",
@@ -125,8 +125,8 @@ async function googleMatrix(
         "originIndex,destinationIndex,duration,distanceMeters,condition",
     },
     body: JSON.stringify({
-      origins: [{ waypoint: wp(origin) }],
-      destinations: dests.map((d) => ({ waypoint: wp(d.point) })),
+      origins: from.map((f) => ({ waypoint: wp(f.point) })),
+      destinations: [{ waypoint: wp(to) }],
       travelMode: "DRIVE",
       routingPreference: "TRAFFIC_AWARE",
     }),
@@ -134,14 +134,14 @@ async function googleMatrix(
   if (!res.ok) throw new Error(`Google Routes ${res.status}`);
   // The matrix comes back as a JSON array of elements.
   const rows: {
-    destinationIndex?: number;
+    originIndex?: number;
     duration?: string;
     distanceMeters?: number;
     condition?: string;
   }[] = await res.json();
   const out: RoadRoute[] = [];
   for (const r of rows) {
-    const d = dests[r.destinationIndex ?? 0];
+    const d = from[r.originIndex ?? 0];
     if (!d || r.condition !== "ROUTE_EXISTS") continue;
     out.push({
       id: d.id,
@@ -207,29 +207,30 @@ async function googlePath(origin: LatLng, dest: LatLng): Promise<RoutePath> {
 // ── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Exact road distance and drive time from `origin` to every destination, in one
- * request. Uses Google's Routes API when the map is Google, otherwise OSRM; if
+ * Exact road distance and drive time from every responder TO the incident
+ * (`to`), in one request. Direction matters: the engines route each responder
+ * to the incident, obeying one-way streets and turn restrictions. Uses Google's Routes API when the map is Google, otherwise OSRM; if
  * Google fails (key lacks the Routes API, quota…) it falls back to OSRM.
  * Destinations with no drivable route are left out.
  */
 export async function getRoadRoutes(
   provider: MapProvider,
-  origin: LatLng,
-  dests: { id: string; point: LatLng }[],
+  from: { id: string; point: LatLng }[],
+  to: LatLng,
 ): Promise<RoadRouteResult> {
-  if (dests.length === 0) return { source: "osrm", routes: [] };
+  if (from.length === 0) return { source: "osrm", routes: [] };
   if (provider === "google") {
     try {
-      return { source: "google", routes: await googleMatrix(origin, dests) };
+      return { source: "google", routes: await googleMatrix(from, to) };
     } catch (e) {
       // eslint-disable-next-line no-console
       console.warn("Google routing failed, using OSRM instead:", e);
     }
   }
-  return { source: "osrm", routes: await osrmMatrix(origin, dests) };
+  return { source: "osrm", routes: await osrmMatrix(from, to) };
 }
 
-/** The drivable route line between two points, for drawing on the map. */
+/** The drivable route line from `origin` (responder) to `dest` (incident). */
 export async function getRoutePath(
   provider: MapProvider,
   origin: LatLng,
