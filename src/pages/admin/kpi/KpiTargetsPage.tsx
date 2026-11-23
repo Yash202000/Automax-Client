@@ -52,6 +52,9 @@ import {
 // custom date range; never sent to the backend.
 const CUSTOM_RANGE_OPTION = "__custom__";
 
+// An Annual Target always covers the whole year (period "annual").
+const ANNUAL_TARGET_TYPE: KpiTargetType = "Annual Target";
+
 const statusColorMap: Record<string, string> = {
   draft: "bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-300",
   submitted: "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400",
@@ -512,9 +515,14 @@ export const KpiTargetsPage: React.FC = () => {
     formMetrics?.[0]?.reporting_frequency;
   const metricStart: string = selectedMetric?.start_date?.slice(0, 10) ?? "";
   const metricDue: string = selectedMetric?.due_date?.slice(0, 10) ?? "";
+  // An Annual Target always covers the whole year, whatever the metric's
+  // reporting frequency (the backend enforces the same rule).
   const formPeriodOptions = useMemo(
     () =>
-      getPeriodOptionsByFrequency(formFreq).filter((p) => {
+      (formTargetType === ANNUAL_TARGET_TYPE
+        ? [{ value: "annual", label: "Annual" }]
+        : getPeriodOptionsByFrequency(formFreq)
+      ).filter((p) => {
         if (p.value === formPeriodCode) return true;
         const { start, end } = getPeriodStartEnd(formYear, p.value);
         return (
@@ -522,7 +530,14 @@ export const KpiTargetsPage: React.FC = () => {
           (!metricDue || start <= metricDue)
         );
       }),
-    [formFreq, formYear, formPeriodCode, metricStart, metricDue],
+    [
+      formFreq,
+      formTargetType,
+      formYear,
+      formPeriodCode,
+      metricStart,
+      metricDue,
+    ],
   );
   const isMilestone = formTargetType === MILESTONE_TARGET_TYPE;
   // An Ad Hoc metric has no reporting periods, so its targets are always
@@ -694,6 +709,13 @@ export const KpiTargetsPage: React.FC = () => {
       return;
     }
 
+    // Thresholds the selected mode doesn't use are sent as null (cleared);
+    // an omitted field would keep its stored value on edit.
+    const usesThresholds =
+      formThresholdMode === "Percentage of Target" ||
+      formThresholdMode === "Absolute Values";
+    const usesRange = formThresholdMode === "Target Range";
+    const num = (v: string, used: boolean) => (used && v ? Number(v) : null);
     const payload: any = {
       kpi_code: formKpiCode,
       kpi_type: formKpiType as any,
@@ -708,17 +730,11 @@ export const KpiTargetsPage: React.FC = () => {
       target_basis: formTargetBasis,
       target_rationale: formTargetRationale.trim(),
       threshold_mode: formThresholdMode,
-      excellent_threshold: formExcellentThreshold
-        ? Number(formExcellentThreshold)
-        : undefined,
-      achieved_threshold: formAchievedThreshold
-        ? Number(formAchievedThreshold)
-        : undefined,
-      warning_threshold: formWarningThreshold
-        ? Number(formWarningThreshold)
-        : undefined,
-      target_range_min: formRangeMin ? Number(formRangeMin) : undefined,
-      target_range_max: formRangeMax ? Number(formRangeMax) : undefined,
+      excellent_threshold: num(formExcellentThreshold, usesThresholds),
+      achieved_threshold: num(formAchievedThreshold, usesThresholds),
+      warning_threshold: num(formWarningThreshold, usesThresholds),
+      target_range_min: num(formRangeMin, usesRange),
+      target_range_max: num(formRangeMax, usesRange),
       period_start: isMilestone ? formCustomStart : periodDates.start,
       period_end: isMilestone ? formCustomEnd : periodDates.end,
     };
@@ -745,30 +761,26 @@ export const KpiTargetsPage: React.FC = () => {
   // Row-level "Submit" quick action — submits the target as-is without
   // opening the editor first. Updates the existing row's status in place
   // (same fix as handleSubmit above — this used to call the create endpoint
-  // with the target's own id tacked on, creating a duplicate row).
+  // with the target's own id tacked on, creating a duplicate row). The whole
+  // record is resent — organization, segment and effective dates included —
+  // so nothing the list row carries is lost (the server also keeps any field
+  // a request omits).
   const handleQuickSubmit = async (target: KpiTarget) => {
+    const {
+      id,
+      metric: _metric,
+      approved_by: _approvedBy,
+      approved_by_id: _approvedById,
+      approved_at: _approvedAt,
+      supersedes_entry_id: _supersedes,
+      version: _version,
+      created_at: _createdAt,
+      updated_at: _updatedAt,
+      ...record
+    } = target;
     await updateTarget.mutateAsync({
-      id: target.id,
-      data: {
-        kpi_code: target.kpi_code,
-        kpi_type: target.kpi_type,
-        metric_id: target.metric_id,
-        target_year: target.target_year,
-        period_code: target.period_code,
-        target_value: target.target_value,
-        target_type: target.target_type,
-        target_basis: target.target_basis,
-        target_rationale: target.target_rationale,
-        threshold_mode: target.threshold_mode,
-        excellent_threshold: target.excellent_threshold,
-        achieved_threshold: target.achieved_threshold,
-        warning_threshold: target.warning_threshold,
-        target_range_min: target.target_range_min,
-        target_range_max: target.target_range_max,
-        period_start: target.period_start,
-        period_end: target.period_end,
-        target_status: "submitted",
-      },
+      id,
+      data: { ...record, target_status: "submitted" } as any,
     });
   };
 
@@ -1376,7 +1388,9 @@ export const KpiTargetsPage: React.FC = () => {
                 disabled={formScopeLocked}
                 onChange={(e) => {
                   setFormTargetType(e.target.value as KpiTargetType);
-                  setFormPeriodCode("");
+                  setFormPeriodCode(
+                    e.target.value === ANNUAL_TARGET_TYPE ? "annual" : "",
+                  );
                   setFormCustomStart("");
                   setFormCustomEnd("");
                 }}
