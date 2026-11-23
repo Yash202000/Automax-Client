@@ -2,14 +2,12 @@ import apiClient from "./client";
 import type { ApiResponse, User } from "../types";
 
 // National ID login through Nafath: start sends a Nafath request, status is
-// polled until the person approves it in the Nafath app (a new number is
-// issued every few seconds while waiting).
+// polled every poll_interval seconds; the number stays the same until Nafath
+// reports the request approved, rejected or expired.
 export interface NafathPending {
   status: "waiting";
   challenge_id: string;
   random: string;
-  rotate_in: number;
-  expires_in: number;
   poll_interval: number;
 }
 

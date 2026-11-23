@@ -3,7 +3,6 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Location } from "../../types";
 import { attachOsmBaseLayer } from "../../utils/mapProvider";
-import MapFallbackNotice from "./MapFallbackNotice";
 
 // Fix default marker icon issue with webpack/vite
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -211,7 +210,6 @@ export default function LeafletLocationMap({
         className="rounded-lg"
         style={{ height: "100%", width: "100%" }}
       />
-      <MapFallbackNotice />
     </div>
   );
 }

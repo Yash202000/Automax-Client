@@ -147,6 +147,8 @@ export const PERMISSIONS = {
   ESCALATION_GROUPS_ASSIGN_USERS: "escalation-groups:assign_users",
   ESCALATION_GROUPS_MANAGE_RULES: "escalation-groups:manage_rules",
   ESCALATION_POLICY_CREATE: "escalation-policies:create",
+  ESCALATION_LOGS_VIEW: "escalation-logs:view",
+  ESCALATION_LOGS_EXPORT: "escalation-logs:export",
 
   // Goal permissions
   GOALS_VIEW: "goals:view",
@@ -157,6 +159,24 @@ export const PERMISSIONS = {
   GOALS_APPROVE: "goals:approve",
   GOALS_MANAGE: "goals:manage",
   DASHBOARD_GOALS: "dashboard:goals",
+
+  // Dispatcher permissions
+  DISPATCHER_VIEW: "dispatcher:view",
+  DASHBOARD_DISPATCHER: "dashboard:dispatcher",
+
+  // Unit management
+  UNITS_VIEW: "units:view",
+  UNITS_CREATE: "units:create",
+  UNITS_UPDATE: "units:update",
+  UNITS_DELETE: "units:delete",
+  UNIT_TYPES_VIEW: "unit-types:view",
+  UNIT_TYPES_CREATE: "unit-types:create",
+  UNIT_TYPES_UPDATE: "unit-types:update",
+  UNIT_TYPES_DELETE: "unit-types:delete",
+  FIRE_STATIONS_VIEW: "fire-stations:view",
+  FIRE_STATIONS_CREATE: "fire-stations:create",
+  FIRE_STATIONS_UPDATE: "fire-stations:update",
+  FIRE_STATIONS_DELETE: "fire-stations:delete",
 
   // KPI permissions
   KPI_VIEW: "kpi:view",
@@ -202,6 +222,7 @@ export const PERMISSIONS = {
   COMMUNICATION_TRACK_UPDATE: "communication-tracking:update",
 
   VIEW_ALL_CALL_LOGS: "call-logs:view_all",
+  CALL_RECORDING_HISTORY: "call-recordings:history",
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

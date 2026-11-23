@@ -50,6 +50,8 @@ import {
   SMSLegends,
   IncidentFilters,
   IncidentStatusStatsRow,
+  IncidentSelectionBar,
+  ShareIncidentsReportModal,
 } from "../../components/incidents";
 import LocationMap from "@/components/maps/LocationMap";
 
@@ -81,6 +83,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
   const [showConvertModal, setShowConvertModal] = useState<boolean>(false);
   const [showBulkTransitionModal, setShowBulkTransitionModal] = useState(false);
   const [showMergeModal, setShowMergeModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [showMap, setShowMap] = useState(false);
 
   const [isValidationLoading, setIsValidationLoading] =
@@ -96,6 +99,8 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
   const canTransitionIncident =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_TRANSITION);
+  const canShareIncidents =
+    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW);
   const pageTitle = isAssigned
     ? t("incidents.assignedToMe")
     : t("incidents.createdByMe");
@@ -138,6 +143,7 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     filter.priority !== undefined ||
     !!filter.start_date ||
     !!filter.end_date ||
+    filter.cooperation_status !== undefined ||
     !!filter.reporter_phone ||
     !!filter.reporter_phone_search
   );
@@ -180,8 +186,8 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     } catch (err: any) {
       const errorMsg =
         err.response?.data?.error || t("incidents.merge.validationFailed");
+      // Shown as an inline warning in the selection bar, not a toast.
       console.error(errorMsg);
-      toast.error(errorMsg);
       setValidationResult({
         canMerge: false,
         errors: [errorMsg],
@@ -355,6 +361,21 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
     !validationResult?.canMerge ||
     (validationResult?.errors?.length ?? 0) > 0;
 
+  const showMergeAction = selectedIncidents.length >= 2 && canMergeIncidents;
+  const showConvertAction = selectedIncidents.length > 1;
+  const showTransitionAction =
+    canTransitionIncident && selectedIncidents.length > 1;
+  const mergeErrors = validationResult?.errors ?? [];
+  const bulkWarning =
+    !(showMergeAction || showConvertAction || showTransitionAction) ||
+    isValidationLoading
+      ? null
+      : !canBulkTransition
+        ? t("incidents.bulkActionsWarning")
+        : showMergeAction && mergeErrors.length > 0
+          ? mergeErrors[0]
+          : null;
+
   if (error) {
     return (
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-12 shadow-sm">
@@ -412,46 +433,6 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
           >
             {showMap ? t("common.hideMap") : t("common.showMap")}
           </Button>
-          {selectedIncidents?.length >= 2 && canMergeIncidents && (
-            <>
-              <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg">
-                <span className="text-sm font-medium text-indigo-700">
-                  {selectedIncidents?.length} {t("common.selected")}
-                </span>
-                <button
-                  onClick={() => setSelectedIncidents([])}
-                  className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                >
-                  {t("common.clear")}
-                </button>
-              </div>
-              <Button
-                variant="default"
-                onClick={() => setShowMergeModal(true)}
-                leftIcon={<ArrowRightLeft className="w-4 h-4" />}
-                disabled={isMergeDisabled}
-              >
-                {t("incidents.merge.title")}
-              </Button>
-            </>
-          )}
-          {selectedIncidents?.length > 1 && allSameState ? (
-            <Button
-              leftIcon={<Repeat className="w-4 h-4" />}
-              onClick={() => setShowConvertModal(true)}
-            >
-              {t("incidents.convertToRequest")}
-            </Button>
-          ) : null}
-          {canTransitionIncident && canBulkTransition && (
-            <Button
-              variant="outline"
-              onClick={() => setShowBulkTransitionModal(true)}
-              leftIcon={<Play className="w-4 h-4" />}
-            >
-              {t("incidents.bulkTransition")}
-            </Button>
-          )}
           <Button
             variant="outline"
             size="sm"
@@ -570,6 +551,54 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
 
       {/* Incidents Table */}
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm">
+        <IncidentSelectionBar
+          count={selectedIncidents.length}
+          onClear={() => setSelectedIncidents([])}
+          canShare={canShareIncidents}
+          onShare={() => setShowShareModal(true)}
+          warning={bulkWarning}
+          warningDetail={mergeErrors.join("\n") || undefined}
+        >
+          {showMergeAction && (
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => setShowMergeModal(true)}
+              isLoading={isValidationLoading}
+              leftIcon={<ArrowRightLeft className="w-3.5 h-3.5" />}
+              disabled={isMergeDisabled}
+            >
+              {t("incidents.merge.title")}
+            </Button>
+          )}
+          {showConvertAction && (
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={!allSameState}
+              onClick={() => setShowConvertModal(true)}
+              leftIcon={<Repeat className="w-3.5 h-3.5" />}
+            >
+              {t("incidents.convertToRequest")}
+            </Button>
+          )}
+          {showTransitionAction && (
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={!canBulkTransition}
+              onClick={() => setShowBulkTransitionModal(true)}
+              leftIcon={<Play className="w-3.5 h-3.5" />}
+              title={
+                !canBulkTransition
+                  ? t("incidents.bulkTransitionDisabled")
+                  : undefined
+              }
+            >
+              {t("incidents.bulkTransition")}
+            </Button>
+          )}
+        </IncidentSelectionBar>
         {isLoading ? (
           <div className="p-12 text-center">
             <div className="inline-flex items-center justify-center w-14 h-14 bg-[hsl(var(--primary)/0.1)] rounded-2xl mb-4">
@@ -983,6 +1012,12 @@ export const MyIncidentsPage: React.FC<MyIncidentsPageProps> = ({ type }) => {
         onClose={() => setShowMergeModal(false)}
         selectedIncidents={selectedIncidents}
         onMergeSuccess={handleMergeSuccess}
+      />
+
+      <ShareIncidentsReportModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        incidents={selectedIncidents}
       />
     </div>
   );

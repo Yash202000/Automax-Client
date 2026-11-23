@@ -29,6 +29,9 @@ import type {
   GenerateReportRequest,
 } from "../../types/reportTemplate";
 import { Button } from "@/components/ui";
+import { BrandingImageUpload } from "@/components/settings/BrandingImageUpload";
+import { settingsApi } from "@/api/settings";
+import { resolveLogoUrl } from "@/utils/publicUrl";
 
 interface ExportFilters {
   date_from?: string;
@@ -62,6 +65,27 @@ const ReportTemplatesListPage: React.FC = () => {
     queryKey: ["report-templates", page, search],
     queryFn: () => listTemplates({ search, page, limit }),
   });
+
+  const leftLogo = useQuery({
+    queryKey: ["report-logo", "inc_logo_left"],
+    queryFn: () => settingsApi.getReportLogo("inc_logo_left"),
+  });
+  const rightLogo = useQuery({
+    queryKey: ["report-logo", "inc_logo_right"],
+    queryFn: () => settingsApi.getReportLogo("inc_logo_right"),
+  });
+  const reportLogos = [
+    {
+      field: "inc_logo_left" as const,
+      label: t("reports.reportLogoLeft", "Left logo"),
+      query: leftLogo,
+    },
+    {
+      field: "inc_logo_right" as const,
+      label: t("reports.reportLogoRight", "Right logo"),
+      query: rightLogo,
+    },
+  ];
 
   const templates = data?.data || [];
   const total = data?.total || 0;
@@ -248,6 +272,27 @@ const ReportTemplatesListPage: React.FC = () => {
           <Plus className="h-5 w-5" />
           {t("goals.templates.newTemplate")}
         </Button>
+      </div>
+
+      {/* Report Logos */}
+      <div className="bg-card rounded-lg shadow mb-6 p-4">
+        <h2 className="text-lg font-semibold mb-4">
+          {t("reports.reportLogos", "Report Logos")}
+        </h2>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {reportLogos.map(({ field, label, query }) => (
+            <BrandingImageUpload
+              key={field}
+              field={field}
+              config="report"
+              label={label}
+              value=""
+              attachment={resolveLogoUrl(query.data)}
+              onUploaded={query.refetch}
+              onRemove={() => {}}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Search */}

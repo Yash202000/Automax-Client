@@ -470,7 +470,15 @@ export const LoginForm: React.FC = () => {
 
       {isSso && nafathPending ? (
         <NafathApproval
+          key={nafathPending.challenge_id}
           initial={nafathPending}
+          onRestart={async () => {
+            const response = await nafathApi.start(nationalId.trim());
+            if (!response.success || !response.data) {
+              throw new Error(response.error || t("auth.loginError"));
+            }
+            setNafathPending(response.data);
+          }}
           onApproved={(data) =>
             completeLogin({
               user: data.user,

@@ -804,6 +804,8 @@ export type IncidentFormField =
   | "reporter_name"
   | "reporter_email"
   | "reporter_phone"
+  | "caller_identity_text"
+  | "cooperation_status"
   | "attachments"
   | "attachment"
   | "comment"
@@ -1251,6 +1253,8 @@ export interface Incident {
   reporter_email: string;
   reporter_name: string;
   reporter_phone: string;
+  caller_identity_text?: string;
+  cooperation_status?: "cooperative" | "uncooperative" | "";
   // Complaint-specific fields
   channel?: string;
   created_by_name?: string;
@@ -1464,11 +1468,15 @@ export interface IncidentCreateRequest {
   reporter_email?: string;
   reporter_name?: string;
   reporter_phone?: string;
+  caller_identity_text?: string;
+  cooperation_status?: "cooperative" | "uncooperative" | "";
   alternate_mobile?: string;
   custom_fields?: string;
   lookup_value_ids?: string[];
   custom_lookup_fields?: Record<string, any>;
   comment?: string;
+  /** CTI call this incident was created from (links the call to the incident). */
+  call_uuid?: string;
 }
 
 export interface IncidentUpdateRequest {
@@ -1493,6 +1501,8 @@ export interface IncidentUpdateRequest {
   reporter_email?: string;
   reporter_name?: string;
   reporter_phone?: string;
+  caller_identity_text?: string;
+  cooperation_status?: "cooperative" | "uncooperative" | "";
 }
 
 export interface IncidentTransitionRequest {
@@ -1590,8 +1600,9 @@ export interface IncidentFilter {
   transition_id?: string;
   reporter_phone?: string;
   reporter_phone_search?: string;
+  cooperation_status?: "cooperative" | "uncooperative";
   momra_ref?: string;
-  current_state_code?: string;
+  current_state_code?: string | string[];
   radius?: number;
 }
 
@@ -1606,6 +1617,7 @@ export interface FeedFilters {
   reporterId?: string;
   workflowId?: string;
   source?: string;
+  cooperationStatus?: "cooperative" | "uncooperative";
   momraRef?: string;
   convertedToRequest?: boolean;
   departmentIds: string[];
@@ -2385,24 +2397,76 @@ export interface UpdateEscalationPolicyRequest {
   steps?: EscalationPolicyStepRequest[];
 }
 
-// ─── Escalation SLA (breach audit) ──────────────────────────────────────────
+// ─── Escalation log (one entry per recipient) ──────────────────────────────
 
-export interface EscalationSLARecord {
+export type EscalationDeliveryStatus =
+  | "sent"
+  | "failed"
+  | "partial"
+  | "skipped"
+  | "unknown";
+
+export interface EscalationNoticeResult {
+  channel: string;
+  recipient: string;
+  status: EscalationDeliveryStatus | string;
+  failure_code?: string;
+  error?: string;
+  notification_log_id?: string;
+  sent_at?: string;
+}
+
+export interface EscalationLogRecipient {
+  user_id?: string;
+  avatar?: string;
+  name: string;
+  email: string;
+  phone: string;
+  status: EscalationDeliveryStatus | string;
+  notices: EscalationNoticeResult[];
+}
+
+export interface EscalationLogEntry {
   id: string;
-  incident_id: string;
-  incident_number?: string;
+  incident_id?: string;
+  incident_number: string;
+  classification_id?: string;
+  classification_name?: string;
   state_id?: string;
   state_name?: string;
-  group_id?: string;
-  group_name?: string;
+  escalation_type: string;
+  escalated_at: string;
+  reason: string;
+  from_level?: number;
+  to_level?: number;
   escalation_policy_id?: string;
   escalation_policy_step_id?: string;
-  step_order?: number;
-  escalation_type: string;
-  channel: string;
-  sent_at: string;
-  recipients?: string;
+  status: EscalationDeliveryStatus | string;
+  recipient: EscalationLogRecipient;
+  actions?: string[];
+  sla_hours_allowed: number;
+  hours_in_state: number;
   created_at: string;
+}
+
+export interface EscalationLogListData {
+  entries: EscalationLogEntry[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface EscalationLogFilter {
+  incident_id?: string;
+  incident_number?: string;
+  level?: string | number;
+  classification_id?: string;
+  date_from?: string;
+  date_to?: string;
+  person?: string;
+  escalation_type?: string;
+  page?: number;
+  limit?: number;
 }
 
 // ─── Resolve Users Request ───────────────────────────────────────────────────

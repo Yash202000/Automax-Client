@@ -45,6 +45,8 @@ import {
   SMSLegends,
   IncidentFilters,
   IncidentStatusStatsRow,
+  IncidentSelectionBar,
+  ShareIncidentsReportModal,
 } from "../../components/incidents";
 import BulkConvertToRequestModal from "@/components/incidents/BulkConvertToRequestModal";
 import { useAuthStore } from "@/stores/authStore";
@@ -65,6 +67,10 @@ interface ColumnConfig {
   required?: boolean; // Can't be hidden
 }
 
+const isNazahaClient =
+  window.APP_CONFIG?.CLIENT === "NAZAHA" ||
+  import.meta.env.VITE_CLIENT === "NAZAHA";
+
 const COLUMN_STORAGE_KEY = "incident_columns_config";
 
 const defaultColumns: ColumnConfig[] = [
@@ -74,6 +80,15 @@ const defaultColumns: ColumnConfig[] = [
     visible: true,
     required: true,
   },
+  ...(isNazahaClient
+    ? [
+        {
+          id: "classification",
+          label: "incidents.classification",
+          visible: true,
+        },
+      ]
+    : []),
   {
     id: "recurring_incidents",
     label: "incidents.recurringIncidents",
@@ -84,7 +99,11 @@ const defaultColumns: ColumnConfig[] = [
   { id: "assignee", label: "incidents.assignee", visible: true },
   { id: "department", label: "incidents.department", visible: false },
   { id: "due_date", label: "incidents.dueDate", visible: true },
-  { id: "created_at", label: "incidents.createdAt", visible: false },
+  {
+    id: "created_at",
+    label: "incidents.createdAt",
+    visible: isNazahaClient,
+  },
   { id: "sla", label: "incidents.slaStatus", visible: true },
   { id: "actions", label: "common.actions", visible: true, required: true },
 ];
@@ -155,6 +174,7 @@ export const IncidentsPage: React.FC = () => {
   const [showMergeModal, setShowMergeModal] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState<boolean>(false);
   const [showBulkTransitionModal, setShowBulkTransitionModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const { user } = useAuthStore();
   const [isValidationLoading, setIsValidationLoading] =
@@ -173,6 +193,8 @@ export const IncidentsPage: React.FC = () => {
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_TRANSITION);
   const canCreateIncident =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_CREATE);
+  const canShareIncidents =
+    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW);
 
   // Check if all selected incidents belong to the same workflow
   const selectedWorkflowId =
@@ -205,8 +227,8 @@ export const IncidentsPage: React.FC = () => {
     } catch (err: any) {
       const errorMsg =
         err.response?.data?.error || t("incidents.merge.validationFailed");
+      // Shown as an inline warning in the selection bar, not a toast.
       console.error(errorMsg);
-      toast.error(errorMsg);
       setValidationResult({
         canMerge: false,
         errors: [errorMsg],
@@ -400,7 +422,13 @@ export const IncidentsPage: React.FC = () => {
       reporter_phone_search:
         searchParams.get("reporter_phone_search") ||
         stored.reporter_phone_search,
+      cooperation_status:
+        (searchParams.get("cooperation_status") as
+          | "cooperative"
+          | "uncooperative"
+          | null) || stored.cooperation_status,
       momra_ref: searchParams.get("momra_ref") || stored.momra_ref,
+      channel: searchParams.get("channel") || stored.channel,
     };
   }, [searchParams, uniqueStates, isVD2Client]);
 
@@ -564,6 +592,7 @@ export const IncidentsPage: React.FC = () => {
     !!filter.start_date ||
     !!filter.end_date ||
     filter.source !== undefined ||
+    filter.cooperation_status !== undefined ||
     !!filter.reporter_phone ||
     !!filter.reporter_phone_search ||
     !!filter.momra_ref
@@ -659,6 +688,21 @@ export const IncidentsPage: React.FC = () => {
     !validationResult?.canMerge ||
     (validationResult?.errors?.length ?? 0) > 0;
 
+  const showMergeAction = selectedIncidents.length >= 2 && canMergeIncidents;
+  const showConvertAction = canConvertToRequest && selectedIncidents.length > 1;
+  const showTransitionAction =
+    canTransitionIncident && selectedIncidents.length > 1;
+  const mergeErrors = validationResult?.errors ?? [];
+  const bulkWarning =
+    !(showMergeAction || showConvertAction || showTransitionAction) ||
+    isValidationLoading
+      ? null
+      : !canBulkTransition
+        ? t("incidents.bulkActionsWarning")
+        : showMergeAction && mergeErrors.length > 0
+          ? mergeErrors[0]
+          : null;
+
   const statusFilterLabel = getLocalizedName(
     uniqueStates.find((s) => s.id === filter.current_state_id),
   );
@@ -690,9 +734,7 @@ export const IncidentsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div
-        className={`flex flex-col gap-4 ${selectedIncidents.length > 1 ? "lg:flex-col lg:items-start lg:justify-start" : "lg:flex-row lg:items-center lg:justify-between"}`}
-      >
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <div className="flex items-center gap-3 mb-1">
             <div
@@ -736,54 +778,6 @@ export const IncidentsPage: React.FC = () => {
               ? t("common.hideMap", "Hide Map")
               : t("common.showMap", "Show Map")}
           </Button>
-          {selectedIncidents?.length >= 2 && canMergeIncidents && (
-            <>
-              <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg">
-                <span className="text-sm font-medium text-indigo-700">
-                  {selectedIncidents?.length} {t("common.selected")}
-                </span>
-                <button
-                  onClick={clearSelection}
-                  className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                >
-                  {t("common.clear")}
-                </button>
-              </div>
-              <Button
-                variant="default"
-                onClick={() => setShowMergeModal(true)}
-                leftIcon={<ArrowRightLeft className="w-4 h-4" />}
-                disabled={isMergeDisabled}
-              >
-                {t("incidents.merge.title")}
-              </Button>
-            </>
-          )}
-          {canConvertToRequest &&
-          selectedIncidents?.length > 1 &&
-          allSameState ? (
-            <Button
-              leftIcon={<Repeat className="w-4 h-4" />}
-              onClick={() => setShowConvertModal(true)}
-            >
-              {t("incidents.convertToRequest")}
-            </Button>
-          ) : null}
-          {canTransitionIncident && selectedIncidents?.length > 1 && (
-            <Button
-              disabled={!canBulkTransition}
-              variant="outline"
-              onClick={() => setShowBulkTransitionModal(true)}
-              leftIcon={<Play className="w-4 h-4" />}
-              title={
-                !canBulkTransition
-                  ? t("incidents.bulkTransitionDisabled")
-                  : undefined
-              }
-            >
-              {t("incidents.bulkTransition")}
-            </Button>
-          )}
           <Button
             variant="outline"
             size="sm"
@@ -921,6 +915,54 @@ export const IncidentsPage: React.FC = () => {
 
       {/* Incidents Table */}
       <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm">
+        <IncidentSelectionBar
+          count={selectedIncidents.length}
+          onClear={clearSelection}
+          canShare={canShareIncidents}
+          onShare={() => setShowShareModal(true)}
+          warning={bulkWarning}
+          warningDetail={mergeErrors.join("\n") || undefined}
+        >
+          {showMergeAction && (
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => setShowMergeModal(true)}
+              isLoading={isValidationLoading}
+              leftIcon={<ArrowRightLeft className="w-3.5 h-3.5" />}
+              disabled={isMergeDisabled}
+            >
+              {t("incidents.merge.title")}
+            </Button>
+          )}
+          {showConvertAction && (
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={!allSameState}
+              onClick={() => setShowConvertModal(true)}
+              leftIcon={<Repeat className="w-3.5 h-3.5" />}
+            >
+              {t("incidents.convertToRequest")}
+            </Button>
+          )}
+          {showTransitionAction && (
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={!canBulkTransition}
+              onClick={() => setShowBulkTransitionModal(true)}
+              leftIcon={<Play className="w-3.5 h-3.5" />}
+              title={
+                !canBulkTransition
+                  ? t("incidents.bulkTransitionDisabled")
+                  : undefined
+              }
+            >
+              {t("incidents.bulkTransition")}
+            </Button>
+          )}
+        </IncidentSelectionBar>
         {isLoading ? (
           <div className="p-12 text-center">
             <div className="inline-flex items-center justify-center w-14 h-14 bg-[hsl(var(--primary)/0.1)] rounded-2xl mb-4">
@@ -990,6 +1032,13 @@ export const IncidentsPage: React.FC = () => {
                       <th className="px-6 py-4 text-start">
                         <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                           {t("incidents.title")}
+                        </span>
+                      </th>
+                    )}
+                    {isNazahaClient && isColumnVisible("classification") && (
+                      <th className="px-6 py-4 text-start">
+                        <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
+                          {t("incidents.classification")}
                         </span>
                       </th>
                     )}
@@ -1070,6 +1119,9 @@ export const IncidentsPage: React.FC = () => {
                       city: incident.city,
                       address: incident.address,
                     });
+                    const classificationName = getLocalizedName(
+                      incident.classification,
+                    );
                     // Detect master and child incidents
                     const isMasterIncident =
                       (incident.merged_incidents_count ?? 0) > 0;
@@ -1167,6 +1219,23 @@ export const IncidentsPage: React.FC = () => {
                             </div>
                           </td>
                         )}
+                        {isNazahaClient &&
+                          isColumnVisible("classification") && (
+                            <td className="px-6 py-4">
+                              {classificationName ? (
+                                <span
+                                  className="block max-w-[220px] truncate text-sm text-[hsl(var(--foreground))]"
+                                  title={classificationName}
+                                >
+                                  {classificationName}
+                                </span>
+                              ) : (
+                                <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                                  -
+                                </span>
+                              )}
+                            </td>
+                          )}
                         {isVD2Client &&
                           isColumnVisible("recurring_incidents") && (
                             <td className="w-56 min-w-56 px-6 py-4">
@@ -1443,6 +1512,12 @@ export const IncidentsPage: React.FC = () => {
           clearSelection();
           refetch();
         }}
+      />
+
+      <ShareIncidentsReportModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        incidents={selectedIncidents}
       />
 
       <BulkConvertToRequestModal

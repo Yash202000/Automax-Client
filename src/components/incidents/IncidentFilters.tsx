@@ -474,6 +474,18 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
       onClear: () => onFilterChange("source", undefined),
     });
   }
+  if (filter.cooperation_status) {
+    filterBadges.push({
+      key: "cooperation_status",
+      label: `${t("incidents.cooperationStatus", "Cooperation Status")}: ${t(
+        `incidents.cooperationStatus.${filter.cooperation_status}`,
+        filter.cooperation_status === "cooperative"
+          ? "Cooperative"
+          : "Uncooperative",
+      )}`,
+      onClear: () => onFilterChange("cooperation_status", undefined),
+    });
+  }
   if (filter.start_date || filter.end_date) {
     filterBadges.push({
       key: "date_range",
@@ -919,6 +931,32 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
               {sourceOptions?.map((source) => (
                 <option value={source.value}>{source.label}</option>
               ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-[hsl(var(--muted-foreground))] mb-1.5">
+              {t("incidents.cooperationStatus", "Cooperation Status")}
+            </label>
+            <select
+              value={filter.cooperation_status || ""}
+              onChange={(e) =>
+                onFilterChange(
+                  "cooperation_status",
+                  e.target.value || undefined,
+                )
+              }
+              className="w-full px-3 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] focus:border-[hsl(var(--primary))]"
+            >
+              <option value="">{t("common.all", "All")}</option>
+              <option value="cooperative">
+                {t("incidents.cooperationStatus.cooperative", "Cooperative")}
+              </option>
+              <option value="uncooperative">
+                {t(
+                  "incidents.cooperationStatus.uncooperative",
+                  "Uncooperative",
+                )}
+              </option>
             </select>
           </div>
           {hasReporterPhonePermission ? (

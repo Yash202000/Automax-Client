@@ -227,6 +227,7 @@ export function DetailsTab({
   slaDays,
   onPreviewAttachment,
   mergedIncidents,
+  hideNearbyIncidents,
 }: {
   incident: Incident;
   attachments: IncidentAttachment[];
@@ -235,6 +236,8 @@ export function DetailsTab({
   slaDays: number | null;
   onPreviewAttachment: (attachmentId: string) => void;
   mergedIncidents: Incident[];
+  /** Hide the "Nearby incidents" card under the description. */
+  hideNearbyIncidents?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -397,6 +400,7 @@ export function DetailsTab({
   // Nearby = separate card under the description; hide it entirely when the
   // feature is not configured or the incident has no coordinates/classification.
   const showNearbyCard =
+    !hideNearbyIncidents &&
     recurrenceEnabled &&
     incident.latitude != null &&
     incident.longitude != null &&
@@ -628,6 +632,37 @@ export function DetailsTab({
         {/* map / GIS — same SingleLocationMap view as IncidentDetailPage,
           constrained to this panel's dimensions */}
         <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl overflow-hidden flex flex-col shadow-sm min-h-[220px] min-w-0">
+          {(incident.caller_identity_text || incident.cooperation_status) && (
+            <div className="px-3 py-2.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.2)]">
+              <div className="space-y-2 text-xs">
+                {incident.caller_identity_text ? (
+                  <div className="min-w-0">
+                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                      {t("incidents.callerIdentity", "Caller Identity")}
+                    </span>
+                    <p className="mt-0.5 font-medium text-[hsl(var(--foreground))] break-words whitespace-pre-wrap">
+                      {incident.caller_identity_text}
+                    </p>
+                  </div>
+                ) : null}
+                {incident.cooperation_status ? (
+                  <div className="min-w-0">
+                    <span className="block text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                      {t("incidents.cooperationStatus", "Cooperation Status")}
+                    </span>
+                    <p className="mt-0.5 font-medium text-[hsl(var(--foreground))]">
+                      {t(
+                        `incidents.cooperationStatus.${incident.cooperation_status}`,
+                        incident.cooperation_status === "cooperative"
+                          ? "Cooperative"
+                          : "Uncooperative",
+                      )}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )}
           <div className="relative bg-[hsl(var(--muted)/0.5)] overflow-hidden flex-1 min-h-[140px]">
             {hasCoords ? (
               <Suspense fallback={<MapLoadingFallback />}>
@@ -664,7 +699,7 @@ export function DetailsTab({
               <div className="w-5 h-5 rounded bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0 mt-0.5 text-primary">
                 <MapPin className="h-2.5 w-2.5" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <span className="text-[9px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-wider block leading-none">
                   {t("incidents.fullAddress")}
                 </span>

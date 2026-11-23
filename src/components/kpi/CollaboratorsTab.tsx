@@ -44,6 +44,9 @@ const formatDate = (d: string) => {
   return date.toLocaleDateString("en-CA");
 };
 
+// Today as YYYY-MM-DD in local time, for the date pickers' min.
+const todayISO = () => new Date().toLocaleDateString("en-CA");
+
 const collabTypeColors: Record<string, string> = {
   "KPI Owner":
     "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
@@ -161,14 +164,34 @@ export const CollaboratorsTab: React.FC<Props> = ({
       toast.error("Effective to must be on or after effective from");
       return;
     }
+    // An existing past date may be kept when editing; a new one may not.
+    const today = todayISO();
+    const fromChanged =
+      !editingAssignment ||
+      form.effective_from !== formatDate(editingAssignment.effective_from);
+    const toChanged =
+      !editingAssignment?.effective_to ||
+      form.effective_to !== formatDate(editingAssignment.effective_to);
+    if (
+      (fromChanged && form.effective_from < today) ||
+      (toChanged && form.effective_to && form.effective_to < today)
+    ) {
+      toast.error("Effective From and Effective To cannot be in the past");
+      return;
+    }
 
-    if (editingId) {
-      await updateAssignment.mutateAsync({
-        assignmentId: editingId,
-        data: form,
-      });
-    } else {
-      await createAssignment.mutateAsync(form);
+    try {
+      if (editingId) {
+        await updateAssignment.mutateAsync({
+          assignmentId: editingId,
+          data: form,
+        });
+      } else {
+        await createAssignment.mutateAsync(form);
+      }
+    } catch {
+      // The mutation's onError already showed the message; keep the form open.
+      return;
     }
     resetForm();
   };
@@ -311,6 +334,7 @@ export const CollaboratorsTab: React.FC<Props> = ({
             <Input
               label="Effective From *"
               type="date"
+              min={todayISO()}
               value={form.effective_from}
               onChange={(e) =>
                 setForm((p) => ({ ...p, effective_from: e.target.value }))
@@ -319,6 +343,11 @@ export const CollaboratorsTab: React.FC<Props> = ({
             <Input
               label="Effective To"
               type="date"
+              min={
+                form.effective_from && form.effective_from > todayISO()
+                  ? form.effective_from
+                  : todayISO()
+              }
               value={form.effective_to ?? ""}
               onChange={(e) =>
                 setForm((p) => ({ ...p, effective_to: e.target.value }))

@@ -16,6 +16,7 @@ import {
   Languages,
   Mail,
   MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuthStore } from "../../stores/authStore";
 import {
@@ -46,6 +47,9 @@ export const CallCentreLayout: React.FC = () => {
 
   const canViewCommunications = hasPermission(
     PERMISSIONS.COMMUNICATION_TRACK_VIEW,
+  );
+  const canViewRecordingHistory = hasPermission(
+    PERMISSIONS.CALL_RECORDING_HISTORY,
   );
 
   const handleLanguageChange = async (langCode: string) => {
@@ -178,6 +182,43 @@ export const CallCentreLayout: React.FC = () => {
               </>
             )}
           </NavLink>
+
+          {canViewRecordingHistory ? (
+            <NavLink
+              to="/call-centre/recording-history"
+              end
+              onClick={() => setMobileMenuOpen(false)}
+              title={collapsed ? t("sidebar.callRecordingHistory") : undefined}
+              className={({ isActive }) =>
+                `group relative flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                  isActive
+                    ? "bg-gradient-to-r from-primary/90 to-accent/90 text-white shadow-lg shadow-violet-500/20"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white ltr:rounded-r-full rtl:rounded-l-full" />
+                  )}
+                  <ShieldCheck size={20} className="flex-shrink-0" />
+                  {!collapsed && (
+                    <>
+                      <span className="ms-3 font-medium text-sm">
+                        {t("sidebar.callRecordingHistory")}
+                      </span>
+                      <span
+                        className={`ms-auto ps-2 text-[10px] font-bold uppercase tracking-wide ${
+                          isActive ? "text-white" : "text-emerald-400"
+                        }`}
+                      ></span>
+                    </>
+                  )}
+                </>
+              )}
+            </NavLink>
+          ) : null}
 
           {canViewCommunications ? (
             <NavLink

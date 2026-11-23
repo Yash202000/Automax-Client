@@ -55,6 +55,7 @@ import {
   ChevronLeft,
   Mail,
   Globe2,
+  Share2,
 } from "lucide-react";
 import {
   Button,
@@ -76,7 +77,9 @@ import {
   BulkUnmergeModal,
   RejectedAttachmentsList,
   PolicyRejectedList,
+  ShareIncidentsReportModal,
 } from "../../components/incidents";
+import EscalationLogView from "../../components/escalation/EscalationLogView";
 import {
   incidentApi,
   userApi,
@@ -92,7 +95,6 @@ import {
   feedbackTemplateApi,
   gisLocationApi,
 } from "../../api/admin";
-import type { EscalationSLARecord } from "../../types";
 import { API_URL } from "../../api/client";
 import type {
   IncidentDetail,
@@ -273,6 +275,8 @@ export const IncidentDetailPage: React.FC = () => {
 
   const canViewReports =
     isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
+  const canShareIncident =
+    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW);
   const canIncludeReportLogs =
     isSuperAdmin || hasPermission(PERMISSIONS.ACTION_LOGS_VIEW);
   const canMergeIncidents =
@@ -295,6 +299,7 @@ export const IncidentDetailPage: React.FC = () => {
     | "nasaq"
     | "revisions"
     | "communications"
+    | "escalation-log"
     | "rejections"
     | "ai-quality"
     | "linked-systems"
@@ -508,27 +513,6 @@ export const IncidentDetailPage: React.FC = () => {
     enabled: !!id && activeTab === "linked-systems",
   });
   const bridges: IncidentBridge[] = bridgesData?.data?.data ?? [];
-
-  // Fetch escalation SLA actions fired for this incident
-  const { data: escalationSlaData } = useQuery({
-    queryKey: ["incident", id, "escalation-sla"],
-    queryFn: async () => {
-      const res = await fetch(
-        `/api/v1/admin/escalation-sla?incident_id=${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        },
-      );
-      if (!res.ok) return { data: [] };
-      return res.json();
-    },
-    enabled: !!id,
-    retry: false,
-  });
-  const escalationSlaRecords: EscalationSLARecord[] =
-    escalationSlaData?.data || [];
 
   const { data: usersData } = useQuery({
     queryKey: ["admin", "users", 1, 100],
@@ -1334,6 +1318,7 @@ export const IncidentDetailPage: React.FC = () => {
   const [generatingReport, setGeneratingReport] = useState(false);
   const [includeReportLogs, setIncludeReportLogs] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   const handleDownloadReport = async () => {
     if (!id || !incident) return;
@@ -2270,6 +2255,16 @@ export const IncidentDetailPage: React.FC = () => {
                 : t("incidents.downloadReport", "Download Report")}
             </Button>
           )}
+          {canShareIncident && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShareModalOpen(true)}
+              leftIcon={<Share2 className="w-4 h-4" />}
+            >
+              {t("incidents.sharePdf")}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -2664,6 +2659,22 @@ export const IncidentDetailPage: React.FC = () => {
                   <span className="flex items-center justify-center gap-2">
                     <Mail className="w-4 h-4" />
                     {t("incidents.communications", "Communication")}
+                  </span>
+                </button>
+              )}
+              {hasPermission(PERMISSIONS.ESCALATION_LOGS_VIEW) && (
+                <button
+                  onClick={() => setActiveTab("escalation-log")}
+                  className={cn(
+                    "flex-1 min-w-fit px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
+                    activeTab === "escalation-log"
+                      ? "text-[hsl(var(--primary))] border-b-2 border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.05)]"
+                      : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
+                  )}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    {t("escalation.tabs.breachLog", "Escalation Log")}
                   </span>
                 </button>
               )}
@@ -3961,6 +3972,12 @@ export const IncidentDetailPage: React.FC = () => {
                   <CommunicationHistory incidentId={id!} />
                 )}
 
+              {/* Escalation Log Tab */}
+              {activeTab === "escalation-log" &&
+                hasPermission(PERMISSIONS.ESCALATION_LOGS_VIEW) && (
+                  <EscalationLogView incidentId={id!} />
+                )}
+
               {/* AI Quality Tab */}
               {activeTab === "ai-quality" && (
                 <div className="space-y-4">
@@ -4342,6 +4359,44 @@ export const IncidentDetailPage: React.FC = () => {
                         {t("incidents.locationUpdateRequired")}
                       </span>
                     )}
+                    {(incident.caller_identity_text ||
+                      incident.cooperation_status) && (
+                      <div className="mt-2 pt-2 border-t border-[hsl(var(--border))]">
+                        <div className="space-y-2 text-sm">
+                          {incident.caller_identity_text ? (
+                            <div className="min-w-0">
+                              <span className="block text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                                {t(
+                                  "incidents.callerIdentity",
+                                  "Caller Identity",
+                                )}
+                              </span>
+                              <p className="mt-0.5 text-[hsl(var(--foreground))] break-words whitespace-pre-wrap">
+                                {incident.caller_identity_text}
+                              </p>
+                            </div>
+                          ) : null}
+                          {incident.cooperation_status ? (
+                            <div className="min-w-0">
+                              <span className="block text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                                {t(
+                                  "incidents.cooperationStatus",
+                                  "Cooperation Status",
+                                )}
+                              </span>
+                              <p className="mt-0.5 text-[hsl(var(--foreground))]">
+                                {t(
+                                  `incidents.cooperationStatus.${incident.cooperation_status}`,
+                                  incident.cooperation_status === "cooperative"
+                                    ? "Cooperative"
+                                    : "Uncooperative",
+                                )}
+                              </p>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -4410,46 +4465,6 @@ export const IncidentDetailPage: React.FC = () => {
                     >
                       <Clock className="w-3.5 h-3.5" />
                       <span>{formatDateTime(incident.sla_deadline)}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Escalation Actions Performed */}
-                {escalationSlaRecords.length > 0 && (
-                  <div>
-                    <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                      {t("incidents.escalationActions")}
-                    </label>
-                    <div className="mt-1.5 space-y-1.5">
-                      {escalationSlaRecords.map((rec) => (
-                        <div
-                          key={rec.id}
-                          className="flex items-start gap-2 p-2 rounded-lg bg-orange-500/5 border border-orange-500/15"
-                        >
-                          <AlertTriangle className="w-3.5 h-3.5 text-orange-500 shrink-0 mt-0.5" />
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium text-[hsl(var(--foreground))] leading-tight">
-                              {rec.escalation_type}
-                              {rec.step_order != null &&
-                                ` · Step ${rec.step_order}`}
-                              {rec.state_name && ` · ${rec.state_name}`}
-                            </p>
-                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                              <span className="capitalize">{rec.channel}</span>
-                              {" · "}
-                              {new Date(rec.sent_at).toLocaleString(
-                                i18n.language === "ar" ? "ar-SA" : "en-US",
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                },
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
                     </div>
                   </div>
                 )}
@@ -6890,6 +6905,14 @@ export const IncidentDetailPage: React.FC = () => {
           refetchMergedIncidents();
         }}
       />
+
+      {canShareIncident && (
+        <ShareIncidentsReportModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          incidents={[incident]}
+        />
+      )}
 
       {canViewReports && isEPM940 && (
         <Modal

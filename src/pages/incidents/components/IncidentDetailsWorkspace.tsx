@@ -13,6 +13,7 @@ import {
   Clock,
   Copy,
   Download,
+  Share2,
   ExternalLink,
   FileText,
   Info,
@@ -48,11 +49,13 @@ import {
   gisLocationApi,
   incidentMergeApi,
 } from "../../../api/admin";
+import { ScrollableNav } from "./ScrollableNav";
 import { IncidentTransitionDialog } from "../../../components/incidents/IncidentTransitionDialog";
 import {
   BulkUnmergeModal,
   ConvertToRequestModal,
   UnmergeIncidentsModal,
+  ShareIncidentsReportModal,
 } from "../../../components/incidents";
 import { useAuthStore } from "../../../stores/authStore";
 import {
@@ -88,6 +91,7 @@ import { DetailsTab } from "./workspace/DetailsTab";
 import { ActivityTab } from "./workspace/ActivityTab";
 import { CommentsTab } from "./workspace/CommentsTab";
 import { CommunicationTab } from "./workspace/CommunicationTab";
+import { EscalationLogTab } from "./workspace/EscalationLogTab";
 import { AttachmentsTab } from "./workspace/AttachmentsTab";
 import { QualityTab } from "./workspace/QualityTab";
 import { RevisionsTab } from "./workspace/RevisionsTab";
@@ -97,6 +101,10 @@ import { NasaqTab } from "./workspace/NasaqTab";
 import { useIncidentWebSocket } from "@/lib/services/incidentWebSocket";
 
 interface Props {
+  /** Hide the "Copy incident URL" action (e.g. inside the dispatcher). */
+  hideCopyUrl?: boolean;
+  /** Hide the "Nearby incidents" button in the details tab. */
+  hideNearbyIncidents?: boolean;
   incident: Incident | null;
 }
 
@@ -107,6 +115,7 @@ type TabKey =
   | "attachments"
   | "revisions"
   | "communication"
+  | "escalationLog"
   | "rejectionHistory"
   | "linkedSystems"
   | "nasaq"
@@ -119,6 +128,7 @@ const TAB_LABEL_KEYS: Record<TabKey, string> = {
   attachments: "incidents.attachments",
   revisions: "incidents.revisions",
   communication: "incidents.communications",
+  escalationLog: "escalation.tabs.breachLog",
   rejectionHistory: "incidents.rejectionHistory",
   linkedSystems: "incidents.linkedSystems",
   nasaq: "incidents.nasaqInformation",
@@ -131,6 +141,7 @@ const TABS: TabKey[] = [
   "attachments",
   "revisions",
   "communication",
+  "escalationLog",
   "rejectionHistory",
   "quality",
   "linkedSystems",
@@ -144,6 +155,7 @@ const TAB_ICONS: Record<TabKey, LucideIcon> = {
   attachments: Paperclip,
   revisions: RotateCcw,
   communication: Mail,
+  escalationLog: TriangleAlert,
   rejectionHistory: XCircle,
   linkedSystems: ArrowRightLeft,
   nasaq: ShieldCheck,
@@ -190,7 +202,11 @@ function transitionIcon(transition: WorkflowTransition) {
   return <ChevronRight className={cls} />;
 }
 
-export function IncidentDetailsWorkspace({ incident }: Props) {
+export function IncidentDetailsWorkspace({
+  incident,
+  hideCopyUrl,
+  hideNearbyIncidents,
+}: Props) {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { hasPermission, isSuperAdmin, canViewAllIncidents } = usePermissions();
@@ -272,6 +288,9 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
     isSuperAdmin || hasPermission(PERMISSIONS.REPORTS_VIEW);
   const canIncludeReportLogs =
     isSuperAdmin || hasPermission(PERMISSIONS.ACTION_LOGS_VIEW);
+  const canShareIncident =
+    isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VIEW);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [generatingReport, setGeneratingReport] = useState(false);
   const [includeReportLogs, setIncludeReportLogs] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -516,9 +535,16 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
   const showNasaqTab =
     !!incident?.classification?.is_nasaq &&
     (isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_VERIFY_NASAQ));
+  const canViewEscalationLog =
+    isSuperAdmin || hasPermission(PERMISSIONS.ESCALATION_LOGS_VIEW);
   const visibleTabs = useMemo(
-    () => TABS.filter((tabKey) => tabKey !== "nasaq" || showNasaqTab),
-    [showNasaqTab],
+    () =>
+      TABS.filter((tabKey) => {
+        if (tabKey === "nasaq") return showNasaqTab;
+        if (tabKey === "escalationLog") return canViewEscalationLog;
+        return true;
+      }),
+    [showNasaqTab, canViewEscalationLog],
   );
   const sourceLabel = useSourceLabel(incident?.source);
 
@@ -826,16 +852,28 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                 : t("incidents.downloadReport")}
             </button>
           ) : null}
-          <button
-            type="button"
-            onClick={copyUrl}
-            className="flex items-center px-3 py-1.5 text-xs font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-[hsl(var(--muted)/0.8)] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] rounded-md transition-all shadow-sm disabled:opacity-60"
-            title={t("incidents.copyIncidentUrl")}
-            aria-label={t("incidents.copyIncidentUrl")}
-          >
-            <Copy className="h-3.5 w-3.5 me-1.5" />
-            {t("incidents.copyIncidentUrl")}
-          </button>
+          {canShareIncident ? (
+            <button
+              type="button"
+              onClick={() => setShareModalOpen(true)}
+              className="flex items-center px-3 py-1.5 text-xs font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-[hsl(var(--muted)/0.8)] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] rounded-md transition-all shadow-sm"
+            >
+              <Share2 className="h-3.5 w-3.5 me-1.5" />
+              {t("incidents.sharePdf")}
+            </button>
+          ) : null}
+          {!hideCopyUrl ? (
+            <button
+              type="button"
+              onClick={copyUrl}
+              className="flex items-center px-3 py-1.5 text-xs font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] bg-[hsl(var(--muted)/0.8)] hover:bg-[hsl(var(--muted))] border border-[hsl(var(--border))] rounded-md transition-all shadow-sm disabled:opacity-60"
+              title={t("incidents.copyIncidentUrl")}
+              aria-label={t("incidents.copyIncidentUrl")}
+            >
+              <Copy className="h-3.5 w-3.5 me-1.5" />
+              {t("incidents.copyIncidentUrl")}
+            </button>
+          ) : null}
         </div>
 
         {/* header banner */}
@@ -1242,7 +1280,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
               canConvertToRequest &&
               !isLocationDefault)) ? (
             <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 px-0.5 flex-1 min-w-0 justify-end">
+              <div className="flex flex-wrap items-center gap-1.5 py-0.5 px-0.5 flex-1 min-w-0 justify-end">
                 {transitions.map((a) => {
                   const isApprove =
                     a.transition.name?.toLowerCase() === "approve";
@@ -1288,7 +1326,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
             </div>
           ) : null}
           <div className="border-b border-[hsl(var(--border))]">
-            <nav className="flex gap-1.5 overflow-x-auto text-xs font-medium pb-px">
+            <ScrollableNav className="flex gap-1.5 text-xs font-medium pb-px">
               {visibleTabs.map((tabKey) => {
                 const badge = badgeFor(tabKey);
                 const active = tab === tabKey;
@@ -1327,7 +1365,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
                   </button>
                 );
               })}
-            </nav>
+            </ScrollableNav>
           </div>
         </div>
 
@@ -1340,6 +1378,7 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
             slaDays={slaDays}
             onPreviewAttachment={openLightbox}
             mergedIncidents={mergedIncidents}
+            hideNearbyIncidents={hideNearbyIncidents}
           />
         ) : tab === "activity" ? (
           <ActivityTab transitionHistory={transitionHistory} />
@@ -1354,6 +1393,11 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
         ) : tab === "communication" ? (
           <CommunicationTab
             key={`communication-${incident.id}`}
+            incidentId={incident.id}
+          />
+        ) : tab === "escalationLog" ? (
+          <EscalationLogTab
+            key={`escalation-${incident.id}`}
             incidentId={incident.id}
           />
         ) : tab === "attachments" ? (
@@ -1572,6 +1616,14 @@ export function IncidentDetailsWorkspace({ incident }: Props) {
           });
         }}
       />
+
+      {canShareIncident ? (
+        <ShareIncidentsReportModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          incidents={[incident]}
+        />
+      ) : null}
 
       {/* Same include-logs modal as IncidentDetailPage (EPM940 only). */}
       {canViewReports && isEPM940 ? (

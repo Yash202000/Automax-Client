@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { format, subDays } from "date-fns";
+import { ar, enUS } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import { type DateRange } from "react-day-picker";
 
@@ -38,7 +39,8 @@ export function DatePickerWithRange({
 }: DatePickerWithRangeProps) {
   const [open, setOpen] = React.useState(false);
   const [range, setRange] = React.useState<DateRange | undefined>(value);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith("ar") ? ar : enUS;
 
   React.useEffect(() => {
     setRange(value);
@@ -59,20 +61,20 @@ export function DatePickerWithRange({
         <Button
           variant="outline"
           className={cn(
-            "w-[220px] justify-start text-left font-normal",
+            "w-[220px] justify-start text-start font-normal",
             !range && "text-muted-foreground",
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
+          <CalendarIcon className="me-2 h-4 w-4" />
 
           {range?.from ? (
             range.to ? (
               <>
-                {format(range.from, "dd MMM yyyy")} -{" "}
-                {format(range.to, "dd MMM yyyy")}
+                {format(range.from, "dd MMM yyyy", { locale: dateLocale })} -{" "}
+                {format(range.to, "dd MMM yyyy", { locale: dateLocale })}
               </>
             ) : (
-              format(range.from, "dd MMM yyyy")
+              format(range.from, "dd MMM yyyy", { locale: dateLocale })
             )
           ) : (
             t("common.selectDateRange")
@@ -86,6 +88,7 @@ export function DatePickerWithRange({
           selected={range}
           onSelect={handleSelect}
           numberOfMonths={2}
+          locale={dateLocale}
           defaultMonth={range?.from}
           min={1}
           disabled={disabled}

@@ -20,6 +20,7 @@ import {
   AdminProtectedRoute,
   PermissionRoute,
   IncidentLayout,
+  DispatcherLayout,
   RequestLayout,
   WorkflowLayout,
   ComplaintsLayout,
@@ -173,6 +174,31 @@ function IncidentDetailsRoute() {
   }
   return <IncidentDetailPage />;
 }
+const DispatcherListPage = lazy(() =>
+  import("./pages/dispatcher/ListPage").then((m) => ({
+    default: m.DispatcherListPage,
+  })),
+);
+const UnitManagementPage = lazy(() =>
+  import("./pages/dispatcher/UnitManagementPage").then((m) => ({
+    default: m.UnitManagementPage,
+  })),
+);
+const UnitFormPage = lazy(() =>
+  import("./pages/dispatcher/UnitFormPage").then((m) => ({
+    default: m.UnitFormPage,
+  })),
+);
+const UnitTypeFormPage = lazy(() =>
+  import("./pages/dispatcher/UnitTypeFormPage").then((m) => ({
+    default: m.UnitTypeFormPage,
+  })),
+);
+const FireStationFormPage = lazy(() =>
+  import("./pages/dispatcher/FireStationFormPage").then((m) => ({
+    default: m.FireStationFormPage,
+  })),
+);
 const IncidentFeedbackPage = lazy(() =>
   import("./pages/IncidentFeedbackPage").then((m) => ({
     default: m.CitizenIncidentFeedbackPage,
@@ -274,6 +300,11 @@ const CallCentrePage = lazy(() =>
 const CallHistory = lazy(() =>
   import("./pages/admin/components/CallHistory").then((m) => ({
     default: m.CallHistory,
+  })),
+);
+const CallRecordingHistoryPage = lazy(() =>
+  import("./pages/admin/CallRecordingHistoryPage").then((m) => ({
+    default: m.CallRecordingHistoryPage,
   })),
 );
 const EmailPage = lazy(() =>
@@ -380,21 +411,22 @@ const ProcessDetailPage = lazy(() =>
     default: m.ProcessDetailPage,
   })),
 );
-const KpiDictionaryImportPage = lazy(() =>
-  import("./pages/admin/kpi/KpiDictionaryImportPage").then((m) => ({
-    default: m.KpiDictionaryImportPage,
-  })),
-);
-const KpiMetricsImportPage = lazy(() =>
-  import("./pages/admin/kpi/KpiMetricsImportPage").then((m) => ({
-    default: m.KpiMetricsImportPage,
-  })),
-);
-const KpiTargetsImportPage = lazy(() =>
-  import("./pages/admin/kpi/KpiTargetsImportPage").then((m) => ({
-    default: m.KpiTargetsImportPage,
-  })),
-);
+// KPI Dictionary, Metrics and Targets import pages hidden for now — bulk import is not working as expected.
+// const KpiDictionaryImportPage = lazy(() =>
+//   import("./pages/admin/kpi/KpiDictionaryImportPage").then((m) => ({
+//     default: m.KpiDictionaryImportPage,
+//   })),
+// );
+// const KpiMetricsImportPage = lazy(() =>
+//   import("./pages/admin/kpi/KpiMetricsImportPage").then((m) => ({
+//     default: m.KpiMetricsImportPage,
+//   })),
+// );
+// const KpiTargetsImportPage = lazy(() =>
+//   import("./pages/admin/kpi/KpiTargetsImportPage").then((m) => ({
+//     default: m.KpiTargetsImportPage,
+//   })),
+// );
 const KpiDictionaryPage = lazy(() =>
   import("./pages/admin/kpi/KpiDictionaryPage").then((m) => ({
     default: m.KpiDictionaryPage,
@@ -828,6 +860,144 @@ function App() {
                     </Route>
                   </Route>
 
+                  {/* Dispatcher routes - separate layout */}
+                  <Route element={<AdminProtectedRoute />}>
+                    <Route element={<DispatcherLayout />}>
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[PERMISSIONS.DISPATCHER_VIEW]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/dispatcher/:id?"
+                          element={<DispatcherListPage />}
+                        />
+                        <Route
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[PERMISSIONS.UNITS_VIEW]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/units"
+                            element={<UnitManagementPage kind="units" />}
+                          />
+                        </Route>
+                        <Route
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[PERMISSIONS.UNITS_CREATE]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/units/new"
+                            element={<UnitFormPage />}
+                          />
+                        </Route>
+                        <Route
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[PERMISSIONS.UNITS_UPDATE]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/units/:id/edit"
+                            element={<UnitFormPage />}
+                          />
+                        </Route>
+                        <Route
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[
+                                PERMISSIONS.UNIT_TYPES_VIEW,
+                              ]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/unit-types"
+                            element={<UnitManagementPage kind="unitTypes" />}
+                          />
+                        </Route>
+                        <Route
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[
+                                PERMISSIONS.UNIT_TYPES_CREATE,
+                              ]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/unit-types/new"
+                            element={<UnitTypeFormPage />}
+                          />
+                        </Route>
+                        <Route
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[
+                                PERMISSIONS.UNIT_TYPES_UPDATE,
+                              ]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/unit-types/:id/edit"
+                            element={<UnitTypeFormPage />}
+                          />
+                        </Route>
+                        <Route
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[
+                                PERMISSIONS.FIRE_STATIONS_VIEW,
+                              ]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/fire-stations"
+                            element={<UnitManagementPage kind="fireStations" />}
+                          />
+                        </Route>
+                        <Route
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[
+                                PERMISSIONS.FIRE_STATIONS_CREATE,
+                              ]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/fire-stations/new"
+                            element={<FireStationFormPage />}
+                          />
+                        </Route>
+                        <Route
+                          element={
+                            <PermissionRoute
+                              requiredPermissions={[
+                                PERMISSIONS.FIRE_STATIONS_UPDATE,
+                              ]}
+                            />
+                          }
+                        >
+                          <Route
+                            path="/unit-management/fire-stations/:id/edit"
+                            element={<FireStationFormPage />}
+                          />
+                        </Route>
+                      </Route>
+                    </Route>
+                  </Route>
+
                   {/* Incident routes - separate layout */}
                   <Route element={<AdminProtectedRoute />}>
                     <Route element={<IncidentLayout />}>
@@ -1081,6 +1251,20 @@ function App() {
                         element={
                           <PermissionRoute
                             requiredPermissions={[
+                              PERMISSIONS.CALL_RECORDING_HISTORY,
+                            ]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/call-centre/recording-history"
+                          element={<CallRecordingHistoryPage />}
+                        />
+                      </Route>
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[
                               PERMISSIONS.COMMUNICATION_TRACK_VIEW,
                             ]}
                           />
@@ -1117,6 +1301,20 @@ function App() {
                         path="/call-centre/history"
                         element={<CallHistory />}
                       />
+                      <Route
+                        element={
+                          <PermissionRoute
+                            requiredPermissions={[
+                              PERMISSIONS.CALL_RECORDING_HISTORY,
+                            ]}
+                          />
+                        }
+                      >
+                        <Route
+                          path="/call-centre/recording-history"
+                          element={<CallRecordingHistoryPage />}
+                        />
+                      </Route>
                       <Route
                         path="/call-centre/communications"
                         element={<CommunicationsPage />}
@@ -1257,6 +1455,7 @@ function App() {
                           path="/goals/kpi/dictionary/new/award"
                           element={<KpiDictionaryFormAwardPage />}
                         />
+                        {/* KPI Dictionary and Metrics import routes hidden for now — bulk import is not working as expected.
                         <Route
                           path="/goals/kpi/dictionary/import"
                           element={<KpiDictionaryImportPage />}
@@ -1265,6 +1464,7 @@ function App() {
                           path="/goals/kpi/metrics/import"
                           element={<KpiMetricsImportPage />}
                         />
+                        */}
                       </Route>
 
                       <Route
@@ -1355,6 +1555,7 @@ function App() {
                         />
                       </Route>
 
+                      {/* Targets import route hidden for now — bulk import is not working as expected.
                       <Route
                         element={
                           <PermissionRoute
@@ -1367,6 +1568,7 @@ function App() {
                           element={<KpiTargetsImportPage />}
                         />
                       </Route>
+                      */}
 
                       <Route
                         element={
