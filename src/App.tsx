@@ -50,6 +50,7 @@ import { UserBootstrap } from "./components/common/UserBootstrap";
 import { ForgotPasswordPage } from "./pages/ForgetPasswordPage";
 import IncidentLister from "./components/incidents/IncidentLister";
 import TemplateFormPage from "./pages/admin/templates/TemplateFormPage";
+import { isNazahaClient } from "./utils/nazaha";
 
 // Lazy: admin/feature pages — only fetched when navigated to.
 // We import each page from its own file (NOT the barrel) so Rollup can emit a
@@ -137,6 +138,18 @@ const IncidentsPage = lazy(() =>
 const IncidentCreatePage = lazy(() =>
   import("./pages/admin/IncidentCreatePage").then((m) => ({
     default: m.IncidentCreatePage,
+  })),
+);
+// Nazaha "Create Report" / "Edit Report" screens, used instead of the generic
+// create and edit pages for CLIENT=NAZAHA
+const NazahaIncidentCreatePage = lazy(() =>
+  import("./pages/admin/NazahaIncidentForm").then((m) => ({
+    default: m.NazahaIncidentCreatePage,
+  })),
+);
+const NazahaIncidentEditPage = lazy(() =>
+  import("./pages/admin/NazahaIncidentForm").then((m) => ({
+    default: m.NazahaIncidentEditPage,
   })),
 );
 const IncidentEditPage = lazy(() =>
@@ -1039,7 +1052,13 @@ function App() {
                         />
                         <Route
                           path="/incidents/:id/edit"
-                          element={<IncidentEditPage />}
+                          element={
+                            isNazahaClient ? (
+                              <NazahaIncidentEditPage />
+                            ) : (
+                              <IncidentEditPage />
+                            )
+                          }
                         />
                       </Route>
                       <Route
@@ -1081,7 +1100,13 @@ function App() {
                         />
                         <Route
                           path="/incidents/new"
-                          element={<IncidentCreatePage />}
+                          element={
+                            isNazahaClient ? (
+                              <NazahaIncidentCreatePage />
+                            ) : (
+                              <IncidentCreatePage />
+                            )
+                          }
                         />
                         <Route
                           path="/incidents/:id/clone"

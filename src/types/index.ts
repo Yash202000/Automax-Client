@@ -14,6 +14,11 @@ export type ClassificationType =
 export interface User {
   id: string;
   national_id?: string;
+  // Citizen reporter details (Nazaha). Nationality is a NATIONALITY master-data value.
+  nationality_id?: string;
+  nationality?: LookupValue;
+  gender?: string;
+  address?: string;
   email: string;
   username: string;
   first_name: string;
@@ -809,6 +814,18 @@ export type IncidentFormField =
   | "attachments"
   | "attachment"
   | "comment"
+  // Nazaha create-screen fields (CLIENT=NAZAHA only)
+  | "reporter_mobile"
+  | "previous_report_ids"
+  | "linked_incident_number"
+  | "concerned_authority_id"
+  | "reporter_nationality"
+  | "reporter_national_id"
+  | "reporter_address"
+  | "reporter_gender"
+  | "content"
+  | "notes"
+  | "street"
   | `lookup:${string}`; // Dynamic lookup category required fields
 
 // Workflow types
@@ -1255,8 +1272,19 @@ export interface Incident {
   reporter_phone: string;
   caller_identity_text?: string;
   cooperation_status?: "cooperative" | "uncooperative" | "";
+  // Nazaha fields (empty for other clients)
+  caller_number?: string;
+  content?: string;
+  notes?: string;
+  street?: string;
+  concerned_authority?: LookupValue;
+  linked_incident?: { id: string; incident_number: string };
+  previous_reports?: { id: string; incident_number: string }[];
+  /** True when an uncooperative reporter's details were left out (Nazaha). */
+  reporter_hidden?: boolean;
   // Complaint-specific fields
   channel?: string;
+  created_by_id?: string;
   created_by_name?: string;
   created_by_mobile?: string;
   evaluation_count?: number;
@@ -1477,6 +1505,18 @@ export interface IncidentCreateRequest {
   comment?: string;
   /** CTI call this incident was created from (links the call to the incident). */
   call_uuid?: string;
+  // Nazaha only (CLIENT=NAZAHA); the backend ignores these for other clients.
+  caller_number?: string;
+  previous_report_ids?: string[];
+  linked_incident_number?: string;
+  concerned_authority_id?: string;
+  reporter_nationality_id?: string;
+  reporter_national_id?: string;
+  reporter_gender?: string;
+  reporter_address?: string;
+  content?: string;
+  notes?: string;
+  street?: string;
 }
 
 export interface IncidentUpdateRequest {
@@ -1503,6 +1543,19 @@ export interface IncidentUpdateRequest {
   reporter_phone?: string;
   caller_identity_text?: string;
   cooperation_status?: "cooperative" | "uncooperative" | "";
+  // Nazaha fields (undefined = unchanged, "" = clear). Reporter fields update
+  // the reporter's contact.
+  caller_number?: string;
+  linked_incident_number?: string;
+  concerned_authority_id?: string;
+  previous_report_ids?: string[];
+  content?: string;
+  notes?: string;
+  street?: string;
+  reporter_national_id?: string;
+  reporter_nationality_id?: string;
+  reporter_gender?: string;
+  reporter_address?: string;
 }
 
 export interface IncidentTransitionRequest {

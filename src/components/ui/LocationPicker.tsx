@@ -92,6 +92,9 @@ interface LocationPickerProps {
   onToggleExpand?: () => void;
   // Show editable Latitude/Longitude inputs under the controls.
   showCoordinateInputs?: boolean;
+  // Show the Latitude/Longitude inputs read-only: they only follow the map
+  // (or the parent's value) and cannot be typed in.
+  coordinatesReadOnly?: boolean;
   // eslint-disable-next-line no-unused-vars
   onCoordinateErrorChange?: (_error: string | undefined) => void;
 }
@@ -304,6 +307,7 @@ export function LocationPicker({
   isExpanded = false,
   onToggleExpand,
   showCoordinateInputs = false,
+  coordinatesReadOnly = false,
   onCoordinateErrorChange,
 }: LocationPickerProps) {
   const { t } = useTranslation();
@@ -604,6 +608,11 @@ export function LocationPicker({
     }, 600);
   };
 
+  const coordinateInputClass = `block w-full px-3 py-2 border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none transition-all text-foreground ${
+    coordinatesReadOnly
+      ? "bg-muted cursor-default"
+      : "bg-background focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+  }`;
   const showLatError = Boolean(coordErrors.lat && (latTouched || error));
   const showLngError = Boolean(coordErrors.lng && (lngTouched || error));
   // Don't repeat a coordinate message in the generic error box.
@@ -708,7 +717,8 @@ export function LocationPicker({
                 onBlur={() => setLatTouched(true)}
                 placeholder="25.204849"
                 aria-invalid={showLatError}
-                className={`block w-full px-3 py-2 bg-background border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-foreground ${showLatError ? "border-red-500" : "border-border"}`}
+                readOnly={coordinatesReadOnly}
+                className={`${coordinateInputClass} ${showLatError ? "border-red-500" : "border-border"}`}
               />
               {showLatError && (
                 <p className="mt-1 text-xs text-red-600">{coordErrors.lat}</p>
@@ -732,7 +742,8 @@ export function LocationPicker({
                 onBlur={() => setLngTouched(true)}
                 placeholder="55.270782"
                 aria-invalid={showLngError}
-                className={`block w-full px-3 py-2 bg-background border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-foreground ${showLngError ? "border-red-500" : "border-border"}`}
+                readOnly={coordinatesReadOnly}
+                className={`${coordinateInputClass} ${showLngError ? "border-red-500" : "border-border"}`}
               />
               {showLngError && (
                 <p className="mt-1 text-xs text-red-600">{coordErrors.lng}</p>

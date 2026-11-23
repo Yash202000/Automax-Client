@@ -67,6 +67,7 @@ import {
   type TransitionEmailConfig,
   type TransitionSmsConfig,
 } from "../../types";
+import { NAZAHA_LOOKUP_CATEGORIES, isNazahaClient } from "../../utils/nazaha";
 import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
 import { WorkflowCanvas } from "../../components/workflow";
@@ -251,6 +252,7 @@ const STATE_COLORS = [
   { name: "Pink", value: "#ec4899" },
   { name: "Gray", value: "#6b7280" },
 ];
+
 const isEPM940 =
   window.APP_CONFIG?.CLIENT === "EPM940" ||
   import.meta.env.VITE_CLIENT === "EPM940";
@@ -338,6 +340,30 @@ const baseFormFields: BaseFormFieldType[] = [
     descriptionKey: "workflows.formFields.commentDesc",
   },
 ];
+
+// Fields of the Nazaha create screen (CLIENT=NAZAHA only). The existing fields
+// (Caller Name, Caller Email, Caller Phone Number, ...) keep their usual names
+// here; only the Nazaha create/edit pages show them under the screen's labels.
+// Concerned Authority is listed as "Authority" here.
+const nazahaFormFields: BaseFormFieldType[] = (
+  [
+    ["previous_report_ids", "nazaha.previousReports"],
+    ["linked_incident_number", "nazaha.linkedReport"],
+    ["concerned_authority_id", "nazaha.authority"],
+    ["reporter_nationality", "nazaha.nationality"],
+    ["reporter_national_id", "nazaha.nationalId"],
+    ["reporter_mobile", "nazaha.mobile"],
+    ["reporter_address", "nazaha.reporterAddress"],
+    ["reporter_gender", "nazaha.gender"],
+    ["content", "nazaha.content"],
+    ["notes", "nazaha.notes"],
+    ["street", "nazaha.street"],
+  ] as [IncidentFormField, string][]
+).map(([field, labelKey]) => ({
+  field,
+  labelKey,
+  descriptionKey: `nazaha.workflowFields.${field}`,
+}));
 
 const TemplateModalBody: React.FC<{
   type: "comment" | "feedback";
@@ -844,7 +870,12 @@ export const WorkflowDesignerPage: React.FC = () => {
   const roles = rolesData?.data || [];
   const lookupCategories: LookupCategory[] = (
     lookupCategoriesData?.data || []
-  ).filter((cat) => cat.add_to_incident_form);
+  ).filter(
+    (cat) =>
+      cat.add_to_incident_form &&
+      // Nazaha: Authority and Nationality have their own fields in the list below.
+      !(isNazahaClient && NAZAHA_LOOKUP_CATEGORIES.includes(cat.code)),
+  );
   const escalationPolicies = escalationPoliciesData?.data || [];
   const emailTemplates: NotificationTemplate[] = emailTemplatesData?.data || [];
   const smsTemplates: NotificationTemplate[] = smsTemplatesData?.data || [];
@@ -909,7 +940,11 @@ export const WorkflowDesignerPage: React.FC = () => {
       label_ar: cat.name_ar || cat.name,
       description: cat.description || `${cat.name} lookup value`,
     }));
-    return [...baseFormFields, ...lookupFields];
+    return [
+      ...baseFormFields,
+      ...(isNazahaClient ? nazahaFormFields : []),
+      ...lookupFields,
+    ];
   }, [lookupCategories]);
 
   // Initialize matching config and required fields from workflow data
