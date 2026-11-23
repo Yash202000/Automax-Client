@@ -1,3 +1,4 @@
+import { KPI_BULK_IMPORT_ENABLED } from "@/api/client";
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -16,6 +17,7 @@ import {
   Award,
   Pencil,
   Crosshair,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   useStrategicKPIs,
@@ -80,10 +82,7 @@ const SortIcon: React.FC<{
 
 export const KpiDictionaryPage: React.FC = () => {
   const { t } = useTranslation();
-  const {
-    canUpdateKpi,
-    // canCreateKpi, // hidden with the import buttons
-  } = usePermissions();
+  const { canUpdateKpi, canCreateKpi } = usePermissions();
   const kpiAccess = useKpiAccess();
   const [activeTab, setActiveTab] = useState<DictTab>("strategic");
   const [search, setSearch] = useState("");
@@ -193,8 +192,7 @@ export const KpiDictionaryPage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Bulk import buttons hidden for now — KPI Dictionary and Metrics imports are not working as expected.
-          {canCreateKpi() && (
+          {KPI_BULK_IMPORT_ENABLED && canCreateKpi() && (
             <>
               <Link
                 to="/goals/kpi/dictionary/import"
@@ -212,7 +210,6 @@ export const KpiDictionaryPage: React.FC = () => {
               </Link>
             </>
           )}
-          */}
           <div className="relative">
             <button
               onClick={() => setNewMenuOpen((prev) => !prev)}

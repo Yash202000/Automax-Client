@@ -54,6 +54,7 @@ export interface KpiImportPageConfig {
 // Record categories in the order the backend reports them.
 const CATEGORIES = [
   "department",
+  "organization",
   "pillar",
   "enabler",
   "strategic_goal",
@@ -62,9 +63,13 @@ const CATEGORIES = [
   "domain",
   "award_criterion",
   "award_sub_criterion",
+  "award_kpi_measure",
+  "data_source",
+  "segmentation_dimension",
   "initiative",
   "kpi",
   "metric",
+  "target",
   "annual_target",
   "performance",
 ];
