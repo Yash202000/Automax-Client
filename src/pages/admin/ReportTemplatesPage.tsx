@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FileBarChart, Plus, Loader2 } from "lucide-react";
 import { Button } from "../../components/ui";
@@ -88,7 +88,15 @@ export const ReportTemplatesPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { hasPermission, isSuperAdmin } = usePermissions();
-  const [filterSource, setFilterSource] = useState<ReportDataSource | "">("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [filterSource, setFilterSource] = useState<ReportDataSource | "">(
+    () => {
+      const param = searchParams.get("data_source");
+      return param && param in dataSourceInfo
+        ? (param as ReportDataSource)
+        : "";
+    },
+  );
   const [dynamicOptionsMap, setDynamicOptionsMap] = useState<
     Record<string, DynamicReportOption[]>
   >({});
@@ -347,9 +355,14 @@ export const ReportTemplatesPage: React.FC = () => {
       <div className="flex items-center gap-3">
         <select
           value={filterSource}
-          onChange={(e) =>
-            setFilterSource(e.target.value as ReportDataSource | "")
-          }
+          onChange={(e) => {
+            const value = e.target.value as ReportDataSource | "";
+            setFilterSource(value);
+            const next = new URLSearchParams(searchParams);
+            if (value) next.set("data_source", value);
+            else next.delete("data_source");
+            setSearchParams(next, { replace: true });
+          }}
           className="px-4 py-2 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)]"
         >
           <option value="">{t("reports.allDataSources")}</option>
