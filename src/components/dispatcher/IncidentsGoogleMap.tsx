@@ -3,7 +3,7 @@ import { useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import GoogleBaseMap from "../maps/google/GoogleBaseMap";
 import GoogleDefaultView from "../maps/google/GoogleDefaultView";
-import { useMapDefaultCenter } from "../../hooks/useMapDefaultCenter";
+import { useMapDefaultCenter } from "../../hooks/useMapConfig";
 import {
   DEFAULT_PIN_COLOR,
   FOCUS_PIN_COLOR,

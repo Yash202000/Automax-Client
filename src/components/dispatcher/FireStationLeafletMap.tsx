@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { attachOsmBaseLayer } from "../../utils/mapProvider";
-import { useMapDefaultCenter } from "../../hooks/useMapDefaultCenter";
+import { useMapDefaultCenter } from "../../hooks/useMapConfig";
 import MapFallbackNotice from "../maps/MapFallbackNotice";
 import type { FireStationMapProps } from "./fireStationMap.types";
 

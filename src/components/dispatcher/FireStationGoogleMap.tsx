@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
 import GoogleBaseMap from "../maps/google/GoogleBaseMap";
 import GoogleDefaultView from "../maps/google/GoogleDefaultView";
-import { useMapDefaultCenter } from "../../hooks/useMapDefaultCenter";
+import { useMapDefaultCenter } from "../../hooks/useMapConfig";
 import type { FireStationMapProps } from "./fireStationMap.types";
 
 function StationPin({ selected }: { selected: boolean }) {

@@ -31,21 +31,21 @@ import { useUnsavedChangesPrompt } from "@/hooks/useUnsavedChangesPrompt";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { getActiveExtensions } from "@/utils/attachmentPolicy";
 import {
-  MAP_DEFAULT_CENTER_QUERY_KEY,
+  MAP_CONFIG_QUERY_KEY,
   mapConfigApi,
   parseMapCenter,
+  parseMapConfig,
   type MapDefaultCenter,
 } from "@/api/mapConfig";
 import {
-  MapDefaultCenterCard,
+  MapConfigCard,
   type MapCenterDraft,
-} from "@/components/settings/MapDefaultCenterCard";
+} from "@/components/settings/MapConfigCard";
 
 const SETTINGS_QUERY_KEY = ["settings"];
-const MAP_CENTER_ADMIN_QUERY_KEY = [...MAP_DEFAULT_CENTER_QUERY_KEY, "admin"];
+const MAP_CONFIG_ADMIN_QUERY_KEY = [...MAP_CONFIG_QUERY_KEY, "admin"];
 
-const toMapCenterDraft = (value: unknown): MapCenterDraft => {
-  const center = parseMapCenter(value);
+const toMapCenterDraft = (center: MapDefaultCenter | null): MapCenterDraft => {
   return center
     ? {
         latitude: String(center.latitude),
@@ -195,18 +195,22 @@ export const SettingsManagementPage: React.FC = () => {
     [attachmentConfig],
   );
 
-  // Config API (map/default_center)
+  // Config API (map/map_config): default center + search toggle in one row.
   const {
-    data: mapCenterConfig,
-    isError: mapCenterFailed,
-    isPending: mapCenterLoading,
+    data: mapConfigRow,
+    isError: mapConfigFailed,
+    isPending: mapConfigLoading,
   } = useQuery({
-    queryKey: MAP_CENTER_ADMIN_QUERY_KEY,
-    queryFn: mapConfigApi.getDefaultCenterConfig,
+    queryKey: MAP_CONFIG_ADMIN_QUERY_KEY,
+    queryFn: mapConfigApi.getRow,
   });
+  const savedMapConfig = useMemo(
+    () => parseMapConfig(mapConfigRow?.value),
+    [mapConfigRow],
+  );
   const savedMapCenter = useMemo(
-    () => toMapCenterDraft(mapCenterConfig?.value),
-    [mapCenterConfig],
+    () => toMapCenterDraft(savedMapConfig.default_center),
+    [savedMapConfig],
   );
   const [mapCenterDraft, setMapCenterDraft] = useState(savedMapCenter);
 
@@ -223,10 +227,22 @@ export const SettingsManagementPage: React.FC = () => {
     });
   }, [savedMapCenter]);
 
+  const savedMapSearchEnabled = savedMapConfig.search_enabled;
+  const [mapSearchDraft, setMapSearchDraft] = useState(savedMapSearchEnabled);
+  React.useEffect(
+    () => setMapSearchDraft(savedMapSearchEnabled),
+    [savedMapSearchEnabled],
+  );
+
   const isSettingsDirty = !isSame(formData, savedSettings);
   const isAttachmentDirty = !isSame(attachmentDraft, attachmentConfig?.value);
   const isMapCenterDirty = !isSame(mapCenterDraft, savedMapCenter);
-  const isDirty = isSettingsDirty || isAttachmentDirty || isMapCenterDirty;
+  const isMapSearchDirty = mapSearchDraft !== savedMapSearchEnabled;
+  const isMapConfigDirty =
+    !mapConfigLoading &&
+    !mapConfigFailed &&
+    (isMapCenterDirty || isMapSearchDirty);
+  const isDirty = isSettingsDirty || isAttachmentDirty || isMapConfigDirty;
 
   // Only the API(s) whose data changed are called.
   const saveMutation = useMutation({
@@ -241,15 +257,17 @@ export const SettingsManagementPage: React.FC = () => {
           queryKey: ATTACHMENT_CONFIG_QUERY_KEY,
         });
       }
-      const mapCenter = fromMapCenterDraft(mapCenterDraft);
-      if (isMapCenterDirty && mapCenter) {
-        await mapConfigApi.saveDefaultCenter(
-          mapCenterConfig ?? null,
-          mapCenter,
-        );
+      if (isMapConfigDirty) {
+        // The whole row is written; an unchanged center keeps its saved value.
+        await mapConfigApi.save(mapConfigRow ?? null, {
+          default_center: isMapCenterDirty
+            ? fromMapCenterDraft(mapCenterDraft)
+            : savedMapConfig.default_center,
+          search_enabled: mapSearchDraft,
+        });
         // Prefix match: refreshes both the admin row and the maps' value.
         await queryClient.invalidateQueries({
-          queryKey: MAP_DEFAULT_CENTER_QUERY_KEY,
+          queryKey: MAP_CONFIG_QUERY_KEY,
         });
       }
     },
@@ -332,6 +350,7 @@ export const SettingsManagementPage: React.FC = () => {
     setFormData(savedSettings);
     setAttachmentDraft(attachmentConfig?.value);
     setMapCenterDraft(savedMapCenter);
+    setMapSearchDraft(savedMapSearchEnabled);
   };
 
   const leavePrompt = useUnsavedChangesPrompt(
@@ -810,8 +829,8 @@ export const SettingsManagementPage: React.FC = () => {
           </div>
         )}
 
-        {/* Map Default Center Section (config API) */}
-        {mapCenterFailed ? (
+        {/* Map Configuration Section (config API: map/map_config) */}
+        {mapConfigFailed ? (
           <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))] text-sm text-[hsl(var(--muted-foreground))]">
             {t(
               "settings.map.loadFailed",
@@ -819,11 +838,15 @@ export const SettingsManagementPage: React.FC = () => {
             )}
           </div>
         ) : (
-          <MapDefaultCenterCard
+          <MapConfigCard
             value={mapCenterDraft}
             onChange={setMapCenterDraft}
-            notConfigured={mapCenterConfig === null}
-            disabled={mapCenterLoading}
+            notConfigured={
+              !mapConfigLoading && savedMapConfig.default_center === null
+            }
+            disabled={mapConfigLoading}
+            searchEnabled={mapSearchDraft}
+            onSearchEnabledChange={setMapSearchDraft}
           />
         )}
 
