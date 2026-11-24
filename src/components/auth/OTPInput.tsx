@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../ui";
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { otpApi } from "@/api/otp";
+import { getOtpSendErrorMessage, otpApi } from "@/api/otp";
 import type { User } from "@/types";
 import { Clock, RotateCcw } from "lucide-react";
 
@@ -102,7 +102,7 @@ export const OTPInput = ({
     },
 
     onError: (error: any) => {
-      setFieldError(error.response?.data?.error || t("auth.failedToResendOtp"));
+      setFieldError(getOtpSendErrorMessage(error, t("auth.failedToResendOtp")));
     },
   });
 

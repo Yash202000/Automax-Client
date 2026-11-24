@@ -21,6 +21,21 @@ export interface OtpVerifyResult {
   };
 }
 
+// Error text for a failed OTP send. A 503 means the SMS/WhatsApp provider is
+// down; its raw message isn't meant for users, so show the fallback instead.
+export const getOtpSendErrorMessage = (err: unknown, fallback: string) => {
+  const response = (
+    err as {
+      response?: {
+        status?: number;
+        data?: { error?: string; message?: string };
+      };
+    }
+  )?.response;
+  if (response?.status === 503) return fallback;
+  return response?.data?.error || response?.data?.message || fallback;
+};
+
 export const otpApi = {
   send: async (data: OtpSendRequest): Promise<OtpSendResult> => {
     const response = await apiClient.post<OtpSendResult>("/otp/send", data);
