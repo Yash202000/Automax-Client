@@ -15,6 +15,8 @@ interface Props {
   onChange: (_value: MapCenterDraft) => void;
   // Shown when no center has been saved yet.
   notConfigured?: boolean;
+  // Inputs are read-only while the saved value is still loading.
+  disabled?: boolean;
 }
 
 const inputClass =
@@ -24,6 +26,7 @@ export function MapDefaultCenterCard({
   value,
   onChange,
   notConfigured,
+  disabled,
 }: Props) {
   const { t } = useTranslation();
   const set =
@@ -61,7 +64,8 @@ export function MapDefaultCenterCard({
             inputMode="decimal"
             value={value.latitude}
             onChange={set("latitude")}
-            className={inputClass}
+            disabled={disabled}
+            className={`${inputClass} disabled:opacity-60`}
             placeholder={String(FALLBACK_MAP_CENTER.latitude)}
           />
         </div>
@@ -74,7 +78,8 @@ export function MapDefaultCenterCard({
             inputMode="decimal"
             value={value.longitude}
             onChange={set("longitude")}
-            className={inputClass}
+            disabled={disabled}
+            className={`${inputClass} disabled:opacity-60`}
             placeholder={String(FALLBACK_MAP_CENTER.longitude)}
           />
         </div>
@@ -88,7 +93,8 @@ export function MapDefaultCenterCard({
             max={20}
             value={value.zoom}
             onChange={set("zoom")}
-            className={inputClass}
+            disabled={disabled}
+            className={`${inputClass} disabled:opacity-60`}
             placeholder={String(FALLBACK_MAP_CENTER.zoom)}
           />
         </div>

@@ -196,7 +196,11 @@ export const SettingsManagementPage: React.FC = () => {
   );
 
   // Config API (map/default_center)
-  const { data: mapCenterConfig, isError: mapCenterFailed } = useQuery({
+  const {
+    data: mapCenterConfig,
+    isError: mapCenterFailed,
+    isPending: mapCenterLoading,
+  } = useQuery({
     queryKey: MAP_CENTER_ADMIN_QUERY_KEY,
     queryFn: mapConfigApi.getDefaultCenterConfig,
   });
@@ -205,7 +209,19 @@ export const SettingsManagementPage: React.FC = () => {
     [mapCenterConfig],
   );
   const [mapCenterDraft, setMapCenterDraft] = useState(savedMapCenter);
-  React.useEffect(() => setMapCenterDraft(savedMapCenter), [savedMapCenter]);
+
+  const prevSavedMapCenterRef = useRef(savedMapCenter);
+  React.useEffect(() => {
+    const prevSaved = prevSavedMapCenterRef.current;
+    prevSavedMapCenterRef.current = savedMapCenter;
+    setMapCenterDraft((current) => {
+      const next = { ...savedMapCenter };
+      for (const key of Object.keys(next) as (keyof MapCenterDraft)[]) {
+        if (current[key] !== prevSaved[key]) next[key] = current[key];
+      }
+      return next;
+    });
+  }, [savedMapCenter]);
 
   const isSettingsDirty = !isSame(formData, savedSettings);
   const isAttachmentDirty = !isSame(attachmentDraft, attachmentConfig?.value);
@@ -807,6 +823,7 @@ export const SettingsManagementPage: React.FC = () => {
             value={mapCenterDraft}
             onChange={setMapCenterDraft}
             notConfigured={mapCenterConfig === null}
+            disabled={mapCenterLoading}
           />
         )}
 
