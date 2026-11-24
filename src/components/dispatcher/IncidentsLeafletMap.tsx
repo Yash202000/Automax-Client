@@ -6,7 +6,7 @@ import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { attachOsmBaseLayer } from "../../utils/mapProvider";
-import { useMapDefaultCenter } from "../../hooks/useMapDefaultCenter";
+import { useMapDefaultCenter } from "../../hooks/useMapConfig";
 import MapFallbackNotice from "../maps/MapFallbackNotice";
 import {
   DEFAULT_PIN_COLOR,

@@ -11,7 +11,10 @@ import BaseMapLayer from "../maps/BaseMapLayer";
 import GoogleBaseMap from "../maps/google/GoogleBaseMap";
 import MapSwitch from "../maps/MapSwitch";
 import { useMapProvider } from "../../utils/mapProvider";
-import { useMapDefaultCenter } from "../../hooks/useMapDefaultCenter";
+import {
+  useMapDefaultCenter,
+  useMapSearchEnabled,
+} from "../../hooks/useMapConfig";
 import { isGisEnabled } from "../../api/mapConfig";
 import {
   reverseGeocodeGoogle,
@@ -399,6 +402,8 @@ export function LocationPicker({
     longitude: defaultLng,
     zoom: defaultZoom,
   } = useMapDefaultCenter();
+  // Address search box, switchable in Settings → Map configuration.
+  const searchEnabled = useMapSearchEnabled();
   const defaultCenter = useMemo<[number, number]>(
     () => [defaultLat, defaultLng],
     [defaultLat, defaultLng],
@@ -887,47 +892,49 @@ export function LocationPicker({
           }
         />
 
-        {/* Search Overlay */}
-        <div className="absolute top-3 left-3 right-3 z-1" ref={searchRef}>
-          <div className="relative shadow-lg max-w-md mx-auto">
-            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
-            </span>
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={onSearchChange}
-              onFocus={() =>
-                searchQuery.length >= 3 && setShowSuggestions(true)
-              }
-              className="block w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm text-foreground"
-              placeholder={t("locationPicker.searchAddress")}
-            />
-            {isSearching && (
-              <span className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+        {/* Search Overlay (Settings → Map configuration → Map search) */}
+        {searchEnabled && (
+          <div className="absolute top-3 left-3 right-3 z-1" ref={searchRef}>
+            <div className="relative shadow-lg max-w-md mx-auto">
+              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-gray-400" />
               </span>
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={onSearchChange}
+                onFocus={() =>
+                  searchQuery.length >= 3 && setShowSuggestions(true)
+                }
+                className="block w-full pl-9 pr-3 py-2 bg-background border border-border rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm text-foreground"
+                placeholder={t("locationPicker.searchAddress")}
+              />
+              {isSearching && (
+                <span className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                </span>
+              )}
+            </div>
+
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-11 mt-1 w-full max-w-md left-1/2 -translate-x-1/2 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden max-h-60 overflow-y-auto">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => handleSelectSuggestion(suggestion)}
+                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-50 last:border-0 transition-colors"
+                  >
+                    <p className="font-medium text-gray-900 truncate">
+                      {suggestion.label}
+                    </p>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
-
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-11 mt-1 w-full max-w-md left-1/2 -translate-x-1/2 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden max-h-60 overflow-y-auto">
-              {suggestions.map((suggestion, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => handleSelectSuggestion(suggestion)}
-                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-50 last:border-0 transition-colors"
-                >
-                  <p className="font-medium text-gray-900 truncate">
-                    {suggestion.label}
-                  </p>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Expand Button Overlay */}
         {onToggleExpand && (
