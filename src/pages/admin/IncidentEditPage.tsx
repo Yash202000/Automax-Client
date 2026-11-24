@@ -76,22 +76,6 @@ const getUserLabel = (user: any) =>
 
 const normalizeStatus = (status?: string) => status?.toLowerCase() ?? "";
 
-const splitCallerName = (value: string) => {
-  const normalized = value.trim().replace(/\s+/g, " ");
-  const parts = normalized.split(" ").filter(Boolean);
-
-  if (parts.length === 0) return { first: "", middle: "", last: "" };
-  if (parts.length === 1) return { first: parts[0], middle: "", last: "" };
-  if (parts.length === 2)
-    return { first: parts[0], middle: "", last: parts[1] };
-
-  return {
-    first: parts[0],
-    middle: parts.slice(1, -1).join(" "),
-    last: parts[parts.length - 1],
-  };
-};
-
 const statusOrder: Record<string, number> = {
   online: 0,
   connected: 1,
@@ -148,11 +132,6 @@ export function IncidentEditPage() {
     string | undefined
   >();
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [callerNameParts, setCallerNameParts] = useState({
-    first: "",
-    middle: "",
-    last: "",
-  });
   const [locationOptions, setLocationOptions] = useState<iLocationOption[]>([]);
   const [showLocationOption, setShowLocationOption] = useState<boolean>(false);
   const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
@@ -457,10 +436,6 @@ export function IncidentEditPage() {
     setLookupValues((prev) => ({ ...prev, ...initialLookupValues }));
     setLookupValuesSeeded(true);
   }, [incident, incidentLookupCategories, lookupValuesSeeded]);
-
-  useEffect(() => {
-    setCallerNameParts(splitCallerName(formData.reporter_name || ""));
-  }, [formData.reporter_name]);
 
   const selectedWorkflow = workflows.find(
     (w) => w.id === incident?.workflow?.id,
@@ -787,7 +762,10 @@ export function IncidentEditPage() {
         field === "location_id" ||
         field === "lookup:PRIORITY" ||
         field === "caller_identity_text" ||
-        field === "cooperation_status"
+        field === "cooperation_status" ||
+        field === "reporter_name" ||
+        field === "reporter_email" ||
+        field === "reporter_phone"
       ) {
         continue;
       }
@@ -1135,60 +1113,6 @@ export function IncidentEditPage() {
                 )}
               </div>
             </Card>
-
-            {/* Caller information*/}
-            {(!isEPM940 || incident.source?.toLowerCase() === "web") &&
-              (workflowRequiredFields.includes("reporter_name") ||
-                workflowOptionalFields.includes("reporter_name") ||
-                workflowRequiredFields.includes("reporter_phone") ||
-                workflowOptionalFields.includes("reporter_phone") ||
-                workflowRequiredFields.includes("reporter_email") ||
-                workflowOptionalFields.includes("reporter_email")) && (
-                <Card className="p-6">
-                  <h2 className="text-lg font-semibold mb-4">
-                    {t("incidents.callerInformation", "Caller Information")}
-                  </h2>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <Input
-                        label={t("incidents.firstName", "First name")}
-                        value={callerNameParts.first}
-                        disabled
-                      />
-                      <Input
-                        label={t("incidents.middleName", "Middle name")}
-                        value={callerNameParts.middle}
-                        disabled
-                      />
-                      <Input
-                        label={t("incidents.lastName", "Last name")}
-                        value={callerNameParts.last}
-                        disabled
-                      />
-                    </div>
-
-                    <Input
-                      className="w-full"
-                      label={t(
-                        "incidents.reporterPhone",
-                        "Caller Phone Number",
-                      )}
-                      type="tel"
-                      value={formData.reporter_phone || ""}
-                      disabled
-                    />
-                    {(workflowRequiredFields.includes("reporter_email") ||
-                      workflowOptionalFields.includes("reporter_email")) && (
-                      <Input
-                        label={t("incidents.reporterEmail", "Caller Email")}
-                        type="email"
-                        value={formData.reporter_email || ""}
-                        disabled
-                      />
-                    )}
-                  </div>
-                </Card>
-              )}
 
             {/* Matching Criteria */}
             <Card className="p-6">

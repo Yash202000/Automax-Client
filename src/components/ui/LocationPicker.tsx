@@ -11,6 +11,8 @@ import BaseMapLayer from "../maps/BaseMapLayer";
 import GoogleBaseMap from "../maps/google/GoogleBaseMap";
 import MapSwitch from "../maps/MapSwitch";
 import { useMapProvider } from "../../utils/mapProvider";
+import { useMapDefaultCenter } from "../../hooks/useMapDefaultCenter";
+import { isGisEnabled } from "../../api/mapConfig";
 import {
   reverseGeocodeGoogle,
   searchGooglePlaces,
@@ -47,10 +49,7 @@ import {
 import { Button } from "./Button";
 import "leaflet/dist/leaflet.css";
 
-// window.APP_CONFIG is set by docker-entrypoint.sh at container start;
-// import.meta.env.VITE_ENABLE_GIS only applies to local dev / build-time.
-const ENABLE_GIS =
-  window.APP_CONFIG?.ENABLE_GIS ?? import.meta.env.VITE_ENABLE_GIS;
+const ENABLE_GIS = isGisEnabled();
 
 // Fix for default marker icon - using local images
 const defaultIcon = new Icon({
@@ -188,14 +187,20 @@ function MapClickHandler({
 }
 
 // Component to recenter map when location changes
-function MapCenterUpdater({ center }: { center: [number, number] | null }) {
+function MapCenterUpdater({
+  center,
+  zoom = 15,
+}: {
+  center: [number, number] | null;
+  zoom?: number;
+}) {
   const map = useMap();
 
   useEffect(() => {
     if (center) {
-      map.setView(center, 15);
+      map.setView(center, zoom);
     }
-  }, [center, map]);
+  }, [center, zoom, map]);
 
   return null;
 }
@@ -203,81 +208,128 @@ function MapCenterUpdater({ center }: { center: [number, number] | null }) {
 // Same as MapCenterUpdater, for the native Google map.
 function GoogleMapCenterUpdater({
   center,
+  zoom = 15,
 }: {
   center: [number, number] | null;
+  zoom?: number;
 }) {
   const map = useGoogleMap();
 
   useEffect(() => {
     if (map && center) {
       map.panTo({ lat: center[0], lng: center[1] });
-      map.setZoom(15);
+      map.setZoom(zoom);
     }
-  }, [center, map]);
+  }, [center, zoom, map]);
 
   return null;
 }
 
-async function reverseGeocode(
+// Recent lookups by coordinates, shared by every picker on the page (e.g. the
+// inline picker and its expand modal), so one pick makes one address + GIS
+// request instead of several.
+const LOOKUP_TTL_MS = 10_000;
+const lookupCache = new Map<
+  string,
+  { at: number; result: Promise<Partial<LocationData>> }
+>();
+
+const coordKey = (lat: number, lng: number) =>
+  `${lat.toFixed(6)},${lng.toFixed(6)}`;
+
+function reverseGeocode(
   lat: number,
   lng: number,
   useGoogle = false,
 ): Promise<Partial<LocationData>> {
-  try {
-    let base: GeoAddress;
-    if (useGoogle) {
-      base = await reverseGeocodeGoogle(lat, lng);
-    } else {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
-        {
-          headers: {
-            "Accept-Language": "en",
-          },
-        },
-      );
+  const key = `${coordKey(lat, lng)},${useGoogle ? "g" : "o"}`;
+  const now = Date.now();
+  for (const [k, entry] of lookupCache) {
+    if (now - entry.at > LOOKUP_TTL_MS) lookupCache.delete(k);
+  }
+  const cached = lookupCache.get(key);
+  if (cached) return cached.result;
+  const result = fetchLocationDetails(lat, lng, useGoogle);
+  lookupCache.set(key, { at: now, result });
+  return result;
+}
 
-      if (!response.ok) {
-        throw new Error("Geocoding failed");
-      }
+async function fetchLocationDetails(
+  lat: number,
+  lng: number,
+  useGoogle: boolean,
+): Promise<Partial<LocationData>> {
+  // The address lookup and the GIS check run side by side and fail
+  // independently: a geocoding failure (Nominatim rate limit, Google key or
+  // Geocoding API problem) must not skip the GIS boundary check.
+  const [addressResult, gisResult] = await Promise.allSettled([
+    lookupAddress(lat, lng, useGoogle),
+    ENABLE_GIS ? integrationApi.gisLocation({ lat, lng }) : undefined,
+  ]);
 
-      const data: NominatimResponse = await response.json();
-      base = {
-        address: data.display_name,
-        city: data.address.city || data.address.town || data.address.village,
-        state: data.address.state || data.address.province,
-        country: data.address.country,
-        postal_code: data.address.postcode,
-        district:
-          data.address.district ||
-          data.address.county ||
-          data.address.state_district ||
-          data.address.suburb,
-      };
-    }
-    let gisData = undefined;
-    if (ENABLE_GIS === "true") {
-      gisData = await integrationApi.gisLocation({ lat, lng });
+  let base: GeoAddress = {};
+  if (addressResult.status === "fulfilled") {
+    base = addressResult.value;
+  } else {
+    // eslint-disable-next-line no-console
+    console.error("Reverse geocoding error:", addressResult.reason);
+  }
+
+  let gisData = undefined;
+  if (ENABLE_GIS) {
+    if (gisResult.status === "fulfilled") {
+      gisData = gisResult.value;
       if (!gisData?.data?.isInsideBoundary) {
         toast.error("Location is outside the boundary");
       }
+    } else {
+      // eslint-disable-next-line no-console
+      console.error("GIS identify error:", gisResult.reason);
     }
-
-    const gisAddress = `${gisData?.data?.plan_no}, ${gisData?.data?.street_fullname}, ${gisData?.data?.municipality_name}, ${gisData?.data?.district_name}`;
-
-    return {
-      ...base,
-      address:
-        ENABLE_GIS === "true" && gisData?.data?.isInsideBoundary
-          ? gisAddress
-          : base.address,
-      gis: gisData ? gisData.data : undefined,
-    };
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error("Reverse geocoding error:", error);
-    return {};
   }
+
+  const gisAddress = `${gisData?.data?.plan_no}, ${gisData?.data?.street_fullname}, ${gisData?.data?.municipality_name}, ${gisData?.data?.district_name}`;
+
+  return {
+    ...base,
+    address: gisData?.data?.isInsideBoundary ? gisAddress : base.address,
+    gis: gisData ? gisData.data : undefined,
+  };
+}
+
+async function lookupAddress(
+  lat: number,
+  lng: number,
+  useGoogle: boolean,
+): Promise<GeoAddress> {
+  if (useGoogle) return reverseGeocodeGoogle(lat, lng);
+
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+    {
+      headers: {
+        "Accept-Language": "en",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Geocoding failed");
+  }
+
+  const data: NominatimResponse = await response.json();
+  return {
+    address: data.display_name,
+    city: data.address.city || data.address.town || data.address.village,
+    state: data.address.state || data.address.province,
+    country: data.address.country,
+    postal_code: data.address.postcode,
+    district:
+      data.address.district ||
+      data.address.county ||
+      data.address.state_district ||
+      data.address.suburb,
+  };
 }
 
 // Coerce latitude/longitude to numbers (the API can send them as strings);
@@ -332,14 +384,25 @@ export function LocationPicker({
   const [lngTouched, setLngTouched] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const coordTimeout = useRef<any>(null);
+  // Coordinates this picker last looked up (address + GIS).
+  const lookedUpRef = useRef<string | null>(null);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const searchTimeout = useRef<any>(null);
 
-  // Default center
-  const defaultCenter: [number, number] = [25.276987, 55.296249]; // Dubai as default
+  // Where the map opens before a point is picked: the default center set by a
+  // super admin in Settings → Map (configs store).
+  const {
+    latitude: defaultLat,
+    longitude: defaultLng,
+    zoom: defaultZoom,
+  } = useMapDefaultCenter();
+  const defaultCenter = useMemo<[number, number]>(
+    () => [defaultLat, defaultLng],
+    [defaultLat, defaultLng],
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -468,6 +531,7 @@ export function LocationPicker({
         const { latitude, longitude } = position.coords;
 
         // Reverse geocode to get address
+        lookedUpRef.current = coordKey(latitude, longitude);
         const addressData = await reverseGeocode(latitude, longitude, isGoogle);
 
         const locationData: LocationData = {
@@ -506,6 +570,7 @@ export function LocationPicker({
       // Always commit the coordinates, even if the address lookup fails, so
       // the parent never keeps stale values.
       let addressData: Partial<LocationData> = {};
+      lookedUpRef.current = coordKey(latlng.lat, latlng.lng);
       try {
         addressData = await reverseGeocode(latlng.lat, latlng.lng, isGoogle);
       } catch {
@@ -526,6 +591,7 @@ export function LocationPicker({
   );
 
   const handleClear = useCallback(() => {
+    lookedUpRef.current = null;
     onChange(undefined);
     setMapCenter(null);
   }, [onChange]);
@@ -635,8 +701,14 @@ export function LocationPicker({
     }
   };
 
+  // Look up coordinates that arrive from outside (initial value, search pick).
+  // Skip ones this picker just looked up itself (map click, current location),
+  // which would otherwise repeat the request.
   useEffect(() => {
     if (value?.latitude && value.longitude) {
+      const key = coordKey(value.latitude, value.longitude);
+      if (lookedUpRef.current === key) return;
+      lookedUpRef.current = key;
       reverseAndSetLatLong();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -747,9 +819,7 @@ export function LocationPicker({
         className={`relative ${isExpanded ? "h-[500px]" : "h-64"} rounded-lg overflow-hidden border group transition-all duration-300`}
         style={{
           border:
-            !GISData?.isInsideBoundary &&
-            GISData !== null &&
-            ENABLE_GIS === "true"
+            !GISData?.isInsideBoundary && GISData !== null && ENABLE_GIS
               ? "2px solid red"
               : "",
         }}
@@ -763,7 +833,7 @@ export function LocationPicker({
                 lat: (mapCenter || defaultCenter)[0],
                 lng: (mapCenter || defaultCenter)[1],
               }}
-              defaultZoom={mapCenter ? 15 : 10}
+              defaultZoom={mapCenter ? 15 : defaultZoom}
               controls
               zoomControlOptions={{ position: ControlPosition.RIGHT_CENTER }}
               streetViewControlOptions={{ position: ControlPosition.RIGHT_TOP }}
@@ -775,6 +845,12 @@ export function LocationPicker({
               }}
             >
               <GoogleMapCenterUpdater center={mapCenter} />
+              {/* The configured center loads after the map mounts; move there while
+                  nothing is picked yet. */}
+              <GoogleMapCenterUpdater
+                center={mapCenter ? null : defaultCenter}
+                zoom={defaultZoom}
+              />
               {value?.latitude && value?.longitude && (
                 <AdvancedMarker
                   position={{ lat: value.latitude, lng: value.longitude }}
@@ -786,7 +862,7 @@ export function LocationPicker({
             <>
               <MapContainer
                 center={mapCenter || defaultCenter}
-                zoom={mapCenter ? 15 : 10}
+                zoom={mapCenter ? 15 : defaultZoom}
                 className={"h-full w-full z-0"}
                 style={{ height: "100%", width: "100%" }}
                 zoomControl={false}
@@ -794,6 +870,10 @@ export function LocationPicker({
                 <BaseMapLayer />
                 <MapClickHandler onLocationSelect={handleMapClick} />
                 <MapCenterUpdater center={mapCenter} />
+                <MapCenterUpdater
+                  center={mapCenter ? null : defaultCenter}
+                  zoom={defaultZoom}
+                />
                 <ZoomControl position={"bottomleft"} />
 
                 {value?.latitude && value?.longitude && (
@@ -902,44 +982,43 @@ export function LocationPicker({
             </div>
           </div>
 
-          {(value.city || value.state || value.country) &&
-            ENABLE_GIS === "false" && (
-              <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
-                {value.city && (
-                  <div>
-                    <span className="font-medium">
-                      {t("locationPicker.city")}:
-                    </span>{" "}
-                    {value.city}
-                  </div>
-                )}
-                {value.state && (
-                  <div>
-                    <span className="font-medium">
-                      {t("locationPicker.state")}:
-                    </span>{" "}
-                    {value.state}
-                  </div>
-                )}
-                {value.country && (
-                  <div>
-                    <span className="font-medium">
-                      {t("locationPicker.country")}:
-                    </span>{" "}
-                    {value.country}
-                  </div>
-                )}
-                {value.postal_code && (
-                  <div>
-                    <span className="font-medium">
-                      {t("locationPicker.postalCode")}:
-                    </span>{" "}
-                    {value.postal_code}
-                  </div>
-                )}
-              </div>
-            )}
-          {ENABLE_GIS === "true" && (
+          {(value.city || value.state || value.country) && !ENABLE_GIS && (
+            <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
+              {value.city && (
+                <div>
+                  <span className="font-medium">
+                    {t("locationPicker.city")}:
+                  </span>{" "}
+                  {value.city}
+                </div>
+              )}
+              {value.state && (
+                <div>
+                  <span className="font-medium">
+                    {t("locationPicker.state")}:
+                  </span>{" "}
+                  {value.state}
+                </div>
+              )}
+              {value.country && (
+                <div>
+                  <span className="font-medium">
+                    {t("locationPicker.country")}:
+                  </span>{" "}
+                  {value.country}
+                </div>
+              )}
+              {value.postal_code && (
+                <div>
+                  <span className="font-medium">
+                    {t("locationPicker.postalCode")}:
+                  </span>{" "}
+                  {value.postal_code}
+                </div>
+              )}
+            </div>
+          )}
+          {ENABLE_GIS && (
             <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
               {GISData?.district_name && (
                 <div>

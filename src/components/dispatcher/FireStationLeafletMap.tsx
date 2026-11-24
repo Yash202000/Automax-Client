@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { attachOsmBaseLayer } from "../../utils/mapProvider";
+import { useMapDefaultCenter } from "../../hooks/useMapDefaultCenter";
 import MapFallbackNotice from "../maps/MapFallbackNotice";
 import type { FireStationMapProps } from "./fireStationMap.types";
 
@@ -26,12 +27,18 @@ export default function FireStationLeafletMap({
   const mapEl = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const center = useMapDefaultCenter();
+  const centerRef = useRef(center);
+  centerRef.current = center;
+  const stationCountRef = useRef(stations.length);
+  stationCountRef.current = stations.length;
 
   useEffect(() => {
     if (!mapEl.current) return;
+    const { latitude, longitude, zoom } = centerRef.current;
     const map = L.map(mapEl.current, { zoomControl: true }).setView(
-      [24.7136, 46.6753],
-      10,
+      [latitude, longitude],
+      zoom,
     );
     attachOsmBaseLayer(map);
     mapRef.current = map;
@@ -62,6 +69,13 @@ export default function FireStationLeafletMap({
       markersRef.current.set(s.id, marker);
     });
   }, [stations, selectedIds, onToggle, getName]);
+
+  // The configured default center (Settings → Map) loads after mount; move
+  // there while there are no stations to fit to.
+  useEffect(() => {
+    if (stationCountRef.current > 0) return;
+    mapRef.current?.setView([center.latitude, center.longitude], center.zoom);
+  }, [center.latitude, center.longitude, center.zoom]);
 
   // Fit to the visible stations when the set changes.
   useEffect(() => {

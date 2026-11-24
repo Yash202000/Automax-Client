@@ -35,6 +35,7 @@ import {
 } from "../../components/ui";
 import type { TreeSelectNode, LocationData } from "../../components/ui";
 import { withCallStatusDot } from "../../utils/callStatus";
+import { isGisEnabled } from "../../api/mapConfig";
 import { cn } from "@/lib/utils";
 import {
   workflowApi,
@@ -256,8 +257,7 @@ export function IncidentCreatePage() {
       ""
     ).toUpperCase() === "EPMCL";
 
-  const ENABLE_GIS =
-    window.APP_CONFIG?.ENABLE_GIS ?? import.meta.env.VITE_ENABLE_GIS;
+  const ENABLE_GIS = isGisEnabled();
 
   const shouldFilterDepartments =
     isEpmclClient &&
@@ -1170,7 +1170,7 @@ export function IncidentCreatePage() {
 
         let matched = undefined;
 
-        if (ENABLE_GIS === "false" || ENABLE_GIS === undefined) {
+        if (!ENABLE_GIS) {
           const searchName = (location.city || location.address || "")
             .toLowerCase()
             .trim();
@@ -1363,7 +1363,7 @@ export function IncidentCreatePage() {
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (ENABLE_GIS === "true" && !gisData?.isInsideBoundary) {
+    if (ENABLE_GIS && !gisData?.isInsideBoundary) {
       newErrors.geolocation = t("incidents.gisError");
     }
     if (!generatedTitle.trim()) newErrors.title = t("incidents.titleRequired");
@@ -1585,6 +1585,19 @@ export function IncidentCreatePage() {
       location_id: finalLocationId,
       comment: comment.trim() || undefined,
     };
+
+    // EPM940 collects the caller name as First/Middle/Last; persist the
+    // combined value as reporter_name so the edit page can split it back.
+    if (isEPM940) {
+      const combinedName = [
+        callerNameParts.first.trim(),
+        callerNameParts.middle.trim(),
+        callerNameParts.last.trim(),
+      ]
+        .filter(Boolean)
+        .join(" ");
+      if (combinedName) submitData.reporter_name = combinedName;
+    }
 
     // Prefilled caller IDs may still be local ("0501234567"); send the
     // country-coded form the agent saw in the phone fields

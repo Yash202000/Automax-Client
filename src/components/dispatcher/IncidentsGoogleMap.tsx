@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import { useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import GoogleBaseMap from "../maps/google/GoogleBaseMap";
+import GoogleDefaultView from "../maps/google/GoogleDefaultView";
+import { useMapDefaultCenter } from "../../hooks/useMapDefaultCenter";
 import {
   DEFAULT_PIN_COLOR,
   FOCUS_PIN_COLOR,
@@ -534,12 +536,14 @@ function LinkLines({ links }: { links?: IncidentsMapProps["links"] }) {
 
 /** Native Google Maps version of the incidents map, clustered. */
 export default function IncidentsGoogleMap(props: IncidentsMapProps) {
+  const center = useMapDefaultCenter();
   return (
     <GoogleBaseMap
-      defaultCenter={{ lat: 24.7136, lng: 46.6753 }}
-      defaultZoom={10}
+      defaultCenter={{ lat: center.latitude, lng: center.longitude }}
+      defaultZoom={center.zoom}
       controls
     >
+      <GoogleDefaultView center={center} enabled={props.markers.length === 0} />
       <ClusteredMarkers {...props} />
       <FocusPin point={props.focusPoint} />
       <RouteLine path={props.routePath} />
