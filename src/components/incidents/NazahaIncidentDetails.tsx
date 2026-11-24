@@ -1,10 +1,5 @@
-// Nazaha fields on the incident details page (rendered for CLIENT=NAZAHA only):
-// report information (content, notes, caller number, linked/previous reports,
-// ...) and the reporter's contact details. Each card shows only when the
-// incident has data for it.
-// An uncooperative reporter's details are not sent by the backend
-// (reporter_hidden); users with the reveal permission can load them on demand,
-// and every reveal is logged by the backend.
+// Nazaha cards on the incident details page: report info and reporter details.
+// A hidden (uncooperative) reporter can be revealed by users with permission.
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -67,9 +62,8 @@ export const NazahaIncidentDetails: React.FC<{ incident: Incident }> = ({
     </Link>
   );
 
-  // All reporter data lives on the reporter's contact (incident.reporter). When
-  // hidden (uncooperative), it comes only from the logged reveal call.
-  // Older reports link the creating operator instead of a reporter contact.
+  // Reporter details come from the contact, or from the reveal call when hidden.
+  // Older reports link the operator instead of a contact.
   const contact =
     incident.reporter && incident.reporter.id !== incident.created_by_id
       ? incident.reporter
@@ -85,7 +79,7 @@ export const NazahaIncidentDetails: React.FC<{ incident: Incident }> = ({
           .filter(Boolean)
           .join(" "),
         reporter_phone: contact?.phone,
-        // A generated login email (…@automax.com) is not the reporter's email.
+        // Skip generated login emails.
         reporter_email: contact?.email?.toLowerCase().endsWith("@automax.com")
           ? undefined
           : contact?.email,
@@ -94,7 +88,7 @@ export const NazahaIncidentDetails: React.FC<{ incident: Incident }> = ({
         reporter_gender: contact?.gender,
         reporter_address: contact?.address,
       };
-  // Contacts without a national ID hold a generated placeholder; show real IDs only.
+  // Skip placeholder national IDs.
   const nationalId = /^[12]\d{9}$/.test(reporter.reporter_national_id || "")
     ? reporter.reporter_national_id
     : undefined;
@@ -109,8 +103,7 @@ export const NazahaIncidentDetails: React.FC<{ incident: Incident }> = ({
     incident.previous_reports?.length ||
     incident.street,
   );
-  // The reporter card adds the contact details the other blocks don't show;
-  // name/phone/email alone are already on the page.
+  // Name, phone and email are already shown elsewhere on the page.
   const hasReporterInfo = Boolean(
     incident.reporter_hidden ||
     nationalId ||

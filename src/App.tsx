@@ -140,8 +140,7 @@ const IncidentCreatePage = lazy(() =>
     default: m.IncidentCreatePage,
   })),
 );
-// Nazaha "Create Report" / "Edit Report" screens, used instead of the generic
-// create and edit pages for CLIENT=NAZAHA
+// Nazaha create and edit pages, used instead of the generic ones
 const NazahaIncidentCreatePage = lazy(() =>
   import("./pages/admin/NazahaIncidentForm").then((m) => ({
     default: m.NazahaIncidentCreatePage,

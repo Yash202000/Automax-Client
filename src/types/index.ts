@@ -14,7 +14,7 @@ export type ClassificationType =
 export interface User {
   id: string;
   national_id?: string;
-  // Citizen reporter details (Nazaha). Nationality is a NATIONALITY master-data value.
+  // Reporter details (Nazaha)
   nationality_id?: string;
   nationality?: LookupValue;
   gender?: string;
@@ -814,7 +814,7 @@ export type IncidentFormField =
   | "attachments"
   | "attachment"
   | "comment"
-  // Nazaha create-screen fields (CLIENT=NAZAHA only)
+  // Nazaha fields
   | "reporter_mobile"
   | "previous_report_ids"
   | "linked_incident_number"
@@ -1505,7 +1505,7 @@ export interface IncidentCreateRequest {
   comment?: string;
   /** CTI call this incident was created from (links the call to the incident). */
   call_uuid?: string;
-  // Nazaha only (CLIENT=NAZAHA); the backend ignores these for other clients.
+  // Nazaha fields (ignored for other clients)
   caller_number?: string;
   previous_report_ids?: string[];
   linked_incident_number?: string;
@@ -1543,8 +1543,7 @@ export interface IncidentUpdateRequest {
   reporter_phone?: string;
   caller_identity_text?: string;
   cooperation_status?: "cooperative" | "uncooperative" | "";
-  // Nazaha fields (undefined = unchanged, "" = clear). Reporter fields update
-  // the reporter's contact.
+  // Nazaha fields (undefined = unchanged, "" = clear)
   caller_number?: string;
   linked_incident_number?: string;
   concerned_authority_id?: string;

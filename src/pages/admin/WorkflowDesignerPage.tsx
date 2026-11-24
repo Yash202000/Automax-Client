@@ -341,10 +341,7 @@ const baseFormFields: BaseFormFieldType[] = [
   },
 ];
 
-// Fields of the Nazaha create screen (CLIENT=NAZAHA only). The existing fields
-// (Caller Name, Caller Email, Caller Phone Number, ...) keep their usual names
-// here; only the Nazaha create/edit pages show them under the screen's labels.
-// Concerned Authority is listed as "Authority" here.
+// Extra form fields for Nazaha workflows.
 const nazahaFormFields: BaseFormFieldType[] = (
   [
     ["previous_report_ids", "nazaha.previousReports"],
@@ -873,7 +870,7 @@ export const WorkflowDesignerPage: React.FC = () => {
   ).filter(
     (cat) =>
       cat.add_to_incident_form &&
-      // Nazaha: Authority and Nationality have their own fields in the list below.
+      // Nazaha: Authority and Nationality have their own fields.
       !(isNazahaClient && NAZAHA_LOOKUP_CATEGORIES.includes(cat.code)),
   );
   const escalationPolicies = escalationPoliciesData?.data || [];

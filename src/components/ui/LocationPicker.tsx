@@ -92,8 +92,7 @@ interface LocationPickerProps {
   onToggleExpand?: () => void;
   // Show editable Latitude/Longitude inputs under the controls.
   showCoordinateInputs?: boolean;
-  // Show the Latitude/Longitude inputs read-only: they only follow the map
-  // (or the parent's value) and cannot be typed in.
+  // Make the Latitude/Longitude inputs read-only (they follow the map).
   coordinatesReadOnly?: boolean;
   // eslint-disable-next-line no-unused-vars
   onCoordinateErrorChange?: (_error: string | undefined) => void;

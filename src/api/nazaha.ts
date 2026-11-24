@@ -1,9 +1,8 @@
-// Nazaha-only API (backend routes exist only when CLIENT_CODE=NAZAHA). Create
-// and edit use the generic incident API (incidentApi), which takes the Nazaha fields.
+// Nazaha-only API. Create and edit use the generic incident API.
 import { apiClient } from "./client";
 import type { ApiResponse, LookupValue } from "../types";
 
-// One value of the "Previous Reports" dropdown.
+// One option of the previous reports dropdown.
 export interface CallerPreviousReport {
   id: string;
   incident_number: string;
@@ -35,7 +34,7 @@ export const nazahaApi = {
     return response.data;
   },
 
-  // Every call is recorded in the activity log (module "reporter_reveal").
+  // Every call is recorded in the activity log.
   revealReporter: async (
     incidentId: string,
   ): Promise<ApiResponse<ReporterDetails>> => {

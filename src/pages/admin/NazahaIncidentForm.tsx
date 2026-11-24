@@ -1,12 +1,6 @@
-// Nazaha "Create Report" / "Edit Report" screens (CLIENT=NAZAHA). Replace the
-// generic create and edit pages (/incidents/new, /incidents/:id/edit) for Nazaha
-// only; both use the same form so the two never drift apart. Field order follows the client's
-// mockup (sections 1-6). Every field follows the selected workflow's form
-// config like the generic create page (hidden unless listed, required when in
-// required_fields), including the Nazaha fields added to the workflow designer.
-// Fixed: report date, classification, location and city.
-// Workflow field names: the existing "reporter_phone" (Caller Phone Number) is
-// the Caller Number here; the reporter's mobile is "reporter_mobile".
+// Nazaha create and edit form. Fields follow the selected workflow's form config
+// (hidden, optional or required). The workflow field "reporter_phone" is the
+// caller number here; the reporter's mobile is "reporter_mobile".
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -102,8 +96,7 @@ import {
 
 type TreeNode = { id: string; children?: TreeNode[] };
 
-// Keeps only the branches that contain one of the user's assigned nodes
-// (same rule as the generic create page). No assignments = whole tree.
+// Keeps only the branches with one of the user's assigned nodes (all when none).
 function filterTreeByAccess<T extends TreeNode>(
   nodes: T[],
   allowedIds: Set<string>,
@@ -129,9 +122,8 @@ function findPath<T extends TreeNode>(nodes: T[], id: string): T[] {
   return [];
 }
 
-// Report Location (2.2) offers the parent locations: every location that has
-// children, plus top-level locations (e.g. "Default"). Their children are the
-// City (6.1) values.
+// Report Location lists parent locations (and top-level ones); their children
+// are the City options.
 function parentLocations(nodes: Location[], isRoot = true): Location[] {
   return nodes
     .filter((n) => isRoot || (n.children?.length ?? 0) > 0)
@@ -143,8 +135,7 @@ function flattenLocations(nodes: Location[]): Location[] {
   return nodes.flatMap((n) => [n, ...flattenLocations(n.children ?? [])]);
 }
 
-// Looks a place name up on OpenStreetMap (same service the generic page uses)
-// for a location that has no coordinates in the master data.
+// Looks up a place name on OpenStreetMap, for locations without coordinates.
 async function geocodeByName(
   name: string,
 ): Promise<{ lat: number; lng: number } | null> {
@@ -163,8 +154,7 @@ async function geocodeByName(
 
 const DEFAULT_LOCATION_NAME = "Default";
 
-// Read-only display fields (report date/time, city): muted like the map's
-// read-only latitude/longitude, with no hover or focus highlight.
+// Style for read-only inputs.
 const READ_ONLY_INPUT_CLASS =
   "bg-[hsl(var(--muted))] cursor-default hover:border-[hsl(var(--border))] focus:border-[hsl(var(--border))] focus:ring-0";
 
@@ -187,8 +177,7 @@ const getUserLabel = (user: Partial<User>) =>
   user?.email ||
   "";
 
-// Reporter fields of the form, filled from the reporter's contact (edit mode).
-// A generated login email and a placeholder national ID are not real details.
+// Reporter form values from the contact (edit), skipping generated values.
 function reporterFromContact(contact?: User) {
   return {
     reporter_name: [
@@ -212,7 +201,7 @@ function reporterFromContact(contact?: User) {
   };
 }
 
-// "2026-11-23T10:30:00Z" → "2026-11-23T13:30" (local time, for datetime-local inputs).
+// ISO date → local "YYYY-MM-DDTHH:mm" for datetime-local inputs.
 function toLocalInput(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "";
@@ -221,8 +210,7 @@ function toLocalInput(iso: string): string {
 }
 
 const NATIONAL_ID_PATTERN = /^[12]\d{9}$/;
-// Caller number (1.2): digits only, optional leading "+" (no country picker).
-// The backend saves it in one format and matches it in any format.
+// Caller number: digits only, with an optional leading "+".
 const CALLER_NUMBER_PATTERN = /^\+?\d{3,20}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -234,8 +222,7 @@ interface FormState {
   previous_report_ids: string[];
   linked_incident_number: string;
   classification_id: string;
-  // Report Location (a parent location). location_id is what is saved: the
-  // selected City when there is one, else the report location.
+  // location_id is what gets saved: the city if chosen, else the report location.
   report_location_id: string;
   location_id: string;
   concerned_authority_id: string;
@@ -272,7 +259,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
   const incomingCallNumber = isEdit ? "" : softphone.incomingCallNumber;
   const incomingCallName = isEdit ? "" : softphone.incomingCallName;
 
-  // Opened from a call (CTI widget or softphone): caller number comes from the call.
+  // Opened from a call: the caller number comes from the call.
   const ctiPrefill = isEdit
     ? undefined
     : (routerLocation.state as any)?.ctiPrefill;
@@ -309,8 +296,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     due_date: "",
   }));
 
-  // A call that arrives while the form is open fills the caller number (and the
-  // reporter name, when given), as on the generic create page.
+  // A call that arrives while the form is open fills the caller number.
   useEffect(() => {
     if (!incomingCallNumber) return;
     setForm((prev) => ({
@@ -379,7 +365,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     queryFn: () => lookupApi.getValuesByCode(NATIONALITY_CATEGORY),
   });
 
-  // ── Edit mode: the incident being edited ──────────────────────────────────
+  // ── Edit mode ─────────────────────────────────────────────────────────────
   const { data: incidentData } = useQuery({
     queryKey: ["incident", incidentId],
     queryFn: () => incidentApi.getById(incidentId!),
@@ -389,8 +375,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
   const { hasPermission, isSuperAdmin } = usePermissions();
   const canReveal =
     isSuperAdmin || hasPermission(PERMISSIONS.INCIDENTS_REVEAL_REPORTER);
-  // An uncooperative reporter's details are not sent; they can be edited only
-  // after a (logged) reveal.
+  // A hidden reporter can be edited only after a reveal.
   const [reporterUnlocked, setReporterUnlocked] = useState(false);
   const [revealing, setRevealing] = useState(false);
   const reporterLocked =
@@ -445,9 +430,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
   const isRequired = (field: string) => requiredFields.includes(field);
   const isShown = (field: string) =>
     requiredFields.includes(field) || optionalFields.includes(field);
-  // A call-originated report always shows the prefilled caller name/phone
-  // (same rule as the generic create page).
-  // A report opened from a call always shows the Caller Number it filled in.
+  // A report opened from a call always shows the caller number.
   const callOriginated = Boolean(ctiPrefill) || Boolean(incomingCallNumber);
   const showCallerNumber = isShown("reporter_phone") || callOriginated;
   const showReporterName = isShown("reporter_name");
@@ -474,8 +457,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     [lookupCategoriesData?.data, selectedWorkflow],
   );
 
-  // Workflows whose classification/location restrictions fit the selection
-  // (same rules as the generic create page); all of them when none fit.
+  // Workflows that fit the selected classification and location (all when none fit).
   const filteredWorkflows = useMemo(() => {
     if (!form.classification_id && !form.location_id) return workflows;
     const locationMatters =
@@ -495,7 +477,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     return matching.length ? matching : workflows;
   }, [workflows, form.classification_id, form.location_id]);
 
-  // A selected workflow that no longer fits is replaced (like the generic page).
+  // Replace a selected workflow that no longer fits.
   useEffect(() => {
     if (isEdit || !form.workflow_id || !filteredWorkflows.length) return;
     if (!filteredWorkflows.some((w) => w.id === form.workflow_id)) {
@@ -506,7 +488,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     }
   }, [isEdit, filteredWorkflows, form.workflow_id]);
 
-  // The selected priority (lookup PRIORITY) also drives the match.
+  // The selected priority is also used for matching.
   const priorityCategory = (lookupCategoriesData?.data || []).find(
     (c) => c.code === "PRIORITY",
   );
@@ -516,8 +498,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
       )
     : undefined;
 
-  // Auto-select the workflow from classification + location + priority (like
-  // the generic page): the matched one, else the default, else the only one.
+  // Auto-select the matched workflow, else the default, else the only one.
   useEffect(() => {
     if (isEdit || !workflows.length) return; // the workflow is fixed once created
     let cancelled = false;
@@ -556,7 +537,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workflows, form.classification_id, form.location_id, priorityValue?.id]);
 
-  // ── Assignment (initial state of the workflow) ────────────────────────────
+  // ── Assignment ────────────────────────────────────────────────────────────
   const { data: initialStateData } = useQuery({
     queryKey: ["admin", "workflows", form.workflow_id, "initial-state"],
     queryFn: () => workflowApi.getInitialState(form.workflow_id),
@@ -604,9 +585,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     enabled: isEdit || isShown("department_id"),
   });
 
-  // Edit: assignment works like the generic edit page — users with the current
-  // state's assignment roles in the incident's location/classification, and a
-  // locked assignee when the state has "lock assignee" on.
+  // Edit: assignee options work like the generic edit page.
   const isAssigneeLocked =
     isEdit && !!incident?.current_state?.lock_assignee && !!incident?.assignee;
   const { data: editUsersData } = useQuery({
@@ -656,9 +635,8 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     ];
   }, [editUsersData?.data, incident?.assignee, t]);
 
-  // ── Link to Previous Report (1.4) ─────────────────────────────────────────
-  // The typed number is looked up (debounced) with the incident details API,
-  // which also accepts report numbers. It must exist and may not be this report.
+  // ── Link to previous report ───────────────────────────────────────────────
+  // The number is checked (debounced): it must exist and not be this report.
   const linkedNumber = form.linked_incident_number.trim();
   const [debouncedLinked, setDebouncedLinked] = useState(linkedNumber);
   useEffect(() => {
@@ -691,12 +669,9 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     )
       linkedIssue = t("nazaha.linkedReportSelf");
   }
-  // (A 403 means the report exists but this user can't open it: allowed.
-  // Other failures are left to the backend, which checks the number again.)
+  // A 403 means the report exists; other errors are left to the backend.
 
-  // ── Previous reports of the caller (1.3) ──────────────────────────────────
-  // Same country-code format as the mobile number; looked up once it is a
-  // complete number.
+  // ── Previous reports of the caller ────────────────────────────────────────
   const [debouncedCaller, setDebouncedCaller] = useState(form.caller_number);
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedCaller(form.caller_number), 400);
@@ -716,8 +691,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
         : [],
     [callerNumberValid, previousData?.data, incidentId],
   );
-  // Drop selections that no longer belong to the caller (not while loading).
-  // Reports already linked to the edited incident are always kept.
+  // Drop selections that aren't the caller's (reports already linked are kept).
   useEffect(() => {
     if (callerNumberValid && !previousData) return;
     setForm((prev) => {
@@ -733,7 +707,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previousReports]);
 
-  // ── Location → city (6.1) and map position ────────────────────────────────
+  // ── Location and city ─────────────────────────────────────────────────────
   const locationPath = useMemo(
     () =>
       form.location_id ? findPath<Location>(locations, form.location_id) : [],
@@ -751,7 +725,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
         : undefined,
     [locations, form.report_location_id],
   );
-  // City (6.1): the children of the report location.
+  // City options: the children of the report location.
   const cityOptions = reportLocationNode?.children ?? [];
   const cityNode =
     form.location_id && form.location_id !== form.report_location_id
@@ -820,13 +794,12 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     if (!form.workflow_id) e.workflow_id = t("incidents.workflowRequired");
     if (!generatedTitle.trim()) e.title = t("incidents.titleRequired");
 
-    // Always required (fixed rules of this screen)
+    // Always required
     need("classification_id", t("nazaha.classification"));
     need("location_id", t("nazaha.reportLocation"));
     if (form.report_location_id && cityOptions.length > 0 && !cityNode)
       e.city = requiredMsg(t("nazaha.city"));
-    // Workflow-configured Nazaha fields
-    // [form field, label, workflow field when its name differs]
+    // Nazaha fields the workflow can require: [form field, label, workflow field]
     const nazahaRequired: [keyof FormState, string, string?][] = [
       ["caller_number", t("nazaha.callerNumber"), "reporter_phone"],
       ["previous_report_ids", t("nazaha.previousReports")],
@@ -989,7 +962,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     onError: (error: any) => showSaveError(error),
   });
 
-  // Backend field errors: { errors: { ReporterNationalID: "..." } } → reporter_national_id
+  // Map backend field errors (e.g. ReporterNationalID) to form fields.
   function showSaveError(error: any) {
     {
       const fieldErrors: Record<string, string> = {};
@@ -1022,9 +995,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
       return;
     }
 
-    // Edit sends every incident-form lookup the incident has (as the generic
-    // edit page does): the backend replaces the whole set, so values of lookups
-    // this workflow doesn't show must be sent too or they would be removed.
+    // Edit sends all the incident's lookup values, since the backend replaces the set.
     const lookupIds: string[] = [];
     const customLookupFields: Record<string, any> = {};
     const lookupCategoriesToSend = isEdit
@@ -1054,7 +1025,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     const opt = (value: string) => value.trim() || undefined;
 
     if (isEdit && incident) {
-      // Send only fields this workflow shows: a hidden field must stay as it is.
+      // Send only the fields this workflow shows.
       const shown = <T,>(field: string, value: T) =>
         isShown(field) ? value : undefined;
       const data: IncidentUpdateRequest = {
@@ -1074,7 +1045,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
           "cooperation_status",
           form.cooperation_status,
         ),
-        // Assignment, as on the generic edit page: empty means "not changed".
+        // Empty assignment means "not changed".
         assignee_id: isAssigneeLocked
           ? undefined
           : form.assignee_id || undefined,
@@ -1105,7 +1076,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
       if (isShown("previous_report_ids") && previousChanged) {
         data.previous_report_ids = form.previous_report_ids;
       }
-      // Reporter (contact) fields: only when visible to this user and changed.
+      // Reporter fields: only when visible and changed.
       if (!reporterLocked) {
         const reporterValues: Record<string, string> = {
           reporter_name: form.reporter_name.trim(),
@@ -1125,7 +1096,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
             value &&
             value !== initialReporterRef.current[field]
           ) {
-            // The nationality is sent as the master-data value's id.
+            // Nationality is sent as the lookup value id.
             const requestField =
               field === "reporter_nationality"
                 ? "reporter_nationality_id"
@@ -1186,8 +1157,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
 
   // ── Options ───────────────────────────────────────────────────────────────
   const isArabic = i18n.language === "ar";
-  // Nationality master data; a contact's saved value that was since removed from
-  // the list is still offered so editing doesn't drop it.
+  // Keep the contact's saved nationality even if it was removed from the list.
   const savedNationality = incident?.reporter?.nationality;
   const nationalityOptions = [
     ...(nationalitiesData?.data || []),
@@ -1221,8 +1191,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
         .filter(Boolean)
         .join(" · "),
     })),
-    // Edit: reports already linked stay selectable even if the caller's list
-    // doesn't return them (e.g. the caller number changed).
+    // Edit: keep reports already linked selectable.
     ...(incident?.previous_reports || [])
       .filter((ref) => !previousReports.some((r) => r.id === ref.id))
       .map((ref) => ({ value: ref.id, label: ref.incident_number })),
@@ -1239,13 +1208,9 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
       ? { latitude: form.latitude, longitude: form.longitude }
       : undefined;
 
-  // ── Report Location ⇄ interactive map ─────────────────────────────────────
-  // Map → dropdown: a picked point selects the matching location (same matching
-  // as the generic create page, falling back to "Default").
-  // Dropdown → map: a picked location moves the map to its coordinates.
-  // The map fires onChange again whenever its coordinates change (reverse
-  // geocoding); the last handled point is remembered so that echo is ignored
-  // and the two never trigger each other in a loop.
+  // ── Location ⇄ map ────────────────────────────────────────────────────────
+  // A map point selects the matching location; a selected location moves the map.
+  // The last handled point is remembered so the two don't loop.
   const lastGeoKeyRef = useRef<string | null>(null);
   const selectingLocationRef = useRef<string | null>(null);
   const flatLocations = useMemo(() => flattenLocations(locations), [locations]);
@@ -1257,8 +1222,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     (window.APP_CONFIG?.DISABLE_AUTO_LOCATION_RETRIEVAL ??
       import.meta.env.VITE_DISABLE_AUTO_LOCATION_RETRIEVAL) !== "true";
 
-  // Edit mode: split the saved location into Report Location and City once the
-  // location tree has loaded.
+  // Edit: split the saved location into report location and city.
   useEffect(() => {
     if (form.report_location_id || !form.location_id || !locations.length)
       return;
@@ -1266,7 +1230,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locations, form.location_id, form.report_location_id]);
 
-  // Report Location picked: the city is cleared (the old one is not under it).
+  // Picking a report location clears the city.
   const onReportLocationSelect = (id: string) => {
     setForm((prev) => ({ ...prev, report_location_id: id, location_id: id }));
     setIsDirty(true);
@@ -1282,7 +1246,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     void moveMapToLocation(locationId);
   };
 
-  // A saved/matched location → Report Location (its parent) and City (itself).
+  // A location → report location (its parent) and city (itself).
   const splitLocation = (id: string) => {
     const path = findPath<Location>(locations, id);
     const report = path.length >= 2 ? path[path.length - 2] : path[0];
@@ -1293,8 +1257,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     selectingLocationRef.current = id;
     const node = flatLocations.find((l) => l.id === id);
     if (!node) return;
-    // Master-data coordinates first; otherwise look the place up by its full
-    // path ("District, City, Region"), then by its own name.
+    // Use saved coordinates, else look up the full path, then the name.
     let point =
       node.latitude != null && node.longitude != null
         ? { lat: Number(node.latitude), lng: Number(node.longitude) }
@@ -1315,8 +1278,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     setForm((prev) => ({ ...prev, latitude: point.lat, longitude: point.lng }));
   };
 
-  // Finds the leaf location for a map point, else the root "Default" location
-  // (created when missing). Returns its id, or undefined on failure.
+  // Finds the location for a map point, else "Default" (created when missing).
   const matchLocation = async (
     location: LocationData,
   ): Promise<string | undefined> => {
@@ -1420,12 +1382,12 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     }
   };
 
-  // Edit mode: fill the form once the incident (and lookup categories) loaded.
+  // Edit: fill the form once the incident has loaded.
   useEffect(() => {
     if (!isEdit || !incident || !lookupCategoriesData || loadedRef.current)
       return;
     loadedRef.current = true;
-    // Older reports link the creating operator instead of a reporter contact.
+    // Older reports link the operator instead of a contact.
     const contact =
       !incident.reporter_hidden &&
       incident.reporter &&
@@ -1461,7 +1423,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
       due_date: incident.due_date ? toLocalInput(incident.due_date) : "",
     }));
     setDebouncedCaller(incident.caller_number || "");
-    // The map echoes the loaded point; it must not re-match the location.
+    // Don't re-match the location from the loaded point.
     if (incident.latitude != null && incident.longitude != null) {
       lastGeoKeyRef.current = `${incident.latitude},${incident.longitude}`;
     }
@@ -1481,7 +1443,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
     setLookupValues(values);
   }, [isEdit, incident, lookupCategoriesData]);
 
-  // Edit mode: load a hidden reporter's details (logged by the backend).
+  // Edit: load a hidden reporter's details (logged).
   const revealReporter = async () => {
     setRevealing(true);
     try {
