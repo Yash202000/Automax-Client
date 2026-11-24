@@ -838,7 +838,9 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
       );
     if (isRequired("description"))
       need("description", t("incidents.description"));
-    if (isRequired("comment")) need("comment", t("incidents.comment"));
+    // The comment is a creation comment, so edit has none (as in the generic edit page).
+    if (!isEdit && isRequired("comment"))
+      need("comment", t("incidents.comment"));
     if (isRequired("department_id"))
       need("department_id", t("incidents.department"));
     if (isRequired("due_date")) need("due_date", t("incidents.dueDate"));
@@ -2012,7 +2014,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
             {(lookupCategories.length > 0 ||
               isShown("description") ||
               isShown("caller_identity_text") ||
-              isShown("comment")) && (
+              (!isEdit && isShown("comment"))) && (
               <Card className="p-6">
                 <h2 className="text-lg font-semibold mb-4">
                   {t("incidents.additionalDetails")}
@@ -2061,7 +2063,7 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
                       />
                     </div>
                   )}
-                  {isShown("comment") && (
+                  {!isEdit && isShown("comment") && (
                     <div className="md:col-span-2">
                       <Textarea
                         label={t("incidents.comment")}
