@@ -33,7 +33,7 @@ import {
 } from "../components/ui";
 import { useAuthStore } from "../stores/authStore";
 import { authApi } from "../api/auth";
-import { otpApi } from "../api/otp";
+import { getOtpSendErrorMessage, otpApi } from "../api/otp";
 
 const profileSchema = z.object({
   username: z.string().min(3, "auth.usernameTooShort").max(50),
@@ -85,12 +85,7 @@ export const ProfilePage: React.FC = () => {
         setOtpError(t("auth.failedToSendOtp"));
       }
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.error ||
-        err?.response?.data?.message ||
-        err?.message ||
-        t("auth.failedToSendOtp");
-      setOtpError(msg);
+      setOtpError(getOtpSendErrorMessage(err, t("auth.failedToSendOtp")));
     } finally {
       setOtpLoading(false);
     }

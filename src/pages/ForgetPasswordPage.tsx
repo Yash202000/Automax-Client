@@ -191,7 +191,9 @@ export function ForgotPasswordPage() {
     },
     onError: (err: any) => {
       setFieldError(
-        resolveError(err?.response?.status, t, err?.response?.data?.error),
+        err?.response?.status === 503
+          ? t("auth.failedToSendOtp")
+          : resolveError(err?.response?.status, t, err?.response?.data?.error),
       );
     },
   });
@@ -207,7 +209,9 @@ export function ForgotPasswordPage() {
     },
     onError: (err: any) => {
       setFieldError(
-        resolveError(err?.response?.status, t, err?.response?.data?.error),
+        err?.response?.status === 503
+          ? t("auth.failedToResendOtp")
+          : resolveError(err?.response?.status, t, err?.response?.data?.error),
       );
     },
   });

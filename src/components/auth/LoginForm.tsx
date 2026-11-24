@@ -25,7 +25,7 @@ import type { User } from "../../types";
 import { OTPInput } from "./OTPInput";
 import { NafathApproval } from "./NafathApproval";
 import { useSettings } from "@/contexts/SettingsContext";
-import { otpApi } from "@/api/otp";
+import { getOtpSendErrorMessage, otpApi } from "@/api/otp";
 
 const maskPhoneNumber = (phone?: string): string => {
   if (!phone) return "";
@@ -138,7 +138,12 @@ export const LoginForm: React.FC = () => {
   };
 
   const sendLoginOtp = async (user: User, method: "whatsapp" | "sms") => {
-    const response = await sendOtpMutation.mutateAsync({ user, method });
+    let response;
+    try {
+      response = await sendOtpMutation.mutateAsync({ user, method });
+    } catch (err: unknown) {
+      throw new Error(getOtpSendErrorMessage(err, t("auth.failedToSendOtp")));
+    }
 
     if (!response.session_id) {
       throw new Error(response.error || t("auth.failedToSendOtp"));
