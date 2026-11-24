@@ -2468,7 +2468,10 @@ export const IncidentDetailPage: React.FC = () => {
             )}
           </div>
 
-          {isNazahaClient && <NazahaIncidentDetails incident={incident} />}
+          {/* Keyed by incident so a revealed reporter never carries over to another incident. */}
+          {isNazahaClient && (
+            <NazahaIncidentDetails key={incident.id} incident={incident} />
+          )}
 
           <NearbyIncidents
             incidentId={incident.id}
