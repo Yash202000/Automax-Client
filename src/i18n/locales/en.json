@@ -750,6 +750,8 @@
     "hasRequirements": "Has requirements",
     "hasActions": "Has actions",
     "searchPlaceholder": "Search by title or incident number...",
+    "searchPlaceholderWithReporterName": "Search by title, incident number or reporter name...",
+    "matchedReporterName": "Reporter name",
     "total": "Total",
     "initial": "Initial",
     "inProgress": "In Progress",
