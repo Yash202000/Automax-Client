@@ -123,7 +123,7 @@ export const PHONE_COUNTRIES: PhoneCountry[] = [
     iso2: "IN",
     name: "India",
     dialCode: "91",
-    pattern: /^[1-9]\d{9}$/,
+    pattern: /^[6-9]\d{9}$/,
     example: "81234 56789",
   },
   {

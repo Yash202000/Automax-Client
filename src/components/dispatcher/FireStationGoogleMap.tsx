@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
 import GoogleBaseMap from "../maps/google/GoogleBaseMap";
+import GoogleDefaultView from "../maps/google/GoogleDefaultView";
+import { useMapDefaultCenter } from "../../hooks/useMapDefaultCenter";
 import type { FireStationMapProps } from "./fireStationMap.types";
 
 function StationPin({ selected }: { selected: boolean }) {
@@ -76,12 +78,14 @@ export default function FireStationGoogleMap({
   focus,
   getName,
 }: FireStationMapProps) {
+  const center = useMapDefaultCenter();
   return (
     <GoogleBaseMap
-      defaultCenter={{ lat: 24.7136, lng: 46.6753 }}
-      defaultZoom={10}
+      defaultCenter={{ lat: center.latitude, lng: center.longitude }}
+      defaultZoom={center.zoom}
       controls
     >
+      <GoogleDefaultView center={center} enabled={stations.length === 0} />
       <MapController stations={stations} focus={focus} />
       {stations.map((s) => (
         <AdvancedMarker

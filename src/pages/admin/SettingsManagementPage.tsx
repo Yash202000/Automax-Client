@@ -30,8 +30,48 @@ import { UnsavedChangesDialog } from "@/components/common/UnsavedChangesDialog";
 import { useUnsavedChangesPrompt } from "@/hooks/useUnsavedChangesPrompt";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { getActiveExtensions } from "@/utils/attachmentPolicy";
+import {
+  MAP_DEFAULT_CENTER_QUERY_KEY,
+  mapConfigApi,
+  parseMapCenter,
+  type MapDefaultCenter,
+} from "@/api/mapConfig";
+import {
+  MapDefaultCenterCard,
+  type MapCenterDraft,
+} from "@/components/settings/MapDefaultCenterCard";
 
 const SETTINGS_QUERY_KEY = ["settings"];
+const MAP_CENTER_ADMIN_QUERY_KEY = [...MAP_DEFAULT_CENTER_QUERY_KEY, "admin"];
+
+const toMapCenterDraft = (value: unknown): MapCenterDraft => {
+  const center = parseMapCenter(value);
+  return center
+    ? {
+        latitude: String(center.latitude),
+        longitude: String(center.longitude),
+        zoom: String(center.zoom),
+      }
+    : { latitude: "", longitude: "", zoom: "" };
+};
+
+// Validated center from the form, or null if latitude/longitude/zoom are invalid.
+const fromMapCenterDraft = (draft: MapCenterDraft): MapDefaultCenter | null => {
+  const num = /^-?\d+(\.\d+)?$/;
+  if (!num.test(draft.latitude.trim()) || !num.test(draft.longitude.trim())) {
+    return null;
+  }
+  const zoomText = draft.zoom.trim();
+  if (zoomText) {
+    const zoom = Number(zoomText);
+    if (!Number.isInteger(zoom) || zoom < 1 || zoom > 20) return null;
+  }
+  return parseMapCenter({
+    latitude: draft.latitude.trim(),
+    longitude: draft.longitude.trim(),
+    zoom: zoomText || undefined,
+  });
+};
 
 // Editable subset of the settings, with defaults for missing values.
 const toSettingsForm = (data?: Settings) => ({
@@ -155,9 +195,38 @@ export const SettingsManagementPage: React.FC = () => {
     [attachmentConfig],
   );
 
+  // Config API (map/default_center)
+  const {
+    data: mapCenterConfig,
+    isError: mapCenterFailed,
+    isPending: mapCenterLoading,
+  } = useQuery({
+    queryKey: MAP_CENTER_ADMIN_QUERY_KEY,
+    queryFn: mapConfigApi.getDefaultCenterConfig,
+  });
+  const savedMapCenter = useMemo(
+    () => toMapCenterDraft(mapCenterConfig?.value),
+    [mapCenterConfig],
+  );
+  const [mapCenterDraft, setMapCenterDraft] = useState(savedMapCenter);
+
+  const prevSavedMapCenterRef = useRef(savedMapCenter);
+  React.useEffect(() => {
+    const prevSaved = prevSavedMapCenterRef.current;
+    prevSavedMapCenterRef.current = savedMapCenter;
+    setMapCenterDraft((current) => {
+      const next = { ...savedMapCenter };
+      for (const key of Object.keys(next) as (keyof MapCenterDraft)[]) {
+        if (current[key] !== prevSaved[key]) next[key] = current[key];
+      }
+      return next;
+    });
+  }, [savedMapCenter]);
+
   const isSettingsDirty = !isSame(formData, savedSettings);
   const isAttachmentDirty = !isSame(attachmentDraft, attachmentConfig?.value);
-  const isDirty = isSettingsDirty || isAttachmentDirty;
+  const isMapCenterDirty = !isSame(mapCenterDraft, savedMapCenter);
+  const isDirty = isSettingsDirty || isAttachmentDirty || isMapCenterDirty;
 
   // Only the API(s) whose data changed are called.
   const saveMutation = useMutation({
@@ -170,6 +239,17 @@ export const SettingsManagementPage: React.FC = () => {
         await attachmentConfigApi.update(attachmentConfig.id, attachmentDraft);
         await queryClient.invalidateQueries({
           queryKey: ATTACHMENT_CONFIG_QUERY_KEY,
+        });
+      }
+      const mapCenter = fromMapCenterDraft(mapCenterDraft);
+      if (isMapCenterDirty && mapCenter) {
+        await mapConfigApi.saveDefaultCenter(
+          mapCenterConfig ?? null,
+          mapCenter,
+        );
+        // Prefix match: refreshes both the admin row and the maps' value.
+        await queryClient.invalidateQueries({
+          queryKey: MAP_DEFAULT_CENTER_QUERY_KEY,
         });
       }
     },
@@ -224,6 +304,15 @@ export const SettingsManagementPage: React.FC = () => {
       );
       return false;
     }
+    if (isMapCenterDirty && !fromMapCenterDraft(mapCenterDraft)) {
+      toast.error(
+        t(
+          "settings.map.invalid",
+          "Enter a valid map center: latitude -90 to 90, longitude -180 to 180, zoom 1 to 20.",
+        ),
+      );
+      return false;
+    }
     const emptyGroup =
       isAttachmentDirty && attachmentDraft
         ? getGroupWithNoFileTypes(attachmentDraft)
@@ -242,6 +331,7 @@ export const SettingsManagementPage: React.FC = () => {
   const discardChanges = () => {
     setFormData(savedSettings);
     setAttachmentDraft(attachmentConfig?.value);
+    setMapCenterDraft(savedMapCenter);
   };
 
   const leavePrompt = useUnsavedChangesPrompt(
@@ -718,6 +808,23 @@ export const SettingsManagementPage: React.FC = () => {
               </>
             )}
           </div>
+        )}
+
+        {/* Map Default Center Section (config API) */}
+        {mapCenterFailed ? (
+          <div className="bg-[hsl(var(--card))] rounded-xl p-6 shadow-sm border border-[hsl(var(--border))] text-sm text-[hsl(var(--muted-foreground))]">
+            {t(
+              "settings.map.loadFailed",
+              "Couldn't load the map configuration.",
+            )}
+          </div>
+        ) : (
+          <MapDefaultCenterCard
+            value={mapCenterDraft}
+            onChange={setMapCenterDraft}
+            notConfigured={mapCenterConfig === null}
+            disabled={mapCenterLoading}
+          />
         )}
 
         {/* Auth Configuration Section */}

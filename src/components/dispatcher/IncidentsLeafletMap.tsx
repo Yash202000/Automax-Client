@@ -6,6 +6,7 @@ import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { attachOsmBaseLayer } from "../../utils/mapProvider";
+import { useMapDefaultCenter } from "../../hooks/useMapDefaultCenter";
 import MapFallbackNotice from "../maps/MapFallbackNotice";
 import {
   DEFAULT_PIN_COLOR,
@@ -105,15 +106,21 @@ export default function IncidentsLeafletMap({
       fireDrop.current(incidentId, dataRefs.current.get(id) ?? d),
     );
   });
+  const center = useMapDefaultCenter();
+  const centerRef = useRef(center);
+  centerRef.current = center;
+  const markerCountRef = useRef(markers.length);
+  markerCountRef.current = markers.length;
   const selectedRef = useRef<string | null>(selectedId);
   const prevSelectedRef = useRef<string | null>(null);
   selectedRef.current = selectedId;
 
   useEffect(() => {
     if (!mapEl.current) return;
+    const { latitude, longitude, zoom } = centerRef.current;
     const map = L.map(mapEl.current, { zoomControl: true }).setView(
-      [24.7136, 46.6753],
-      10,
+      [latitude, longitude],
+      zoom,
     );
     attachOsmBaseLayer(map);
     const cluster = L.markerClusterGroup({
@@ -280,6 +287,13 @@ export default function IncidentsLeafletMap({
       dataRefs.current.delete(id);
     });
   }, [markers]);
+
+  // The configured default center (Settings → Map) loads after mount; move
+  // there while there are no pins to fit to.
+  useEffect(() => {
+    if (markerCountRef.current > 0) return;
+    mapRef.current?.setView([center.latitude, center.longitude], center.zoom);
+  }, [center.latitude, center.longitude, center.zoom]);
 
   // Fit to all pins only when the set of incidents changes.
   const markerKey = `${markers.length}:${markers[0]?.id ?? ""}:${markers[markers.length - 1]?.id ?? ""}`;

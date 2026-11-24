@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import SingleLocationMap from "../../components/maps/SingleLocationMap";
 import { withCallStatusDot } from "../../utils/callStatus";
+import { isGisEnabled } from "../../api/mapConfig";
 import { errorLogApi } from "../../api/errorLogs";
 import { useImageValidation } from "../../hooks/useImageValidation";
 import { useAttachmentPolicy } from "../../hooks/useAttachmentPolicy";
@@ -769,6 +770,10 @@ export const IncidentDetailPage: React.FC = () => {
   useEffect(() => {
     const checkLocation = async () => {
       try {
+        if (!isGisEnabled()) {
+          setDisableApproveTransition(false);
+          return;
+        }
         if (!incident?.latitude || !incident?.longitude) return;
 
         const response: any = await gisLocationApi.identifyLocation({
@@ -792,7 +797,9 @@ export const IncidentDetailPage: React.FC = () => {
     };
 
     checkLocation();
-  }, [incident]);
+    // Re-check only when the incident or its coordinates change, not on every
+    // refetch of the same incident.
+  }, [incident?.id, incident?.latitude, incident?.longitude]);
 
   // State-level edit restriction: if current state has editable_roles configured,
   // user must be in one of those roles (superadmin bypasses this check).

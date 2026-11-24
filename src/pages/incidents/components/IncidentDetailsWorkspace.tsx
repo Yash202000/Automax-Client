@@ -75,6 +75,7 @@ import type {
   WorkflowTransition,
 } from "../../../types";
 import { priorityTone, stateTone } from "@/utils/incidentTone";
+import { isGisEnabled } from "@/api/mapConfig";
 import { useSourceLabel } from "../../../hooks/useIncidentDisplay";
 import {
   useClassificationTree,
@@ -249,14 +250,15 @@ export function IncidentDetailsWorkspace({
         setDisableApproveTransition(false);
       }
     };
-    if (!incident) {
+    if (!incident || !isGisEnabled()) {
       setDisableApproveTransition(false);
       pendingIncidentRef.current = null;
       return;
     }
     setDisableApproveTransition(false);
     void checkLocation();
-  }, [incident]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incident?.id, incident?.latitude, incident?.longitude]);
 
   /* Request Info — same mutation as IncidentDetailPage. */
   const canRequestInfo =
