@@ -25,9 +25,19 @@ declare global {
       GOOGLE_MAPS_API_KEY?: string;
       GOOGLE_MAPS_MAP_ID?: string;
       OSRM_URL?: string;
+      ENABLE_KPI_BULK_IMPORT?: string;
     };
   }
 }
+
+// KPI bulk import buttons (Dictionary, Metrics, Targets). On unless set to
+// "false" (runtime config.js first, then the build-time env).
+export const KPI_BULK_IMPORT_ENABLED =
+  String(
+    window.APP_CONFIG?.ENABLE_KPI_BULK_IMPORT ??
+      import.meta.env.VITE_ENABLE_KPI_BULK_IMPORT ??
+      "true",
+  ).toLowerCase() !== "false";
 
 export const API_URL =
   window.APP_CONFIG?.API_URL ||

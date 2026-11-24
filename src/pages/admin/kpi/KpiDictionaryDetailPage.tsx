@@ -1,3 +1,4 @@
+import { KPI_BULK_IMPORT_ENABLED } from "@/api/client";
 import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -36,6 +37,7 @@ import {
   Scale,
   Database,
   CheckCircle2,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   useStrategicKPIDetail,
@@ -400,7 +402,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { type, id } = useParams<{ type: string; id: string }>();
   const navigate = useNavigate();
-  // const { canCreateKpi } = usePermissions(); // hidden with the import button
+  const { canCreateKpi } = usePermissions();
   const permissions = usePermissions();
   const kpiAccess = useKpiAccess();
   // An action needs both the role permission and the user's collaborator
@@ -1612,8 +1614,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
 
           {canUpdateKpi() && (
             <div className="flex justify-end gap-2">
-              {/* Metrics import hidden for now — bulk import is not working as expected.
-              {canCreateKpi() && (
+              {KPI_BULK_IMPORT_ENABLED && canCreateKpi() && (
                 <Link
                   to="/goals/kpi/metrics/import"
                   className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
@@ -1622,7 +1623,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   {t("kpi.metricsImport.button")}
                 </Link>
               )}
-              */}
               <Button
                 size="sm"
                 variant="outline"
