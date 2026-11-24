@@ -1191,6 +1191,12 @@ export const IncidentsPage: React.FC = () => {
                                   {incident.incident_number}
                                 </p>
                                 <SMSLegends incident={incident} />
+                                {isNazahaClient &&
+                                  incident.matched_reporter_name && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                      {t("incidents.matchedReporterName")}
+                                    </span>
+                                  )}
                                 {incident.active_viewers &&
                                   incident.active_viewers > 0 && (
                                     <span

@@ -1282,6 +1282,8 @@ export interface Incident {
   previous_reports?: { id: string; incident_number: string }[];
   /** True when an uncooperative reporter's details were left out (Nazaha). */
   reporter_hidden?: boolean;
+  // True when the search matched the reporter name (Nazaha).
+  matched_reporter_name?: boolean;
   // Complaint-specific fields
   channel?: string;
   created_by_id?: string;

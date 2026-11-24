@@ -28,6 +28,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { PERMISSIONS } from "@/constants/permissions";
 import usePermissions from "@/hooks/usePermissions";
 import { useDebounce } from "@/hooks/useDebounce";
+import { isNazahaClient } from "@/utils/nazaha";
 
 // Column configuration (shared across pages)
 export interface ColumnConfig {
@@ -558,7 +559,11 @@ export const IncidentFilters: React.FC<IncidentFiltersProps> = ({
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] w-5 h-5" />
           <input
             type="text"
-            placeholder={t("incidents.searchPlaceholder")}
+            placeholder={
+              isNazahaClient
+                ? t("incidents.searchPlaceholderWithReporterName")
+                : t("incidents.searchPlaceholder")
+            }
             value={filter.search || ""}
             onChange={(e) =>
               onFilterChange("search", e.target.value || undefined)

@@ -751,6 +751,8 @@
     "hasRequirements": "يحتوي متطلبات",
     "hasActions": "يحتوي إجراءات",
     "searchPlaceholder": "البحث حسب العنوان أو رقم البلاغ",
+    "searchPlaceholderWithReporterName": "البحث حسب العنوان أو رقم البلاغ أو اسم المبلغ...",
+    "matchedReporterName": "اسم المبلغ",
     "total": "الإجمالي",
     "initial": "ابتدائي",
     "inProgress": "قيد التنفيذ",
