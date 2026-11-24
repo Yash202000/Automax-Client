@@ -116,6 +116,8 @@ import type {
 } from "../../types";
 import { cn, getLocalizedField, getLocalizedName } from "@/lib/utils";
 import { usePermissions } from "../../hooks/usePermissions";
+import { NazahaIncidentDetails } from "../../components/incidents/NazahaIncidentDetails";
+import { isNazahaClient } from "../../utils/nazaha";
 import { PERMISSIONS } from "../../constants/permissions";
 import { useAuthStore } from "../../stores/authStore";
 import "leaflet/dist/leaflet.css";
@@ -2473,6 +2475,11 @@ export const IncidentDetailPage: React.FC = () => {
             )}
           </div>
 
+          {/* Keyed by incident so a revealed reporter never carries over to another incident. */}
+          {isNazahaClient && (
+            <NazahaIncidentDetails key={incident.id} incident={incident} />
+          )}
+
           <NearbyIncidents
             incidentId={incident.id}
             latitude={incident.latitude}
@@ -4765,7 +4772,7 @@ export const IncidentDetailPage: React.FC = () => {
                 )}
 
               {/* Reporter - compact */}
-              {!isVd2 ? (
+              {!isVd2 && !incident.reporter_hidden ? (
                 <div className="pt-2 border-t border-[hsl(var(--border))]">
                   <label className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                     {t("incidents.reporter")}

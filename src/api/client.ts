@@ -26,6 +26,8 @@ declare global {
       GOOGLE_MAPS_MAP_ID?: string;
       OSRM_URL?: string;
       ENABLE_KPI_BULK_IMPORT?: string;
+      INCIDENT_CONTENT_MAX_LENGTH?: string;
+      INCIDENT_CALLER_NUMBER_EDITABLE?: string;
     };
   }
 }
