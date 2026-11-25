@@ -35,6 +35,8 @@ import type {
 } from "../../../types/kpi";
 import {
   getYearOptions,
+  TARGET_YEAR_MIN,
+  TARGET_YEAR_MAX,
   getPeriodOptionsByFrequency,
   TARGET_TYPE_OPTIONS,
   TARGET_BASIS_OPTIONS,
@@ -492,7 +494,10 @@ export const KpiTargetsPage: React.FC = () => {
 
   const { data: formMetrics } = useKpiMetricsByCode(formKpiCode || undefined);
 
-  const yearOptions = useMemo(() => getYearOptions(), []);
+  const yearOptions = useMemo(
+    () => getYearOptions(TARGET_YEAR_MIN, TARGET_YEAR_MAX),
+    [],
+  );
   // Fall back to the fetched metrics' own reporting_frequency when the KPI
   // isn't present in cardOptions — same class of bug as the Metric dropdown
   // above: don't let a secondary, separately-loaded list gate data we
@@ -1407,7 +1412,7 @@ export const KpiTargetsPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Target Basis <span className="text-red-500">*</span>
+                Target Basis
               </label>
               <select
                 value={formTargetBasis}
@@ -1443,7 +1448,7 @@ export const KpiTargetsPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Threshold Mode <span className="text-red-500">*</span>
+                Threshold Mode
               </label>
               <select
                 value={formThresholdMode}

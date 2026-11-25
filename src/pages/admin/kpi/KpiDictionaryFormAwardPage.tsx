@@ -142,6 +142,14 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
       toast.error(t("kpi.targets.formValidation"));
       return;
     }
+    if (!form.owner_dept_id) {
+      toast.error(t("kpi.dictionary.ownerDeptRequired"));
+      return;
+    }
+    if (form.owner_type === "external" && !form.owner_org_id) {
+      toast.error(t("kpi.dictionary.ownerOrgRequired"));
+      return;
+    }
 
     const data: AwardKPIRequest = {
       ...form,
@@ -263,7 +271,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
               ]}
             />
             <Select
-              label={t("kpi.dictionary.fieldOwnerDept")}
+              label={`${t("kpi.dictionary.fieldOwnerDept")} *`}
               value={form.owner_dept_id}
               onChange={(v) =>
                 setForm((prev) => ({ ...prev, owner_dept_id: v.target.value }))
@@ -294,7 +302,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
             />
             {form.owner_type === "external" && (
               <Select
-                label={t("kpi.dictionary.fieldOwnerOrg")}
+                label={`${t("kpi.dictionary.fieldOwnerOrg")} *`}
                 value={form.owner_org_id}
                 onChange={(v) =>
                   setForm((prev) => ({
@@ -367,14 +375,20 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Select
-              label={t("kpi.dictionary.fieldPolarity")}
+              label={`${t("kpi.dictionary.fieldPolarity")} *`}
               value={form.polarity}
               onChange={(v) =>
                 setForm((prev) => ({ ...prev, polarity: v.target.value }))
               }
               options={[
-                { value: "ascending", label: "Ascending" },
-                { value: "descending", label: "Descending" },
+                {
+                  value: "ascending",
+                  label: t("kpi.dictionary.polarityAscending"),
+                },
+                {
+                  value: "descending",
+                  label: t("kpi.dictionary.polarityDescending"),
+                },
               ]}
             />
             <Select
@@ -398,7 +412,7 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
               ]}
             />
             <Select
-              label={t("kpi.dictionary.fieldFrequency")}
+              label={`${t("kpi.dictionary.fieldFrequency")} *`}
               value={form.reporting_frequency}
               onChange={(v) =>
                 setForm((prev) => ({
@@ -407,13 +421,22 @@ export const KpiDictionaryFormAwardPage: React.FC = () => {
                 }))
               }
               options={[
-                { value: "monthly", label: "Monthly" },
-                { value: "quarterly", label: "Quarterly" },
+                {
+                  value: "monthly",
+                  label: t("kpi.dictionary.fieldFrequencyMonthly"),
+                },
+                {
+                  value: "quarterly",
+                  label: t("kpi.dictionary.fieldFrequencyQuarterly"),
+                },
                 {
                   value: "semi_annual",
                   label: t("kpi.dictionary.fieldFrequencySemiAnnual"),
                 },
-                { value: "annually", label: "Annually" },
+                {
+                  value: "annually",
+                  label: t("kpi.dictionary.fieldFrequencyAnnual"),
+                },
                 {
                   value: "custom",
                   label: t("kpi.dictionary.fieldFrequencyCustom"),

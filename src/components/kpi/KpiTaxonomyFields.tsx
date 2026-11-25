@@ -42,6 +42,9 @@ export const KpiTaxonomyFields: React.FC<KpiTaxonomyFieldsProps> = ({
   onChange,
 }) => {
   const { t, i18n } = useTranslation();
+  const localName = (r: { name_en?: string; name_ar?: string }) =>
+    (i18n.language?.startsWith("ar") ? r.name_ar || r.name_en : r.name_en) ??
+    "";
   const isAr = i18n.language?.startsWith("ar");
   const { data: objectivesData } = useOperationalObjectives();
   const { data: processesData } = useProcesses();
@@ -135,7 +138,8 @@ export const KpiTaxonomyFields: React.FC<KpiTaxonomyFieldsProps> = ({
           }}
           options={criteria.map((c: any) => ({
             value: c.id,
-            label: `${c.criterion_no} - ${c.name_en}`,
+            // Same format as the Excel template: "Criterion 5 - Name".
+            label: `${i18n.language?.startsWith("ar") ? "المعيار" : "Criterion"} ${c.criterion_no} - ${localName(c)}`,
           }))}
           placeholder={t("common.selectAnOption")}
         />
@@ -145,7 +149,8 @@ export const KpiTaxonomyFields: React.FC<KpiTaxonomyFieldsProps> = ({
           onChange={(v) => onChange({ award_sub_criterion_id: v.target.value })}
           options={visibleSubCriteria.map((s: any) => ({
             value: s.id,
-            label: `${s.award_criterion?.criterion_no ?? ""}-${s.sub_no} ${s.name_en}`,
+            // Same format as the Excel template: "5.1 - Name" (sub_no is already "5.1").
+            label: `${s.sub_no} - ${localName(s)}`,
           }))}
           placeholder={t("common.selectAnOption")}
           disabled={!!selectedCriterionId && visibleSubCriteria.length === 0}

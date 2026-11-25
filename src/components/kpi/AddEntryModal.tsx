@@ -31,6 +31,8 @@ import {
   parseCustomPeriod,
   periodCodeLabel,
   getYearOptions,
+  TARGET_YEAR_MIN,
+  TARGET_YEAR_MAX,
   getCurrentPeriodCode,
   DATA_SOURCE_TYPE_OPTIONS,
   DATA_QUALITY_STATUS_OPTIONS,
@@ -466,7 +468,10 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     }
     return options;
   }, [reportingFrequency, milestoneTargetsRes, periodCode, isEditMode]);
-  const yearOptions = useMemo(() => getYearOptions(), []);
+  const yearOptions = useMemo(
+    () => getYearOptions(TARGET_YEAR_MIN, TARGET_YEAR_MAX),
+    [],
+  );
 
   // ── Approved-target lookup for create mode. Scoped tightly (kpi_code +
   // metric + year + period) and only enabled while the modal is open and

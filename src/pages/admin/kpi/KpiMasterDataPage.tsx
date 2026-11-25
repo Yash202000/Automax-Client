@@ -316,6 +316,10 @@ export const KpiMasterDataPage: React.FC = () => {
       toast.error(t("kpi.masterData.requiredFieldsMissing"));
       return;
     }
+    if (modalType === "initiative" && !form.goal_id) {
+      toast.error(t("kpi.masterData.requiredFieldsMissing"));
+      return;
+    }
     if (modalType === "domain" && !form.type) {
       toast.error(t("kpi.masterData.requiredFieldsMissing"));
       return;
@@ -1045,7 +1049,7 @@ export const KpiMasterDataPage: React.FC = () => {
           {modalType === "initiative" && (
             <>
               <Select
-                label={t("kpi.masterData.strategicGoal")}
+                label={`${t("kpi.masterData.strategicGoal")} *`}
                 options={(goals ?? []).map((g: any) => ({
                   value: g.id,
                   label: g.title,
@@ -1098,10 +1102,33 @@ export const KpiMasterDataPage: React.FC = () => {
                 searchable
                 placeholder={t("common.selectAnOption")}
               />
-              <Input
+              <Select
                 label={t("kpi.masterData.status")}
+                options={[
+                  {
+                    value: "draft",
+                    label: t("kpi.masterData.initiativeStatusDraft"),
+                  },
+                  {
+                    value: "active",
+                    label: t("kpi.masterData.initiativeStatusActive"),
+                  },
+                  {
+                    value: "on_hold",
+                    label: t("kpi.masterData.initiativeStatusOnHold"),
+                  },
+                  {
+                    value: "complete",
+                    label: t("kpi.masterData.initiativeStatusComplete"),
+                  },
+                  {
+                    value: "cancelled",
+                    label: t("kpi.masterData.initiativeStatusCancelled"),
+                  },
+                ]}
                 value={form.status}
-                onChange={set("status")}
+                onChange={setSel("status")}
+                placeholder={t("common.selectAnOption")}
               />
             </>
           )}
