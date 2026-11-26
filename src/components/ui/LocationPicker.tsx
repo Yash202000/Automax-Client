@@ -503,6 +503,9 @@ export function LocationPicker({
 
   const handleSelectSuggestion = useCallback(
     async (suggestion: PlaceSuggestion) => {
+      // Close the dropdown as soon as a location is picked.
+      setShowSuggestions(false);
+
       let locationData: LocationData;
       try {
         locationData = await suggestion.resolve();
@@ -515,7 +518,8 @@ export function LocationPicker({
       onChange(locationData);
       setMapCenter([locationData.latitude, locationData.longitude]);
       setSearchQuery(suggestion.label);
-      setShowSuggestions(false);
+      // Clear old suggestions so the dropdown doesn't reopen on input focus.
+      setSuggestions([]);
 
       // Restore focus to input to avoid browser scroll-to-top on suggestion button unmount
       setTimeout(() => {
