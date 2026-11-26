@@ -469,7 +469,18 @@
     "alertFireStation": "Alert fire station",
     "withoutAlerting": "Without alerting",
     "alertSent": "Fire stations alerted successfully",
-    "alertFailed": "Failed to alert fire stations"
+    "alertFailed": "Failed to alert fire stations",
+    "incidentAssignedWarning": "This incident is already assigned to: {{stations}}",
+    "alreadyAssignedToStation": "incident is already assigned to this fire station",
+    "dispatchLogs": "Dispatch logs",
+    "noDispatchLogs": "No dispatch logs for this incident",
+    "dispatchLogsFailed": "Failed to load dispatch logs",
+    "logTime": "Time",
+    "logAction": "Action",
+    "logStatus": "Status change",
+    "logRole": "Role",
+    "logFireStation": "Fire station",
+    "logAcceptedBy": "Accepted by"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2311,6 +2322,7 @@
     "forceDeleteMessage": "Units are still assigned to this fire station. Detach all of them and delete the station?",
     "detachAndDelete": "Detach and delete",
     "fireStation": "Fire Station",
+    "noUnitsToAssign": "All units are already assigned to fire stations",
     "selectFireStation": "Select fire station",
     "unitStatus": "Unit Status",
     "resStatus": {

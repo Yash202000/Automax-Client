@@ -519,6 +519,14 @@ const UnitsTable: React.FC = () => {
     queryKey: ["dispatcher", "unit-types", "all"],
     queryFn: unitTypeApi.all,
   });
+  const { data: servicePoints = [] } = useQuery({
+    queryKey: ["dispatcher", "service-points", "all"],
+    queryFn: servicePointApi.all,
+  });
+  const stationName = useMemo(
+    () => new Map(servicePoints.map((x) => [x.id, x.name])),
+    [servicePoints],
+  );
   const drivers: User[] = driversData?.data ?? [];
   const locationsTree = useMemo(
     () => asTreeSelect(toTreeNodes(locationsData?.data)),
@@ -704,6 +712,7 @@ const UnitsTable: React.FC = () => {
             <Th>{t("unitManagement.plateNumber", "Plate Number")}</Th>
             <Th>{t("unitManagement.chassisNumber", "Chassis Number")}</Th>
             <Th>{t("unitManagement.unitType", "Unit Type")}</Th>
+            <Th>{t("unitManagement.fireStation", "Fire Station")}</Th>
             <Th>{t("unitManagement.radioId", "Radio ID")}</Th>
             <Th>{t("unitManagement.modifiedDate", "Modified Date")}</Th>
             <Th actions>{t("common.actions", "Actions")}</Th>
@@ -718,6 +727,10 @@ const UnitsTable: React.FC = () => {
             <td className={cell}>{u.plate_number || "—"}</td>
             <td className={cell}>{u.chassis_number || "—"}</td>
             <td className={cell}>{typeName.get(u.resource_type_id) ?? "—"}</td>
+            <td className={cell}>
+              {(u.service_point_id && stationName.get(u.service_point_id)) ||
+                "—"}
+            </td>
             <td className={cell}>{u.radio_id || "—"}</td>
             <td className={mutedCell}>
               {u.updated_at

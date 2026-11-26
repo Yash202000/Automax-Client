@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "../../components/ui";
 import { Modal, ModalBody, ModalFooter } from "../../components/ui/Modal";
 import { incidentApi } from "../../api/admin";
+import { dispatcherApi } from "../../api/dispatcher";
 import type { AvailableTransition, User as UserType } from "../../types";
 import { useFireStations } from "./useDispatchData";
 import { AssociateFireStationsModal } from "./AssociateFireStationsModal";
@@ -46,10 +47,18 @@ const PRIORITY_TEXT: Record<number, string> = {
   4: "text-rose-600",
 };
 
-type TabKey = "details" | "attachments" | "comments" | "activity";
+type TabKey =
+  | "details"
+  | "attachments"
+  | "comments"
+  | "activity"
+  | "dispatchLogs";
 
 const fmt = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleString() : "—";
+
+const humanize = (s?: string | null) =>
+  s ? s.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "—";
 
 const userName = (u?: Pick<UserType, "first_name" | "last_name" | "email">) =>
   u
@@ -94,6 +103,14 @@ export function IncidentDetailModal({
   const { data: historyRes, isLoading: historyLoading } = useQuery({
     queryKey: ["incidents", "dispatcher", "history", incident.id],
     queryFn: () => incidentApi.getHistory(incident.id),
+  });
+  const {
+    data: dispatchLogs = [],
+    isLoading: logsLoading,
+    isError: logsError,
+  } = useQuery({
+    queryKey: ["dispatcher", "logs", incident.id],
+    queryFn: () => dispatcherApi.listLogs(incident.id),
   });
   const queryClient = useQueryClient();
   const { data: transitionsRes, isLoading: transitionsLoading } = useQuery({
@@ -185,7 +202,42 @@ export function IncidentDetailModal({
       key: "activity",
       label: `${t("incidents.activity", "Activity")} (${history.length})`,
     },
+    {
+      key: "dispatchLogs",
+      label: `${t("dispatcher.dispatchLogs", "Dispatch logs")} (${dispatchLogs.length})`,
+    },
   ];
+
+  // Newest first.
+  // Fire stations this incident is currently assigned to: the latest log per
+  // station, ignoring stations whose latest status released the assignment.
+  const RELEASED = [
+    "rejected",
+    "declined",
+    "cancelled",
+    "canceled",
+    "released",
+  ];
+  const assignedStations = (() => {
+    const latest = new Map<string, (typeof dispatchLogs)[number]>();
+    for (const log of dispatchLogs) {
+      const key = log.fire_station_id || log.fire_station_name;
+      if (!key) continue;
+      const prev = latest.get(key);
+      if (!prev || new Date(log.created_at) > new Date(prev.created_at)) {
+        latest.set(key, log);
+      }
+    }
+    return [...latest.values()]
+      .filter((l) => !RELEASED.includes((l.to_status ?? "").toLowerCase()))
+      .map((l) => l.fire_station_name)
+      .filter((n): n is string => !!n);
+  })();
+
+  const logsDesc = [...dispatchLogs].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 
   const field = (label: string, value?: string | null) => (
     <div className="min-w-0">
@@ -258,6 +310,22 @@ export function IncidentDetailModal({
             </span>
           ) : null}
         </div>
+
+        {assignedStations.length > 0 ? (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300"
+          >
+            <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>
+              {t(
+                "dispatcher.incidentAssignedWarning",
+                "This incident is already assigned to: {{stations}}",
+                { stations: assignedStations.join(", ") },
+              )}
+            </span>
+          </div>
+        ) : null}
 
         {/* meta tiles */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 pb-3 border-b border-[hsl(var(--border))]">
@@ -523,6 +591,70 @@ export function IncidentDetailModal({
             loadingText
           ) : (
             <ActivityTab transitionHistory={historyAsc} />
+          )
+        ) : null}
+
+        {tab === "dispatchLogs" ? (
+          logsLoading ? (
+            loadingText
+          ) : logsError ? (
+            <div className={cn(card, "text-xs text-rose-600")}>
+              {t(
+                "dispatcher.dispatchLogsFailed",
+                "Failed to load dispatch logs",
+              )}
+            </div>
+          ) : logsDesc.length === 0 ? (
+            <div
+              className={cn(
+                card,
+                "text-xs text-[hsl(var(--muted-foreground))]",
+              )}
+            >
+              {t(
+                "dispatcher.noDispatchLogs",
+                "No dispatch logs for this incident",
+              )}
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {logsDesc.map((log) => (
+                <li key={log.id} className={card}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold">
+                      {humanize(log.action)}
+                    </span>
+                    {log.from_status || log.to_status ? (
+                      <span className="flex items-center gap-1 text-[11px]">
+                        <span className="rounded-md border border-[hsl(var(--border))] px-1.5 py-0.5">
+                          {humanize(log.from_status)}
+                        </span>
+                        <span className="text-[hsl(var(--muted-foreground))] rtl:rotate-180">
+                          →
+                        </span>
+                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 font-semibold text-primary">
+                          {humanize(log.to_status)}
+                        </span>
+                      </span>
+                    ) : null}
+                    <span className="ms-auto text-[10px] text-[hsl(var(--muted-foreground))]">
+                      {fmt(log.created_at)}
+                    </span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {field(
+                      t("dispatcher.logFireStation", "Fire station"),
+                      log.fire_station_name,
+                    )}
+                    {field(
+                      t("dispatcher.logAcceptedBy", "Accepted by"),
+                      log.accepted_by_name,
+                    )}
+                    {field(t("dispatcher.logRole", "Role"), humanize(log.role))}
+                  </div>
+                </li>
+              ))}
+            </ul>
           )
         ) : null}
       </ModalBody>

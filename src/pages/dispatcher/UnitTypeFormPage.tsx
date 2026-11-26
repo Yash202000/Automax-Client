@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { format } from "date-fns";
+import { format, startOfToday } from "date-fns";
 import {
   ArrowLeft,
   Layers,
@@ -360,6 +360,7 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
             value={form.active_till_date}
             onChange={(d) => setForm((f) => ({ ...f, active_till_date: d }))}
             disabled={!form.is_active}
+            disabledDate={{ before: startOfToday() }}
             placeholder={t("unitManagement.activeTillDate", "Active Till Date")}
           />
         </div>

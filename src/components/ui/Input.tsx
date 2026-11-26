@@ -34,7 +34,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const inputId = props.id || props.name || generatedId;
 
     return (
-      <div className="w-full" dir={props.dir}>
+      <div className="w-full">
         {label && (
           <label
             htmlFor={inputId}

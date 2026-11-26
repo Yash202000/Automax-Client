@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { format } from "date-fns";
+import { format, startOfToday } from "date-fns";
 import {
   ArrowLeft,
   Building2,
@@ -132,6 +132,14 @@ const FireStationFormInner: React.FC<{
     queryKey: ["dispatcher", "units", "all"],
     queryFn: resourceApi.all,
   });
+  // Units already assigned to a fire station are not offered; on edit, this
+  // station's own units (and any just selected) stay in the list.
+  const assignableUnits = units.filter(
+    (u) =>
+      !u.service_point_id ||
+      u.service_point_id === existing?.id ||
+      form.unit_ids.includes(u.id),
+  );
   const { data: locationsData } = useQuery({
     queryKey: ["admin", "locations", "tree"],
     queryFn: () => locationApi.getTree(),
@@ -361,22 +369,23 @@ const FireStationFormInner: React.FC<{
             value={form.active_till_date}
             onChange={(d) => setForm((f) => ({ ...f, active_till_date: d }))}
             disabled={!form.is_active}
+            disabledDate={{ before: startOfToday() }}
             placeholder={t("unitManagement.activeTillDate", "Active Till Date")}
           />
         </div>
         <div className="md:col-span-2 xl:col-span-3">
           <MultiSelect
             label={t("unitManagement.assignUnits", "Assign Units")}
-            options={units.map((u) => ({
+            options={assignableUnits.map((u) => ({
               value: u.id,
               label: u.unique_id ? `${u.name} (${u.unique_id})` : u.name,
             }))}
             value={form.unit_ids}
             onChange={(v) => setForm((f) => ({ ...f, unit_ids: v }))}
             placeholder={t("unitManagement.selectUnits", "Select units")}
-            helperText={t(
-              "unitManagement.assignUnitsHint",
-              "A unit assigned to another fire station is moved to this one.",
+            emptyMessage={t(
+              "unitManagement.noUnitsToAssign",
+              "All units are already assigned to fire stations",
             )}
             searchable
             showSelectAll
