@@ -36,6 +36,8 @@ export type MultiSelectProps = {
   showSelectAll?: boolean;
   /** Optional label shown above the control */
   label?: React.ReactNode;
+  /** Shown in the dropdown when there are no options at all (not on a no-match search) */
+  emptyMessage?: string;
   /** Optional helper text below the control */
   helperText?: string;
   /** Error message – red border + text */
@@ -130,6 +132,7 @@ export function MultiSelect({
   showSelectAll = false,
   label,
   helperText,
+  emptyMessage,
   error,
   className,
   size = "md",
@@ -384,7 +387,9 @@ export function MultiSelect({
           <div className="max-h-56 overflow-y-auto overscroll-contain py-1">
             {filteredOptions.length === 0 ? (
               <div className="px-3 py-6 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                {t("common.noOptionsFound")}
+                {options.length === 0 && emptyMessage
+                  ? emptyMessage
+                  : t("common.noOptionsFound")}
               </div>
             ) : (
               filteredOptions.map((option) => {

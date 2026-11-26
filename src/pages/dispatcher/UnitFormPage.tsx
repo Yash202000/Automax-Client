@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { format } from "date-fns";
+import { format, startOfToday } from "date-fns";
 import {
   ArrowLeft,
   Truck,
@@ -262,6 +262,8 @@ const UnitFormInner: React.FC<{ id?: string; existing?: Resource }> = ({
 
   const missing = {
     name: !form.name.trim(),
+    unique_id: !form.unique_id.trim(),
+    chassis_number: !form.chassis_number.trim(),
     plate_number: !form.plate_number.trim(),
     resource_type_id: !form.resource_type_id,
     location_id: !form.location_id,
@@ -394,12 +396,14 @@ const UnitFormInner: React.FC<{ id?: string; existing?: Resource }> = ({
         />
         <Input
           label={t("unitManagement.uniqueId", "Unique ID")}
+          required
           value={form.unique_id}
           onChange={text("unique_id")}
           error={err("unique_id")}
         />
         <Input
           label={t("unitManagement.chassisNumber", "Chassis Number")}
+          required
           value={form.chassis_number}
           onChange={text("chassis_number")}
           error={err("chassis_number")}
@@ -472,6 +476,7 @@ const UnitFormInner: React.FC<{ id?: string; existing?: Resource }> = ({
             value={form.active_till_date}
             onChange={(d) => set("active_till_date")(d)}
             disabled={!form.is_active}
+            disabledDate={{ before: startOfToday() }}
             placeholder={t("unitManagement.activeTillDate", "Active Till Date")}
           />
         </div>

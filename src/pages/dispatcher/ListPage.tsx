@@ -19,7 +19,8 @@ import {
   INCIDENT_DRAG_TYPE,
   type IncidentMapMarker,
 } from "../../components/dispatcher/incidentMap.types";
-import { dispatcherApi } from "../../api/dispatcher";
+import { dispatcherApi, servicePointApi } from "../../api/dispatcher";
+import { useFireStations } from "./useDispatchData";
 import { DispatcherMapPanel } from "./DispatcherMapPanel";
 import { IncidentDetailModal } from "./IncidentDetailModal";
 import { FireStationAlertModal } from "../../components/dispatcher/FireStationAlertModal";
@@ -213,15 +214,28 @@ export function DispatcherListPage() {
   // Dropping an incident on a fire station pushes it to that station
   // (POST /dispatch/fcm/push, with the incident). The responders panel's Alert
   // button uses POST /dispatch/fire-station-alerts instead.
+  const { servicePoints } = useFireStations();
   const pushMutation = useMutation({
-    mutationFn: (v: {
+    mutationFn: async (v: {
       serviceId: string;
       incidentId: string;
       via: "drop" | "alert";
-    }) =>
-      v.via === "drop"
-        ? dispatcherApi.pushToFireStation(v.serviceId, v.incidentId)
-        : dispatcherApi.alertFireStations([v.serviceId]),
+    }) => {
+      if (v.via !== "drop") {
+        return dispatcherApi.alertFireStations([v.serviceId]);
+      }
+      // Reject (409) before notifying if it is already assigned to the station.
+      const departmentId = (
+        servicePoints.find((s) => s.id === v.serviceId) ??
+        (await servicePointApi.get(v.serviceId))
+      ).department_id;
+      await dispatcherApi.assertIncidentNotAssigned(
+        v.incidentId,
+        departmentId,
+        v.serviceId,
+      );
+      return dispatcherApi.pushToFireStation(v.serviceId, v.incidentId);
+    },
   });
 
   const assign = (
@@ -264,6 +278,15 @@ export function DispatcherListPage() {
       {
         onSuccess: apply,
         onError: (error) => {
+          if (isAxiosError(error) && error.response?.status === 409) {
+            toast.error(
+              t(
+                "dispatcher.alreadyAssignedToStation",
+                "incident is already assigned to this fire station",
+              ),
+            );
+            return;
+          }
           const message = isAxiosError(error)
             ? error.response?.data?.message
             : undefined;

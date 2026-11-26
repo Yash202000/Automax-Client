@@ -469,7 +469,18 @@
     "alertFireStation": "تنبيه محطة الإطفاء",
     "withoutAlerting": "بدون تنبيه",
     "alertSent": "تم تنبيه محطات الإطفاء بنجاح",
-    "alertFailed": "فشل تنبيه محطات الإطفاء"
+    "alertFailed": "فشل تنبيه محطات الإطفاء",
+    "incidentAssignedWarning": "هذا البلاغ مُسند بالفعل إلى: {{stations}}",
+    "alreadyAssignedToStation": "البلاغ مُسند بالفعل إلى محطة الإطفاء هذه",
+    "dispatchLogs": "سجلات الإرسال",
+    "noDispatchLogs": "لا توجد سجلات إرسال لهذا البلاغ",
+    "dispatchLogsFailed": "فشل تحميل سجلات الإرسال",
+    "logTime": "الوقت",
+    "logAction": "الإجراء",
+    "logStatus": "تغيّر الحالة",
+    "logRole": "الدور",
+    "logFireStation": "محطة الإطفاء",
+    "logAcceptedBy": "تم القبول بواسطة"
   },
   "dashboard": {
     "title": "لوحة المعلومات",
@@ -2311,6 +2322,7 @@
     "forceDeleteMessage": "ما زالت هناك وحدات معينة لمحطة الإطفاء هذه. هل تريد فصلها جميعاً وحذف المحطة؟",
     "detachAndDelete": "فصل وحذف",
     "fireStation": "محطة الإطفاء",
+    "noUnitsToAssign": "جميع الوحدات مُسندة بالفعل إلى محطات الإطفاء",
     "selectFireStation": "اختر محطة الإطفاء",
     "unitStatus": "حالة الوحدة",
     "resStatus": {

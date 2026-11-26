@@ -21,7 +21,51 @@ export interface FireStation {
   longitude: number;
 }
 
+/** One entry of an incident's dispatch audit trail (`GET /dispatch/logs`). */
+export interface DispatchLog {
+  id: string;
+  assignment_id: string;
+  incident_id: string;
+  resource_id: string;
+  role: string;
+  action: string;
+  from_status?: string | null;
+  to_status?: string | null;
+  fire_station_id?: string | null;
+  fire_station_name?: string | null;
+  accepted_by_id?: string | null;
+  accepted_by_name?: string | null;
+  created_at: string;
+}
+
 export const dispatcherApi = {
+  /** Dispatch logs of an incident, as returned by the API (list envelope). */
+  listLogs: async (incidentId: string): Promise<DispatchLog[]> => {
+    const { data } = await apiClient.get<
+      { data: DispatchLog[] } | DispatchLog[]
+    >("/dispatch/logs", { params: { incident_id: incidentId } });
+    return Array.isArray(data) ? data : (data.data ?? []);
+  },
+
+  /**
+   * Checks the incident can still be assigned to the station. Resolves on 200;
+   * rejects with an HTTP 409 when it is already assigned to that station.
+   */
+  assertIncidentNotAssigned: async (
+    incidentId: string,
+    departmentId: string,
+    servicePointId: string,
+  ): Promise<void> => {
+    await apiClient.post(
+      `/dispatch/incidents/${incidentId}/fire-station-alerts`,
+      {
+        department_id: departmentId,
+        service_point_ids: [servicePointId],
+        all: false,
+      },
+    );
+  },
+
   /** Push-notify a fire station about an incident (incident dropped on it). */
   pushToFireStation: async (
     serviceId: string,
