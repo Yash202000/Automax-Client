@@ -716,6 +716,15 @@ export const KpiDictionaryDetailPage: React.FC = () => {
       toast.error("Name is required");
       return;
     }
+    if (
+      metricForm.calculation_type === "Formula" &&
+      !metricForm.formula?.trim()
+    ) {
+      toast.error(
+        "Formula is required when Calculation Type is Formula (see Formula Readiness)",
+      );
+      return;
+    }
     if (isDuplicateMetricName(metricForm.name)) {
       toast.error(DUPLICATE_METRIC_NAME_MSG);
       return;
@@ -1698,13 +1707,6 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                     }))
                   }
                 />
-                <Input
-                  label="Unit"
-                  value={metricForm.unit}
-                  onChange={(e) =>
-                    setMetricForm((p) => ({ ...p, unit: e.target.value }))
-                  }
-                />
                 {metricForm.unit === "Custom" && (
                   <Input
                     label="Custom Unit Label"
@@ -1790,7 +1792,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                 <div className="p-4 border-t border-slate-200 dark:border-slate-700/60 space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <Select
-                      label="Calculation Type *"
+                      label="Calculation Type"
                       value={metricForm.calculation_type}
                       onChange={(e) =>
                         setMetricForm((p) => ({
@@ -1816,7 +1818,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                       ]}
                     />
                     <Select
-                      label="Direction *"
+                      label="Direction"
                       value={metricForm.direction}
                       onChange={(e) =>
                         setMetricForm((p) => ({
@@ -1877,7 +1879,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                       ]}
                     />
                     <Select
-                      label="Aggregation Method *"
+                      label="Aggregation Method"
                       value={metricForm.aggregation_method}
                       onChange={(e) =>
                         setMetricForm((p) => ({
@@ -2098,7 +2100,11 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                       ]}
                     />
                     <Textarea
-                      label="Formula (optional)"
+                      label={
+                        metricForm.calculation_type === "Formula"
+                          ? "Formula *"
+                          : "Formula (optional)"
+                      }
                       value={metricForm.formula}
                       onChange={(e) =>
                         setMetricForm((p) => ({
@@ -2259,7 +2265,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   }
                 />
                 <Input
-                  label="Metric Code *"
+                  label="Metric Code"
                   value={configForm.metric_code ?? ""}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>
@@ -2269,7 +2275,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   }
                 />
                 <Select
-                  label="Metric Status *"
+                  label="Metric Status"
                   value={configForm.metric_status ?? "Active"}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>
@@ -2296,7 +2302,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   }
                 />
                 <Input
-                  label="Weight (%) *"
+                  label="Weight (%)"
                   type="number"
                   step="0.1"
                   min={0}
@@ -2315,7 +2321,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   }
                 />
                 <Input
-                  label="Baseline *"
+                  label="Baseline"
                   type="number"
                   value={configForm.baseline_value ?? 0}
                   disabled={!canUpdateKpi() || configLocked}
@@ -2347,7 +2353,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
 
                 <div className="sm:col-span-2 lg:col-span-4">
                   <Textarea
-                    label="Metric Description *"
+                    label="Metric Description"
                     rows={2}
                     value={configForm.metric_description ?? ""}
                     disabled={!canUpdateKpi()}
@@ -2360,7 +2366,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                 </div>
 
                 <Select
-                  label="Calculation Type *"
+                  label="Calculation Type"
                   value={configForm.calculation_type ?? "Direct Value"}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>
@@ -2389,7 +2395,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   ]}
                 />
                 <Select
-                  label="Direction *"
+                  label="Direction"
                   value={configForm.direction ?? "Higher is Better"}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>
@@ -2408,7 +2414,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   ]}
                 />
                 <Select
-                  label="Unit *"
+                  label="Unit"
                   value={configForm.unit ?? ""}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>
@@ -2435,7 +2441,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   ]}
                 />
                 <Select
-                  label="Decimal Precision *"
+                  label="Decimal Precision"
                   value={String(configForm.decimal_precision ?? 2)}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>
@@ -2458,7 +2464,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                 />
 
                 <Select
-                  label="Aggregation Method *"
+                  label="Aggregation Method"
                   value={configForm.aggregation_method ?? "Sum"}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>
@@ -2490,7 +2496,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   ]}
                 />
                 <Select
-                  label="Reporting Frequency *"
+                  label="Reporting Frequency"
                   value={configForm.reporting_frequency ?? ""}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>
@@ -2508,7 +2514,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   ]}
                 />
                 <Input
-                  label="Target Source *"
+                  label="Target Source"
                   value={
                     configForm.calculation_type === "Formula"
                       ? "Formula"
@@ -2539,7 +2545,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                 />
 
                 <Input
-                  label="Numerator Label *"
+                  label="Numerator Label"
                   value={configForm.numerator_label ?? ""}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>
@@ -2549,7 +2555,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   }
                 />
                 <Input
-                  label="Numerator Variable Code *"
+                  label="Numerator Variable Code"
                   value={configForm.numerator_variable_code ?? ""}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>
@@ -2564,7 +2570,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   }
                 />
                 <Input
-                  label="Denominator Label *"
+                  label="Denominator Label"
                   value={configForm.denominator_label ?? ""}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>
@@ -2574,7 +2580,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   }
                 />
                 <Input
-                  label="Denominator Variable Code *"
+                  label="Denominator Variable Code"
                   value={configForm.denominator_variable_code ?? ""}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>
@@ -2590,7 +2596,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                 />
 
                 <Input
-                  label="Metric Owner *"
+                  label="Metric Owner"
                   value={configForm.metric_owner_id ?? ""}
                   disabled={!canUpdateKpi()}
                   placeholder="User UUID"
@@ -2601,7 +2607,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   }
                 />
                 <Input
-                  label="Data Source *"
+                  label="Data Source"
                   value={configForm.data_source ?? ""}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>
@@ -2611,7 +2617,7 @@ export const KpiDictionaryDetailPage: React.FC = () => {
                   }
                 />
                 <Select
-                  label="Evidence Required *"
+                  label="Evidence Required"
                   value={configForm.evidence_required ? "Yes" : "No"}
                   disabled={!canUpdateKpi()}
                   onChange={(e) =>

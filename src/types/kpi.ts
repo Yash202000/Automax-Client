@@ -1035,6 +1035,7 @@ export type KpiAggregationMethod =
   | "Sum"
   | "Average"
   | "Latest Approved Value"
+  | "Recalculate Ratio from Approved Inputs"
   | "Minimum"
   | "Maximum"
   | "Weighted Average"
@@ -1702,10 +1703,17 @@ export function getCurrentPeriodCode(
   }
 }
 
-export function getYearOptions(): { value: number; label: string }[] {
-  const current = new Date().getFullYear();
+/** Years the target and entry APIs and the Excel import accept. */
+export const TARGET_YEAR_MIN = 2020;
+export const TARGET_YEAR_MAX = 2040;
+
+/** Year dropdown options: by default the current year -2 to +3. */
+export function getYearOptions(
+  min = new Date().getFullYear() - 2,
+  max = new Date().getFullYear() + 3,
+): { value: number; label: string }[] {
   const years: { value: number; label: string }[] = [];
-  for (let y = current - 2; y <= current + 3; y++) {
+  for (let y = min; y <= max; y++) {
     years.push({ value: y, label: String(y) });
   }
   return years;
