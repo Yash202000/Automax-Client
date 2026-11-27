@@ -218,7 +218,11 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
   const { data: rollup } = useKpiMetricDisplayRollup(kpiType, kpiId, m.id);
 
   const hasData = !!rollup?.has_data;
-  const hasTarget = hasData && rollup?.target != null;
+  // The period's approved target is shown with or without approved data;
+  // achievement needs both (the server only sends it then).
+  const hasTarget = rollup?.target != null;
+  const pendingTarget =
+    !hasTarget && rollup?.pending_target != null ? rollup.pending_target : null;
   const achievement =
     hasTarget && rollup?.achievement_capped != null
       ? rollup.achievement_capped
@@ -311,11 +315,24 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
               ? formatValue(m, rollup.target)
               : "No target set"}
           </p>
+          {pendingTarget !== null && (
+            <p
+              className="text-[10px] text-amber-600 dark:text-amber-400 truncate"
+              title={`A target of ${formatValue(m, pendingTarget)} is ${rollup?.pending_target_status ?? "draft"} — it counts once approved`}
+            >
+              {rollup?.pending_target_status === "submitted"
+                ? "Submitted"
+                : rollup?.pending_target_status === "returned"
+                  ? "Returned"
+                  : "Draft"}{" "}
+              target {formatValue(m, pendingTarget)} — awaiting approval
+            </p>
+          )}
           <p
             className="text-[10px] text-blue-600 dark:text-blue-400 truncate"
             title={
               rollup?.is_fallback_period
-                ? `No data for the current period yet — showing ${periodLabel}, the most recent period with approved data`
+                ? `Nothing for the current period yet — showing ${periodLabel}, the most recent period with approved data or an approved target`
                 : `${rollup?.entry_count ?? 0} approved entr${rollup?.entry_count === 1 ? "y" : "ies"} for ${periodLabel}`
             }
           >
@@ -342,7 +359,7 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
             {rollup?.is_fallback_period && (
               <span
                 className="ms-1 text-blue-500 dark:text-blue-400"
-                title="Current period has no data — showing the most recent period that does"
+                title="Nothing for the current period yet — showing the most recent period with approved data or an approved target"
               >
                 (latest)
               </span>
@@ -360,7 +377,9 @@ const MetricRollupCard: React.FC<MetricRollupCardProps> = ({
               ? "No Data"
               : !hasTarget
                 ? "No target for this period"
-                : `${achievement!.toFixed(2)}%`}
+                : achievement === null
+                  ? "—"
+                  : `${achievement.toFixed(2)}%`}
           </span>
         </div>
       </div>

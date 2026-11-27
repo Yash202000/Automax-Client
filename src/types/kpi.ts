@@ -1989,9 +1989,13 @@ export interface KpiMetricPeriodRollup {
   achievement_raw?: number | null;
   achievement_capped?: number | null;
   performance_status?: string;
+  // No approved target for the period, but one waiting for approval
+  // (draft / submitted / returned): its value and status.
+  pending_target?: number | null;
+  pending_target_status?: string;
   // Only present on the display-rollup endpoint: true when the returned
-  // period_code/year isn't the real current period, because the current
-  // period had no data and this is the most recent period that does.
+  // period_code/year isn't the real current period (it had no data and no
+  // approved target), so the card shows the most recent period that has.
   is_fallback_period?: boolean;
 }
 
