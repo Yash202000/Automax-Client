@@ -250,6 +250,7 @@ export default function SoftPhone({
     setIsCallerIncidentsMinimized,
     setIncomingCallNumber,
     setIncomingCallName,
+    clearCallData,
   } = useSoftphoneStore();
 
   const [dialedNumber, setDialedNumber] = useState<string>("");
@@ -814,6 +815,7 @@ export default function SoftPhone({
     const duration = globalCallDuration;
     stopTimer();
     setOpenCallerIncidents(false);
+    clearCallData();
     if (
       wasIncomingCallRef.current &&
       canCreateSentimentRef.current &&

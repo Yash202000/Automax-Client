@@ -90,6 +90,7 @@ export const CintrixCtiHost: React.FC = () => {
     setIncomingCallName,
     setOpenCallerIncidents,
     setIsCallerIncidentsMinimized,
+    clearCallData,
   } = useSoftphoneStore();
   const { hasPermission } = usePermissions();
   const { t } = useTranslation();
@@ -294,6 +295,7 @@ export const CintrixCtiHost: React.FC = () => {
       inCallRef.current = false;
       setActiveCaller(null);
       setOpenCallerIncidents(false);
+      clearCallData();
       const d = (e as CustomEvent).detail || {};
       if (
         canCreateSentiment &&
@@ -336,6 +338,7 @@ export const CintrixCtiHost: React.FC = () => {
     setIncomingCallName,
     setOpenCallerIncidents,
     setIsCallerIncidentsMinimized,
+    clearCallData,
     canCreateSentiment,
   ]);
 

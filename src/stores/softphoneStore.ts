@@ -22,6 +22,7 @@ interface SoftphoneState {
   setShouldConnect: (shouldConnect: boolean) => void;
   toggle: () => void;
   reset: () => void;
+  clearCallData: () => void;
 }
 
 export const useSoftphoneStore = create<SoftphoneState>()(
@@ -57,6 +58,8 @@ export const useSoftphoneStore = create<SoftphoneState>()(
           shouldConnect: false,
           isCallerIncidentsMinimized: false,
         }),
+      clearCallData: () =>
+        set({ incomingCallNumber: "", incomingCallName: "", reporterId: null }),
     }),
     {
       name: "softphone-storage",
