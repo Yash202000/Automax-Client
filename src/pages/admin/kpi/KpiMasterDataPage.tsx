@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -261,6 +261,10 @@ export const KpiMasterDataPage: React.FC = () => {
   }));
 
   const [modalOpen, setModalOpen] = useState(false);
+  // Saving: the Save / Create button is disabled while a save runs, and a
+  // second click is ignored (a double-click used to create two records).
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [modalType, setModalType] = useState<EntityType>("pillar");
   const [modalItem, setModalItem] = useState<any>(null);
   const [form, setForm] = useState<FormState>(initialForm);
@@ -304,6 +308,18 @@ export const KpiMasterDataPage: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      await saveModal();
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+
+  const saveModal = async () => {
     const isEdit = !!modalItem;
     if (!form.name_en) {
       toast.error(t("kpi.masterData.nameEnRequired"));
@@ -1206,7 +1222,7 @@ export const KpiMasterDataPage: React.FC = () => {
             <Button variant="outline" onClick={() => setModalOpen(false)}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} isLoading={saving} disabled={saving}>
               {modalItem ? t("common.save") : t("common.create")}
             </Button>
           </div>
