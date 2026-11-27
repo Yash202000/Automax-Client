@@ -50,6 +50,7 @@ export default function IncidentsLeafletMap({
   focusPoint,
   routePath,
   links,
+  onContextPoint,
 }: IncidentsMapProps) {
   const focusMarkerRef = useRef<L.Marker | null>(null);
   const onDropRef = useRef(onDropIncident);
@@ -404,6 +405,28 @@ export default function IncidentsLeafletMap({
       group.remove();
     };
   }, [links]);
+
+  // Right-click reports the point so the host can offer "create incident".
+  const onContextRef = useRef(onContextPoint);
+  onContextRef.current = onContextPoint;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const onContext = (e: L.LeafletMouseEvent) => {
+      if (!onContextRef.current) return;
+      e.originalEvent.preventDefault();
+      onContextRef.current({
+        latitude: e.latlng.lat,
+        longitude: e.latlng.lng,
+        clientX: e.originalEvent.clientX,
+        clientY: e.originalEvent.clientY,
+      });
+    };
+    map.on("contextmenu", onContext);
+    return () => {
+      map.off("contextmenu", onContext);
+    };
+  }, []);
 
   return (
     <div className="relative h-full w-full">

@@ -266,7 +266,16 @@ function NazahaIncidentForm({ incidentId }: { incidentId?: string }) {
   const callNumber: string =
     ctiPrefill?.reporter_phone || incomingCallNumber || "";
 
+  const mapPrefill = isEdit
+    ? undefined
+    : (routerLocation.state as any)?.mapPrefill;
   const [form, setForm] = useState<FormState>(() => ({
+    latitude: Number.isFinite(mapPrefill?.latitude)
+      ? mapPrefill.latitude
+      : undefined,
+    longitude: Number.isFinite(mapPrefill?.longitude)
+      ? mapPrefill.longitude
+      : undefined,
     workflow_id: "",
     source: ctiPrefill?.source || "web",
     call_uuid: ctiPrefill?.call_uuid || "",

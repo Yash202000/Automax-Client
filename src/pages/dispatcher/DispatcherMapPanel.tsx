@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQueries } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Maximize2, MapPin, Minimize2, Search, X } from "lucide-react";
+import { Maximize2, MapPin, Minimize2, Plus, Search, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { usePermissions } from "../../hooks/usePermissions";
+import { PERMISSIONS } from "../../constants/permissions";
 import { cn } from "@/lib/utils";
 import IncidentsMap from "../../components/dispatcher/IncidentsMap";
 import type {
+  MapContextPoint,
   FocusPoint,
   IncidentMapMarker,
   MapLink,
@@ -191,6 +195,58 @@ export function DispatcherMapPanel({
     mode === "live" ? LIVE_REFRESH_MS : undefined,
   );
   const [entity, setEntity] = useState<MapEntity | null>(null);
+
+  // Right-click on the map offers "Create incident here", which opens the
+  // create form prefilled with that point's coordinates.
+  const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
+  const canCreateIncident = hasPermission(PERMISSIONS.INCIDENTS_CREATE);
+  const mapBoxRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menu, setMenu] = useState<{
+    latitude: number;
+    longitude: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  const handleContext = useCallback((pt: MapContextPoint) => {
+    const box = mapBoxRef.current?.getBoundingClientRect();
+    if (!box) return;
+    setMenu({
+      latitude: pt.latitude,
+      longitude: pt.longitude,
+      x: pt.clientX - box.left,
+      y: pt.clientY - box.top,
+    });
+  }, []);
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: Event) => {
+      if (
+        e instanceof MouseEvent &&
+        menuRef.current?.contains(e.target as Node)
+      )
+        return;
+      setMenu(null);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenu(null);
+    window.addEventListener("mousedown", close);
+    window.addEventListener("wheel", close);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", close);
+      window.removeEventListener("wheel", close);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menu]);
+  const createHere = () => {
+    if (!menu) return;
+    navigate("/incidents/new", {
+      state: {
+        mapPrefill: { latitude: menu.latitude, longitude: menu.longitude },
+      },
+    });
+  };
 
   // Live tracking: each unit's assigned incident (`incident_id` on the unit).
   // Known incidents come from the list; the rest are fetched by id.
@@ -566,7 +622,7 @@ export function DispatcherMapPanel({
           )}
         </button>
       </div>
-      <div className="relative min-h-0 flex-1">
+      <div ref={mapBoxRef} className="relative min-h-0 flex-1">
         <IncidentsMap
           markers={markers}
           selectedId={selectedId}
@@ -575,7 +631,29 @@ export function DispatcherMapPanel({
           focusPoint={focus}
           routePath={routePath}
           links={links}
+          onContextPoint={canCreateIncident ? handleContext : undefined}
         />
+        {menu ? (
+          <div
+            ref={menuRef}
+            role="menu"
+            style={{ left: menu.x, top: menu.y }}
+            className="absolute z-[1100] min-w-44 overflow-hidden rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] py-1 shadow-lg"
+          >
+            <button
+              type="button"
+              role="menuitem"
+              onClick={createHere}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-start text-xs font-medium hover:bg-[hsl(var(--muted))]"
+            >
+              <Plus className="h-3.5 w-3.5 text-primary" />
+              {t("dispatcher.createIncidentHere", "Create incident here")}
+            </button>
+            <div className="px-3 pb-1 text-[10px] text-[hsl(var(--muted-foreground))]">
+              {menu.latitude.toFixed(5)}, {menu.longitude.toFixed(5)}
+            </div>
+          </div>
+        ) : null}
         {mode !== "live" &&
         selectedIncident &&
         hasCoordinates(selectedIncident) ? (

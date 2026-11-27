@@ -234,6 +234,11 @@ const FireStationFormInner: React.FC<{
     resource_ids: form.unit_ids,
   });
 
+  const { data: servicePoints = [] } = useQuery({
+    queryKey: ["dispatcher", "service-points", "all"],
+    queryFn: servicePointApi.all,
+  });
+
   const saveMutation = useMutation({
     mutationFn: () =>
       isEdit
@@ -247,15 +252,51 @@ const FireStationFormInner: React.FC<{
     onError: (e) => {
       const { status, message, fields } = parseApiError(e);
       if (status === 409) {
-        setServerErrors({
-          radio_id: [
-            message ||
-              t(
-                "unitManagement.radioIdExists",
-                "This radio ID already exists in the department",
-              ),
-          ],
-        });
+        // Duplicate: report it as a toast, name first, then radio ID. The
+        // loaded stations tell which field clashes; the API message is the
+        // fallback when the list isn't available.
+        const norm = (v?: string | null) => (v ?? "").trim().toLowerCase();
+        const others = servicePoints.filter(
+          (s) => s.id !== id && s.department_id === form.department_id,
+        );
+        const msg = norm(message);
+        const nameDup =
+          others.some((s) => norm(s.name) === norm(form.name)) ||
+          (!others.length && msg.includes("name"));
+        const radioDup =
+          others.some(
+            (s) =>
+              !!form.radio_id.trim() &&
+              norm(s.radio_id) === norm(form.radio_id),
+          ) ||
+          (!others.length && msg.includes("radio"));
+        const nameMsg = t(
+          "unitManagement.fireStationNameExists",
+          "A fire station with this name already exists",
+        );
+        const radioMsg = t(
+          "unitManagement.radioIdExists",
+          "This radio ID already exists in the department",
+        );
+        // Shown as a toast and inline under the clashing field.
+        setServerErrors(
+          nameDup
+            ? { name: [nameMsg] }
+            : radioDup
+              ? { radio_id: [radioMsg] }
+              : {},
+        );
+        toast.error(
+          nameDup
+            ? nameMsg
+            : radioDup
+              ? radioMsg
+              : message ||
+                t(
+                  "unitManagement.fireStationDuplicate",
+                  "A fire station with these details already exists",
+                ),
+        );
       } else {
         setServerErrors(fields);
         toast.error(

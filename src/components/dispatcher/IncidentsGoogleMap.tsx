@@ -534,6 +534,30 @@ function LinkLines({ links }: { links?: IncidentsMapProps["links"] }) {
   return null;
 }
 
+/** Right-click reports the point so the host can offer "create incident". */
+function ContextPoint({
+  onContext,
+}: {
+  onContext?: IncidentsMapProps["onContextPoint"];
+}) {
+  const map = useMap();
+  useEffect(() => {
+    if (!map || !onContext) return;
+    const l = map.addListener("rightclick", (e: google.maps.MapMouseEvent) => {
+      const dom = e.domEvent as MouseEvent | undefined;
+      if (!e.latLng || !dom) return;
+      onContext({
+        latitude: e.latLng.lat(),
+        longitude: e.latLng.lng(),
+        clientX: dom.clientX,
+        clientY: dom.clientY,
+      });
+    });
+    return () => l.remove();
+  }, [map, onContext]);
+  return null;
+}
+
 /** Native Google Maps version of the incidents map, clustered. */
 export default function IncidentsGoogleMap(props: IncidentsMapProps) {
   const center = useMapDefaultCenter();
@@ -548,6 +572,7 @@ export default function IncidentsGoogleMap(props: IncidentsMapProps) {
       <FocusPin point={props.focusPoint} />
       <RouteLine path={props.routePath} />
       <LinkLines links={props.links} />
+      <ContextPoint onContext={props.onContextPoint} />
     </GoogleBaseMap>
   );
 }

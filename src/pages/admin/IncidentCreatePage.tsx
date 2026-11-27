@@ -818,6 +818,20 @@ export function IncidentCreatePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Map prefill: navigated here from the dispatcher map ("Create incident from
+  // map"). Declared after the reset effect above for the same reason.
+  useEffect(() => {
+    const p = (routerLocation.state as any)?.mapPrefill;
+    if (!p || !Number.isFinite(p.latitude) || !Number.isFinite(p.longitude))
+      return;
+    setFormData((prev) => ({
+      ...prev,
+      latitude: p.latitude,
+      longitude: p.longitude,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const findClassificationById = useCallback(
     (nodes: Classification[], id: string): Classification | undefined => {
       for (const node of nodes) {

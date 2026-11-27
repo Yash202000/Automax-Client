@@ -61,7 +61,7 @@ const emptyForm = (): Form => ({
   code: "",
   alt_name: "",
   department_id: "",
-  acceptance_timeout_seconds: "0",
+  acceptance_timeout_seconds: "",
   icon: undefined,
   min_speed: "0",
   max_speed: "0",
@@ -149,9 +149,13 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
   const missing = {
     name: !form.name.trim(),
     department_id: !form.department_id,
+    acceptance_timeout_seconds: form.acceptance_timeout_seconds.trim() === "",
   };
+  // The API requires an acceptance timeout of at least 1 second.
+  const timeoutTooLow =
+    !missing.acceptance_timeout_seconds &&
+    !(num(form.acceptance_timeout_seconds) >= 1);
   const numbersOk = [
-    form.acceptance_timeout_seconds,
     form.min_speed,
     form.max_speed,
     form.min_weight,
@@ -162,6 +166,7 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
     !speedBad &&
     !weightBad &&
     numbersOk &&
+    !timeoutTooLow &&
     !uploading;
 
   const required = t("common.required", "Required");
@@ -332,14 +337,22 @@ const UnitTypeFormPageInner: React.FC<{ id?: string; existing?: UnitType }> = ({
             "Acceptance Timeout (seconds)",
           )}
           type="number"
-          min={0}
+          required
+          min={1}
           step={1}
           value={form.acceptance_timeout_seconds}
           onChange={text(
             "acceptance_timeout_seconds",
             "acceptance_timeout_seconds",
           )}
-          error={serverErrors.acceptance_timeout_seconds?.[0]}
+          error={
+            submitted && timeoutTooLow
+              ? t(
+                  "unitManagement.timeoutMin",
+                  "Acceptance timeout must be at least 1 second",
+                )
+              : fieldErr("acceptance_timeout_seconds")
+          }
         />
         <Select
           label={t("unitManagement.status", "Status")}
