@@ -10,12 +10,17 @@ export interface ApiErrorInfo {
 export const parseApiError = (e: unknown): ApiErrorInfo => {
   if (axios.isAxiosError(e)) {
     const data = e.response?.data as
-      | { message?: string; errors?: Record<string, string[]> }
+      | { message?: string; errors?: Record<string, string | string[]> }
       | undefined;
+    // Field errors arrive as `{ field: "msg" }` or `{ field: ["msg"] }`.
+    const fields: Record<string, string[]> = {};
+    for (const [k, v] of Object.entries(data?.errors ?? {})) {
+      fields[k] = Array.isArray(v) ? v : [String(v)];
+    }
     return {
       status: e.response?.status,
       message: data?.message,
-      fields: data?.errors ?? {},
+      fields,
     };
   }
   return { fields: {} };

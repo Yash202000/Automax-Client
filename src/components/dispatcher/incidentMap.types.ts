@@ -27,6 +27,17 @@ export interface IncidentsMapProps {
   routePath?: { latitude: number; longitude: number }[] | null;
   /** Unit → assigned-incident lines (live tracking). */
   links?: MapLink[];
+  /** Right-click on the map: coordinates plus the click's viewport position. */
+  // eslint-disable-next-line no-unused-vars
+  onContextPoint?: (point: MapContextPoint) => void;
+}
+
+export interface MapContextPoint {
+  latitude: number;
+  longitude: number;
+  /** Viewport (clientX/clientY) position of the right-click. */
+  clientX: number;
+  clientY: number;
 }
 
 /** A line joining a unit to the incident it is assigned to. */
